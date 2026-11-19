@@ -51,3 +51,39 @@ func TestLogMetaUpstreamCost(t *testing.T) {
 		t.Errorf("expected cost without an upstream cost = %v, want 4", meta[model.LogMetaExpectedCost])
 	}
 }
+
+// Vercel AI Gateway reports its charge: it is logged with the host that served the request, and
+// the cost figures use it (with the channel's fee) over the list-price estimate, as it follows
+// the host the gateway actually used. A charge reported only in provider_metadata (messages,
+// responses) reaches the usage through the consume snapshot.
+func TestGatewayCostAndHost(t *testing.T) {
+	price := model.Price{Type: model.TokensPriceType, Input: 1, Output: 2}
+	usage := &types.Usage{PromptTokens: 1_000_000, CompletionTokens: 500_000, UpstreamCost: 1.2}
+	q := &Quota{price: price, groupRatio: 1, channelType: config.ChannelTypeVercelAIGateway, feeRate: 0.03, upstreamHost: "deepinfra"}
+	meta := q.GetLogMeta(usage)
+	if meta[model.LogMetaUpstreamCost] != 1.2 || meta["upstream_host"] != "deepinfra" {
+		t.Fatalf("meta = %v", meta)
+	}
+	if got, want := q.GetCostQuotaByUsage(usage), int(math.Round(1.2*1.03*config.QuotaPerUnit)); got != want {
+		t.Errorf("cost quota = %d, want %d (the reported charge with the fee)", got, want)
+	}
+	// An upstream whose cost is not verified keeps the estimate.
+	q.channelType = config.ChannelTypeOpenAI
+	if got := q.GetCostQuotaByUsage(usage); got == int(math.Round(1.2*1.03*config.QuotaPerUnit)) {
+		t.Errorf("cost quota from an unverified upstream cost: %d", got)
+	}
+
+	snapUsage := &types.Usage{PromptTokens: 10, CompletionTokens: 5}
+	q = &Quota{price: price, groupRatio: 1}
+	snap := ConsumeSnapshot{ChannelType: config.ChannelTypeVercelAIGateway, UpstreamHost: "alibaba", GatewayCost: 0.25}
+	q.applySnapshotGateway(snap, snapUsage)
+	if snapUsage.UpstreamCost != 0.25 || q.upstreamHost != "alibaba" {
+		t.Errorf("snapshot: usage cost %v host %q", snapUsage.UpstreamCost, q.upstreamHost)
+	}
+	// usage.cost, when the response had one, is kept.
+	snapUsage = &types.Usage{UpstreamCost: 0.3}
+	q.applySnapshotGateway(snap, snapUsage)
+	if snapUsage.UpstreamCost != 0.3 {
+		t.Errorf("usage.cost replaced: %v", snapUsage.UpstreamCost)
+	}
+}

@@ -31,6 +31,12 @@ const (
 	GinUpstreamRequestIdKey = "upstream_request_id"
 	// GinUpstreamResponseModelKey 上游在响应里声明的模型名（统一模型名改写之前），见 base.ObserveUpstreamModel。
 	GinUpstreamResponseModelKey = "upstream_response_model"
+	// GinUpstreamHostKey and GinUpstreamGatewayCostKey are what a gateway upstream (Vercel AI
+	// Gateway) says about the attempt in its response: the hosting provider that served it and
+	// the amount charged, in USD (0 when it did not say). Reset on every upstream response, so a
+	// retry on another channel does not inherit them (base.ObserveGatewayMeta).
+	GinUpstreamHostKey        = "upstream_host"
+	GinUpstreamGatewayCostKey = "upstream_gateway_cost"
 	// GinSupplyRenamesModelKey is set per attempt: true when the request goes through a supply
 	// whose upstream model name differs from the public model name. Responses then carry the
 	// public name the client asked for, whatever the unified-response-model switches say.

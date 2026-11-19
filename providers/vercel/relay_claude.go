@@ -26,6 +26,8 @@ func (p *VercelProvider) claudeProvider() *claude.ClaudeProvider {
 	provider.Config = getClaudeConfig()
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
 	provider.Requester.RequestHook = p.Requester.RequestHook
+	// The hook SetContext installed records the request id and the serving host.
+	provider.Requester.ResponseHook = p.Requester.ResponseHook
 	return provider
 }
 

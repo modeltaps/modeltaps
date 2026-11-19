@@ -18,6 +18,7 @@ var adminOnlyLogMetaKeys = []string{
 	"response_model",          // the model the upstream said it used, when it did not match
 	"response_model_mismatch", // flag for the above
 	"session_affinity",        // whether the request reused the session's channel
+	"upstream_host",           // the hosting provider a gateway upstream routed the request to
 }
 
 // RedactForMember clears the channel and cost fields of a log that is shown to a user or an

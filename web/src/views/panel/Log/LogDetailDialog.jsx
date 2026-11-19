@@ -937,6 +937,11 @@ export default function LogDetailDialog({
                     t={t}
                   />
                 )}
+                {/* The hosting provider a gateway upstream (Vercel AI Gateway) routed the request to;
+                    admins only, members' logs drop it. */}
+                {metadata.upstream_host && (
+                  <KeyValueRow label={t('logPage.requestSection.upstreamHost')} value={metadata.upstream_host} mono />
+                )}
                 {finishMeta && <KeyValueRow label={t('logPage.requestSection.finishReason')} value={t(finishMeta.labelKey)} />}
                 <KeyValueRow
                   label={t('logPage.requestSection.streaming')}

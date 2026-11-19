@@ -814,6 +814,7 @@
       "token": "API Key",
       "requestId": "Request ID",
       "upstreamRequestId": "Upstream Request ID",
+      "upstreamHost": "Served by host",
       "finishReason": "Finish Reason",
       "streaming": "Streaming",
       "yes": "Yes",

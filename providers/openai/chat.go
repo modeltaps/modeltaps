@@ -306,6 +306,9 @@ func (h *OpenAIStreamHandler) HandlerChatStream(rawLine *[]byte, dataChan chan s
 	// 两条出口各需一份：默认出口发原始字节 → 必须在 *rawLine 字节上就地改 model；
 	// EscapeJSON 出口 marshal 结构体 → 需结构体 openaiResponse.Model 也改。二者缺一不可，非冗余。
 	// UnifyModelInJSONBytes 无映射时恒 no-op（gjson 查 model 值 == 上游名才 sjson 改）。
+	// What the upstream charged is the gateway's business: routers put it in usage (OpenRouter,
+	// Vercel AI Gateway) and the raw chunk would carry it to the client. It was read above.
+	*rawLine = base.StripUpstreamCost(*rawLine)
 	if h.Context != nil {
 		if patched, changed := base.UnifyModelInJSONBytes(h.Context, *rawLine, "model"); changed {
 			*rawLine = patched

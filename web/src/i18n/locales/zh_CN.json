@@ -1514,6 +1514,7 @@
       "token": "API Key",
       "requestId": "请求 ID",
       "upstreamRequestId": "上游请求 ID",
+      "upstreamHost": "实际托管商",
       "finishReason": "结束原因",
       "streaming": "流式",
       "yes": "是",

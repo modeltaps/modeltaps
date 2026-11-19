@@ -379,6 +379,14 @@ func (p *BaseProvider) SetContext(c *gin.Context) {
 			if p.Channel != nil && p.Channel.Type == config.ChannelTypeClaudeCode {
 				model.ObserveClaudeUsageHeaders(p.Channel.Id, resp.Header)
 			}
+			// The serving host and the charge a gateway reports in the body (gateway_meta.go);
+			// every response clears what an earlier attempt on this request left.
+			if p.Channel != nil && p.Channel.Type == config.ChannelTypeVercelAIGateway {
+				ObserveGatewayMeta(c, resp)
+			} else if _, ok := c.Get(config.GinUpstreamHostKey); ok {
+				c.Set(config.GinUpstreamHostKey, "")
+				c.Set(config.GinUpstreamGatewayCostKey, 0.0)
+			}
 		}
 	}
 }

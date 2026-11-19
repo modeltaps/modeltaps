@@ -170,6 +170,8 @@ type Quota struct {
 	// disconnected, and the output tokens were counted locally (see relay/main.go).
 	clientCancelled bool
 	usageEstimated  bool
+	// upstreamHost is the hosting provider a gateway upstream says served the request.
+	upstreamHost string
 	// 请求 / 上游 / 响应声明的模型名与渠道类型,用于判断上游是否换了模型(CHAN-9)。
 	requestedModel, upstreamModel, responseModel string
 	channelType                                  int
@@ -579,6 +581,11 @@ type ConsumeSnapshot struct {
 	ClientCancelled bool
 	UsageEstimated  bool
 
+	// UpstreamHost and GatewayCost are the hosting provider a gateway upstream says served the
+	// request and what it charged, in USD (see config.GinUpstreamHostKey).
+	UpstreamHost string
+	GatewayCost  float64
+
 	// RetryAttempts 成功前失败过的上游尝试（重试链），为空表示首个渠道即成功。
 	RetryAttempts []RelayAttempt
 
@@ -614,6 +621,18 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		RetryAttempts:   RelayAttempts(c),
 		ClientCancelled: c.GetBool(config.GinClientCancelledKey),
 		UsageEstimated:  c.GetBool(config.GinUsageEstimatedKey),
+		UpstreamHost:    c.GetString(config.GinUpstreamHostKey),
+		GatewayCost:     c.GetFloat64(config.GinUpstreamGatewayCostKey),
+	}
+}
+
+// applySnapshotGateway takes what a gateway upstream said about the request: the host that served
+// it, and its charge when usage.cost did not carry it (Vercel's messages and responses report it
+// only in provider_metadata).
+func (q *Quota) applySnapshotGateway(snap ConsumeSnapshot, usage *types.Usage) {
+	q.upstreamHost = snap.UpstreamHost
+	if usage != nil && usage.UpstreamCost == 0 && snap.GatewayCost > 0 {
+		usage.UpstreamCost = snap.GatewayCost
 	}
 }
 
@@ -644,6 +663,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.retryAttempts = snap.RetryAttempts
 	q.supplyId = snap.SupplyId
 	q.clientCancelled, q.usageEstimated = snap.ClientCancelled, snap.UsageEstimated
+	q.applySnapshotGateway(snap, usage)
 	ctx := snap.Ctx
 	defer func() {
 		if r := recover(); r != nil {

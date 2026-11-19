@@ -814,6 +814,7 @@
       "token": "API キー",
       "requestId": "リクエストID",
       "upstreamRequestId": "アップストリームリクエストID",
+      "upstreamHost": "実際のホスト",
       "finishReason": "終了理由",
       "streaming": "ストリーミング",
       "yes": "はい",

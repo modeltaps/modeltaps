@@ -265,9 +265,12 @@ func WithUpstreamRequestID(ctx context.Context, c *gin.Context) context.Context 
 // the account in USD. A cost from any other upstream is ignored: its unit is not verified.
 // OpenRouter: https://openrouter.ai/docs/use-cases/usage-accounting
 // Cheaper Inference: https://www.cheaperinference.com/docs (the wallet charge, in USD)
+// Vercel AI Gateway: usage.cost and provider_metadata.gateway.gatewayCost, the credits charged in
+// USD at the serving provider's price (checked 2026-11-19 against the providers' listed prices).
 var upstreamCostTypes = map[int]bool{
 	config.ChannelTypeOpenRouter:       true,
 	config.ChannelTypeCheaperInference: true,
+	config.ChannelTypeVercelAIGateway:  true,
 }
 
 func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
@@ -348,6 +351,10 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta[model.LogMetaExpectedCost] = q.ExpectedUpstreamCost(usage)
 		if usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
 			meta[model.LogMetaUpstreamCost] = usage.UpstreamCost
+		}
+		// The hosting provider a gateway upstream routed the request to.
+		if q.upstreamHost != "" {
+			meta["upstream_host"] = q.upstreamHost
 		}
 
 		// 处理档位(SEC-36,additive):上游回报了非标准档位或推理区域时记录,倍率已计入扣费。

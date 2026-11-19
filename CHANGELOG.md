@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first; with cost first, hosts cheaper than the vendor by the minimum saving go ahead of it.
   Vercel still fails over past the order. The channel price is the first host's, and the price
   details show the order. Models whose vendor Vercel does not list keep Vercel's own routing.
+- The cost and margin figures of a request use what the upstream reports it charged (with the
+  channel's fee) for OpenRouter, Cheaper Inference and Vercel AI Gateway channels, instead of the
+  price list estimate, so they follow a gateway's fallback host, cache hits and long-context
+  tiers. Vercel AI Gateway's charge is now recorded as the upstream cost, including messages and
+  responses requests, which report it only in `provider_metadata`, and the host that served each
+  request is kept in the log details (site admins only).
 
 ### Removed
 

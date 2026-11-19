@@ -86,6 +86,8 @@ On Vercel AI Gateway many open models are hosted by several providers at differe
 
 When a host up the order is unavailable, Vercel still moves to the next, so requests do not fail for it. The channel's cost is the first host's price, and the price details list the order. A model whose vendor Vercel does not list is left to Vercel's routing at its listed price. The order is refreshed with the prices (at startup, daily, and when the channel is saved).
 
+Vercel tells us with every request which host served it and what it charged: the host is kept in the log details as **Served by host**, and the charge as the upstream cost. The cost and margin figures use that charge (with the channel's fee) instead of an estimate from the price list, so the cost stays right when Vercel falls back to another host.
+
 ## The price check
 
 A supply whose cost is above what the site's normal price brings in loses money on every request it serves. The line is:
@@ -100,7 +102,7 @@ Discount groups are not checked: a discount is your own choice. The Pricing card
 
 A price list can be wrong in ways no sync notices: it lags a vendor's change, a promotion ended, or a relay adds a markup. The upstream's own bill settles it. Every hour Modeltaps compares the last three days of what upstreams billed with the expected cost it logged from the price list (the channel's list price, without its fee):
 
-- **Per model**, from the cost OpenRouter reports for every request.
+- **Per model**, from the cost OpenRouter, Vercel AI Gateway and Cheaper Inference report for every request.
 - **Per account**, from the daily bill of OpenAI, Anthropic and OpenRouter channels that have an **Upstream management key**. The bill covers the whole account, so use of the same account outside this site makes it look higher.
 
 A difference of 10% or more, over at least 10 requests and $0.10, opens an **Upstream charges** alert on the channel (Platform admin → **Alerts**) and sends one price change notice. The alert links to the channel's **Stats** tab, which shows both amounts per model and per day.

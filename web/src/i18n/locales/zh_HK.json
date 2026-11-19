@@ -814,6 +814,7 @@
       "token": "API Key",
       "requestId": "請求 ID",
       "upstreamRequestId": "上游請求 ID",
+      "upstreamHost": "實際託管商",
       "finishReason": "結束原因",
       "streaming": "流式",
       "yes": "是",

@@ -186,12 +186,19 @@ func (q *Quota) channelCostQuota(usage *types.Usage) int {
 	return q.calcQuotaWith(price, promptTokens, completionTokens, price.GetInput()*inRatio*tier, price.GetOutput()*outRatio*tier, 1+q.feeRate)
 }
 
-// GetCostQuotaByUsage is the request's cost for the cost and margin figures: the channel's list
-// price with its fee (channelCostQuota), 0 when the cost is not known. It is never charged.
+// GetCostQuotaByUsage is the request's cost for the cost and margin figures: what the upstream
+// says it charged, with the channel's fee, when it is one whose charge is known to be USD
+// (upstreamCostTypes); else the channel's list price with its fee (channelCostQuota); 0 when the
+// cost is not known. It is never charged. The upstream's own figure follows where the request
+// actually went (a gateway's fallback host, a long-context tier, a cache hit) where the list price
+// is an estimate.
 //
 // Requests billed without a chosen channel's price (task and Midjourney settlements) fall back
 // to the catalog price at the channel's cost ratio, as before.
 func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
+	if usage != nil && usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
+		return int(math.Round(usage.UpstreamCost * (1 + q.feeRate) * config.QuotaPerUnit))
+	}
 	if q.costPrice != nil {
 		return q.channelCostQuota(usage)
 	}

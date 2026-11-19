@@ -34,6 +34,7 @@ func seedRedactLog(t *testing.T, userId int) {
 			"response_model":          "gpt-5.4-nano",
 			"response_model_mismatch": true,
 			"session_affinity":        "hit",
+			"upstream_host":           "deepinfra",
 			"retry_attempts":          []any{map[string]any{"channel_id": 3, "status": 429, "cooldown": true}},
 		}),
 	}
