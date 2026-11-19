@@ -19,7 +19,16 @@ import { isPlaygroundToken } from 'utils/playgroundToken';
 import ModelLimitSelector from './ModelLimitSelector';
 import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
-import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
+import {
+  EXPIRY_PRESETS,
+  PROMPT_CACHE_HINTS,
+  PROMPT_CACHE_MODES,
+  RESET_PERIODS,
+  expiryFromPreset,
+  promptCacheSetting,
+  quotaDraft,
+  quotaPatch
+} from './tokenData';
 import { AgentHandover } from './PairingCode';
 import { isOrgOwnedToken } from './orgOwned';
 
@@ -573,11 +582,6 @@ function AdvancedBody({ draft, setDraft, ctx }) {
 
 AdvancedBody.propTypes = bodyProps;
 
-// The key's prompt cache mode (PROTO-9). Auto is stored as no value, the way keys made before the
-// setting existed have it.
-const PROMPT_CACHE_MODES = ['auto', 'on', 'off'];
-const PROMPT_CACHE_HINTS = { auto: 'promptCacheAutoHint', on: 'promptCacheOnHint', off: 'promptCacheOffHint' };
-
 const advancedTab = {
   key: 'advanced',
   make: (tk) => ({
@@ -590,7 +594,7 @@ const advancedTab = {
     ...(adminMode && d.user_id ? { user_id: parseInt(d.user_id, 10) } : {}),
     setting: {
       heartbeat: { enabled: d.heartbeat, timeout_seconds: parseInt(d.timeout, 10) || 30 },
-      prompt_cache: d.promptCache === 'auto' ? '' : d.promptCache
+      prompt_cache: promptCacheSetting(d.promptCache)
     }
   }),
   Body: AdvancedBody

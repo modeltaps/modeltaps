@@ -17,9 +17,12 @@ import {
   KEY_TYPES,
   MANAGEMENT_EXPIRY_DEFAULT,
   MANAGEMENT_EXPIRY_PRESETS,
+  PROMPT_CACHE_HINTS,
+  PROMPT_CACHE_MODES,
   expiryFromPreset,
   isManagementKeyType,
   managementExpiryFromPreset,
+  promptCacheSetting,
   quotaPatch
 } from './tokenData';
 import { SecretKeyReveal } from './KeySecret';
@@ -57,7 +60,8 @@ export default function NewTokenDialog({
     quota: '',
     expiry: 'never',
     managementExpiry: MANAGEMENT_EXPIRY_DEFAULT,
-    owner: 'member'
+    owner: 'member',
+    promptCache: 'auto'
   });
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState('');
@@ -97,7 +101,7 @@ export default function NewTokenDialog({
       backup_group: '',
       unlimited_quota,
       remain_quota,
-      setting: structuredClone(DEFAULT_SETTING),
+      setting: { ...structuredClone(DEFAULT_SETTING), prompt_cache: promptCacheSetting(form.promptCache) },
       ...(allowOrgOwned ? { owner: form.owner } : {})
     });
     const { success, message, data, code } = res.data;
@@ -274,6 +278,26 @@ export default function NewTokenDialog({
                   </Field>
                   {expiryField}
                 </div>
+              )}
+              {!management && (
+                <Field
+                  label={t('apiKey.panel.promptCache')}
+                  htmlFor="nt-prompt-cache"
+                  hint={t(`apiKey.panel.${PROMPT_CACHE_HINTS[form.promptCache]}`)}
+                >
+                  <Select value={form.promptCache} onValueChange={(v) => setForm((f) => ({ ...f, promptCache: v }))}>
+                    <SelectTrigger id="nt-prompt-cache" data-testid="key-prompt-cache-trigger">
+                      <span className="truncate">{t(`apiKey.panel.promptCache_${form.promptCache}`)}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROMPT_CACHE_MODES.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {t(`apiKey.panel.promptCache_${mode}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               )}
             </div>
             <DialogFooter className="items-center sm:justify-between">

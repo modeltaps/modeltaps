@@ -3,6 +3,12 @@ import { API } from 'utils/api';
 // Loading and saving one API key for its panel. The update endpoints take the whole key, so a save
 // starts from the key as stored now and replaces only the fields of the tab being saved.
 
+// The key's prompt cache mode (PROTO-9). Auto is stored as no value, the way keys made before the
+// setting existed have it.
+export const PROMPT_CACHE_MODES = ['auto', 'on', 'off'];
+export const PROMPT_CACHE_HINTS = { auto: 'promptCacheAutoHint', on: 'promptCacheOnHint', off: 'promptCacheOffHint' };
+export const promptCacheSetting = (mode) => (mode === 'auto' ? '' : mode);
+
 export const DEFAULT_SETTING = {
   heartbeat: { enabled: false, timeout_seconds: 30 },
   limits: {
