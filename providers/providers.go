@@ -43,6 +43,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/stabilityAI"
 	"github.com/modeltaps/modeltaps/providers/suno"
 	"github.com/modeltaps/modeltaps/providers/tencent"
+	"github.com/modeltaps/modeltaps/providers/venice"
 	"github.com/modeltaps/modeltaps/providers/vercel"
 	"github.com/modeltaps/modeltaps/providers/vertexai"
 	vertexai_express "github.com/modeltaps/modeltaps/providers/vertexai_express"
@@ -109,6 +110,7 @@ func init() {
 		config.ChannelTypeVertexAIExpress: vertexai_express.VertexAIExpressProviderFactory{},
 		config.ChannelTypeVercelAIGateway: vercel.VercelProviderFactory{},
 		config.ChannelTypeRequesty:        requesty.RequestyProviderFactory{},
+		config.ChannelTypeVenice:          venice.VeniceProviderFactory{},
 	}
 	for channelType, p := range preset.Presets {
 		providerFactories[channelType] = preset.ProviderFactory{Preset: p}

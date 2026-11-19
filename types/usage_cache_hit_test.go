@@ -73,3 +73,15 @@ func TestGetExtraTokensTopLevelCachedTokens(t *testing.T) {
 		t.Fatalf("top-level cached_tokens should bill as cached input, got %d", got)
 	}
 }
+
+// Venice reports Claude cache writes inside prompt_tokens_details under Anthropic's name.
+func TestGetExtraTokensVeniceCacheWrite(t *testing.T) {
+	var u Usage
+	body := `{"prompt_tokens":5200,"completion_tokens":10,"prompt_tokens_details":{"cached_tokens":0,"cache_creation_input_tokens":5100}}`
+	if err := json.Unmarshal([]byte(body), &u); err != nil {
+		t.Fatal(err)
+	}
+	if extra := u.GetExtraTokens(); extra[config.UsageExtraCachedWrite] != 5100 || extra[config.UsageExtraCache] != 0 {
+		t.Fatalf("cache write = %v", extra)
+	}
+}

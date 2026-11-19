@@ -145,6 +145,10 @@ func (u *Usage) GetExtraTokens() map[string]int {
 		}
 	}
 
+	if d := &u.PromptTokensDetails; d.VeniceCacheCreationTokens > 0 && d.CachedWriteTokens == 0 && d.CachedWrite1hTokens == 0 {
+		d.CachedWriteTokens = d.VeniceCacheCreationTokens
+	}
+
 	// 输入音频
 	if u.PromptTokensDetails.AudioTokens > 0 && u.ExtraTokens[config.UsageExtraInputAudio] == 0 {
 		u.ExtraTokens[config.UsageExtraInputAudio] = u.PromptTokensDetails.AudioTokens
@@ -231,6 +235,9 @@ type PromptTokensDetails struct {
 	// fields: caching_tokens in total, caching_token_details split by TTL. Reads use cached_tokens.
 	RequestyCachingTokens  int                     `json:"caching_tokens,omitempty"`
 	RequestyCachingDetails *RequestyCachingDetails `json:"caching_token_details,omitempty"`
+
+	// Venice reports cache writes (Claude models) inside the details, under Anthropic's name.
+	VeniceCacheCreationTokens int `json:"cache_creation_input_tokens,omitempty"`
 }
 
 type RequestyCachingDetails struct {

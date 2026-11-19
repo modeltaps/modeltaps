@@ -827,6 +827,16 @@ const typeConfig = {
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'BytePlus ModelArk' }]
     }
+  },
+  82: {
+    input: {
+      models: ['claude-opus-5-5', 'openai-gpt-55', 'deepseek-v4-flash'],
+      test_model: 'deepseek-v4-flash'
+    },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Venice' }]
+    },
+    modelGroup: 'Venice'
   }
 };
 

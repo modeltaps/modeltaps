@@ -83,6 +83,8 @@ func init() {
 	SetChannelPriceSource(config.ChannelTypeOpenRouter, ChannelPriceSource{Name: "OpenRouter", Page: ExactPage("https://openrouter.ai/{id}")})
 	SetChannelPriceSource(config.ChannelTypeVercelAIGateway, ChannelPriceSource{Name: "Vercel AI Gateway", Page: ExactPage("https://vercel.com/ai-gateway/models/{name}")})
 	SetChannelPriceSource(config.ChannelTypeRequesty, ChannelPriceSource{Name: "Requesty", Page: requestyPage})
+	// Venice's model pages take the id as it is (checked 2026-11-19).
+	SetChannelPriceSource(config.ChannelTypeVenice, ChannelPriceSource{Name: "Venice", Page: ExactPage("https://venice.ai/models/{id}")})
 }
 
 func requestyPage(model string) (string, bool) {

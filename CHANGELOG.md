@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Venice channels. Venice serves an OpenAI compatible API; Claude format requests go through the
+  Claude to OpenAI conversion, as Venice has no Messages endpoint. Fetch models adds the text and
+  embedding models that are online, without the end-to-end encrypted ones (`e2ee-*`), which take
+  only prompts encrypted by the client. Prices, cache read and write prices, long context prices
+  and model details sync from Venice's public model list; image, speech and transcription models
+  keep a channel price, so one added by hand is priced. The balance is the USD balance plus the
+  DIEM left this epoch and any credits, and reads 0 while Venice says the account cannot spend.
+  Cache writes Venice reports under `prompt_tokens_details.cache_creation_input_tokens` are
+  billed as cache writes. The brand icons move to `@lobehub/icons-static-svg` 1.104.0 for
+  Venice's mark.
+
 ## [0.5.0] - 2026-11-19
 
 ### Upgrading from 0.4.0

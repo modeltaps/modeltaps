@@ -1,6 +1,6 @@
 {
-  "version": "1.102.0",
-  "source": "@lobehub/icons-static-svg@1.102.0",
+  "version": "1.104.0",
+  "source": "@lobehub/icons-static-svg@1.104.0",
   "icons": {
     "ai21": {
       "mono": true,
@@ -557,6 +557,11 @@
       "color": true,
       "scale": 1
     },
+    "venice": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "vercel": {
       "mono": true,
       "color": false,
@@ -809,7 +814,8 @@
     "78": "xiaomimimo",
     "79": "longcat",
     "80": "volcengine",
-    "81": "byteplus"
+    "81": "byteplus",
+    "82": "venice"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -988,6 +994,7 @@
     "tencentcloudapi.com": "hunyuan",
     "together.ai": "together",
     "together.xyz": "together",
+    "venice.ai": "venice",
     "vercel.com": "vercel",
     "vercel.sh": "vercel",
     "volces.com": "volcengine",

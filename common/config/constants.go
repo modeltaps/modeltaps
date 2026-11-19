@@ -660,6 +660,7 @@ const (
 	ChannelTypeLongCat     = 79
 	ChannelTypeVolcengine  = 80
 	ChannelTypeBytePlus    = 81
+	ChannelTypeVenice      = 82
 )
 
 const (

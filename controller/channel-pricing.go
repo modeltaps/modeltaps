@@ -115,6 +115,7 @@ var ownPricingChannelTypes = []struct {
 	{config.ChannelTypeOpenRouter, model.ModelInfoSourceOpenRouter},
 	{config.ChannelTypeVercelAIGateway, model.ModelInfoSourceVercel},
 	{config.ChannelTypeRequesty, model.ModelInfoSourceRequesty},
+	{config.ChannelTypeVenice, model.ModelInfoSourceVenice},
 }
 
 // ChannelTypeHasOwnPricing 判断渠道类型是否自带价格表（可自动同步）。

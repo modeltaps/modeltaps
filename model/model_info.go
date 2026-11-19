@@ -23,6 +23,7 @@ const (
 	ModelInfoSourceOpenRouter = "openrouter"
 	ModelInfoSourceVercel     = "vercel"
 	ModelInfoSourceRequesty   = "requesty"
+	ModelInfoSourceVenice     = "venice"
 	// ModelInfoSourceMigrated marks rows the supply migration created for names channels listed.
 	ModelInfoSourceMigrated = "migrated"
 )

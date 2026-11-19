@@ -419,6 +419,7 @@ var channelTypeLibraryProviders = map[int][]string{
 	config.ChannelTypeOpenRouter:      {"openrouter"},
 	config.ChannelTypeVercelAIGateway: {"vercel"},
 	config.ChannelTypeRequesty:        {"requesty"},
+	config.ChannelTypeVenice:          {"venice"},
 	config.ChannelTypeGroq:            {"groq"},
 }
 

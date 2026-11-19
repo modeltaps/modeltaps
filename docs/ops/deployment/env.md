@@ -59,7 +59,7 @@ LOGS_FILENAME="modeltaps.log"
    - 例子：`SYNC_FREQUENCY=60`
 7. `NODE_TYPE`：设置之后将指定节点类型，可选值为 `master` 和 `slave`，未设置则默认为 `master`。
    - 例子：`NODE_TYPE=slave`
-8. `CHANNEL_UPDATE_FREQUENCY`：定期更新渠道余额的间隔，单位为分钟，默认 60，设为 0 则不更新。只有带余额接口的渠道类型会刷新（OpenRouter、Vercel AI Gateway、Requesty、DeepSeek、Moonshot、SiliconFlow）；余额低于渠道的低余额提醒阈值时发送通知，余额为 0 时自动禁用渠道。订阅类渠道（Codex、Claude Code）同一节奏检查用量窗口（Codex 查询用量接口，Claude Code 用上游响应里带回的用量），每个窗口用到提醒档位（默认 50%、75%、100%，在「通知」设置或渠道「监控」页修改）时各发一次「订阅用量到档」通知，窗口重置后重新计。OpenRouter 返回的是这把 key 的剩余额度，需在 OpenRouter 后台给 key 设置消费上限。Requesty 只给有管理权限的 key 返回余额：渠道密钥填成 `调用密钥|管理密钥`，或用一把同时有两种权限的 key。
+8. `CHANNEL_UPDATE_FREQUENCY`：定期更新渠道余额的间隔，单位为分钟，默认 60，设为 0 则不更新。只有带余额接口的渠道类型会刷新（OpenRouter、Vercel AI Gateway、Requesty、Venice、DeepSeek、Moonshot、SiliconFlow）；余额低于渠道的低余额提醒阈值时发送通知，余额为 0 时自动禁用渠道。订阅类渠道（Codex、Claude Code）同一节奏检查用量窗口（Codex 查询用量接口，Claude Code 用上游响应里带回的用量），每个窗口用到提醒档位（默认 50%、75%、100%，在「通知」设置或渠道「监控」页修改）时各发一次「订阅用量到档」通知，窗口重置后重新计。OpenRouter 返回的是这把 key 的剩余额度，需在 OpenRouter 后台给 key 设置消费上限。Requesty 只给有管理权限的 key 返回余额：渠道密钥填成 `调用密钥|管理密钥`，或用一把同时有两种权限的 key。
    - 例子：`CHANNEL_UPDATE_FREQUENCY=1440`
 9. `CHANNEL_TEST_FREQUENCY`：设置之后按该间隔（分钟）定期测试全部渠道，覆盖后台「系统设置 → 网关行为 → 渠道自动禁用与恢复」里的定时测试设置。未设置时按后台设置执行，默认每 10 分钟只测试被自动禁用的渠道，通过即恢复。
    - 例子：`CHANNEL_TEST_FREQUENCY=1440`
