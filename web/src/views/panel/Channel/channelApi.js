@@ -105,7 +105,7 @@ export async function manageChannel(id, action, value) {
         res = await API.put(url, { ...data, [action]: Number(value) });
         break;
       case 'test':
-        res = await API.get(url + `test/${id}`, { params: value ? { model: value } : {} });
+        res = await API.post(url + `test/${id}`, null, { params: value ? { model: value } : {} });
         break;
       case 'batch_delete':
         res = await API.delete('/api/channel/batch', { data: { value: 'batch_delete', ids: value } });

@@ -8,7 +8,7 @@ vi.mock('utils/api', () => ({
 }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { checkChannelModel, fetchChannelStatusCounts, fetchTagChannels, statusCountParams, updateChannel } from './channelApi';
+import { checkChannelModel, fetchChannelStatusCounts, fetchTagChannels, manageChannel, statusCountParams, updateChannel } from './channelApi';
 
 describe('statusCountParams', () => {
   it('keeps the other filters and swaps in the chip status', () => {
@@ -108,5 +108,19 @@ describe('updateChannel', () => {
     put.mockResolvedValue({ data: { success: true } });
     await updateChannel({ id: 1, models: 'm' }, { key: 'sk-new' });
     expect(put.mock.calls[0][1].key).toBe('sk-new');
+  });
+});
+
+describe('manageChannel test', () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+  });
+
+  it('tests a channel with POST, the only method the route accepts', async () => {
+    post.mockResolvedValue({ data: { success: true, time: 0.5 } });
+    await expect(manageChannel(3, 'test', 'gpt-4o-mini')).resolves.toEqual({ success: true, time: 0.5 });
+    expect(post).toHaveBeenCalledWith('/api/channel/test/3', null, { params: { model: 'gpt-4o-mini' } });
+    expect(get).not.toHaveBeenCalled();
   });
 });
