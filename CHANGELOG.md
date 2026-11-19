@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-19
+
 ### Upgrading from 0.4.0
 
 Read these before upgrading; everything else needs no action.
