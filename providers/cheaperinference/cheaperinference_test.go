@@ -224,3 +224,25 @@ func TestBalance(t *testing.T) {
 		t.Errorf("forbidden error = %v", err)
 	}
 }
+
+func TestFidelityHeadersOnEveryFormat(t *testing.T) {
+	p := CheaperInferenceProviderFactory{}.Create(channelWith(nil)).(*CheaperInferenceProvider)
+	p.SetContext(testContext(`{}`))
+	for name, headers := range map[string]map[string]string{
+		"openai":   p.GetRequestHeaders(),
+		"messages": p.claudeProvider().GetRequestHeaders(),
+	} {
+		if headers[headerModelLock] != "1" || headers[headerTechniques] != "off" {
+			t.Errorf("%s: model lock %q, techniques %q", name, headers[headerModelLock], headers[headerTechniques])
+		}
+	}
+	// The channel's own headers win.
+	channel := channelWith(nil)
+	custom := `{"x-ci-model-lock":""}`
+	channel.ModelHeaders = &custom
+	p = CheaperInferenceProviderFactory{}.Create(channel).(*CheaperInferenceProvider)
+	p.SetContext(testContext(`{}`))
+	if got, ok := p.GetRequestHeaders()[headerModelLock]; !ok || got != "" {
+		t.Errorf("custom header lost: %q", got)
+	}
+}

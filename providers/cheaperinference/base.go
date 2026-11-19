@@ -87,7 +87,21 @@ func RequestErrorHandle(resp *http.Response) *types.OpenAIError {
 const (
 	headerPromptCache        = "x-ci-prompt-cache"
 	headerPromptCacheSession = "x-ci-prompt-cache-session"
+	headerModelLock          = "x-ci-model-lock"
+	headerTechniques         = "x-ci-techniques"
 )
+
+// fidelityHeaders keep the request what the client sent (checked 2026-11-19 against the OpenAPI
+// spec). x-ci-model-lock: 1 serves exactly the model in the body: no model routing, experiment
+// variant or canary may swap it, and a request something would still change is refused before
+// it is billed. x-ci-techniques: off turns off the account's optional techniques, such as
+// whitespace normalization, which rewrite prompts to save tokens at some quality risk. The
+// gateway bills the model it was asked for and promises the client its prompt goes through as
+// sent, so both are always on; the channel's custom headers can still override them.
+func fidelityHeaders(headers map[string]string) {
+	headers[headerModelLock] = "1"
+	headers[headerTechniques] = "off"
+}
 
 // promptCacheMode is the x-ci-prompt-cache value OpenAI format requests carry: "on" unless the
 // channel's plugin says "passthrough" or "off". Coding agents resend the same long context every
@@ -105,6 +119,7 @@ func promptCacheMode(channel *model.Channel) string {
 func openAIHeaders(channel *model.Channel) func(*gin.Context, map[string]string) {
 	mode := promptCacheMode(channel)
 	return func(c *gin.Context, headers map[string]string) {
+		fidelityHeaders(headers)
 		headers[headerPromptCache] = mode
 		sessionHeader(c, headers)
 	}

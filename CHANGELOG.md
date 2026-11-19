@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   syncs prices from the ZDR list; a minimum discount leaves out of fetch models the text models
   whose price does not clear it, since their requests fail instead of falling back. Upstream
   requesters gain a hook that runs on every request right before it is sent.
+- Cheaper Inference requests always carry `x-ci-model-lock: 1`, so the model asked for is the
+  one served (no model routing, experiment or canary swaps it), and `x-ci-techniques: off`, so
+  the account's optional techniques do not rewrite prompts. The channel's custom headers can
+  override both.
 
 ## [0.5.0] - 2026-11-19
 
