@@ -889,8 +889,8 @@
     "vendorModels": "{{count}} models",
     "vendorNoChannel": "{{count}} without channel",
     "viewVendorModels": "View models",
-    "aboveQuoteTip": "{{count}} supplies taking requests cost more than the quote (up to {{max}}). With the cost floor on, their requests are charged the channel cost.",
-    "costUnknownTip": "{{count}} supplies taking requests have no known cost: the cost floor cannot protect them.",
+    "aboveQuoteTip": "{{count}} supplies taking requests cost more than the quote (up to {{max}}). Their requests are still charged the quote.",
+    "costUnknownTip": "{{count}} supplies taking requests have no known cost, so the price check cannot judge them.",
     "costFilter": "Channel cost",
     "costAboveQuote": "Above the quote",
     "costUnknown": "Cost unknown",
@@ -3581,7 +3581,7 @@
         },
         "billing-rules": {
           "title": "Billing rules",
-          "description": "Empty replies, approximate counting, the channel cost floor and price sync",
+          "description": "Empty replies, approximate counting and price sync",
           "hint": "Applies to new requests right away"
         },
         "quota-reset": {

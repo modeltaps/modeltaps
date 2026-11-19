@@ -894,8 +894,8 @@
     "vendorModels": "{{count}} 個模型",
     "vendorNoChannel": "{{count}} 無渠道",
     "viewVendorModels": "查看模型",
-    "aboveQuoteTip": "{{count}} 條承接請求的線路渠道成本高於報價（最高 {{max}}）。開啟渠道成本保底後，這些請求按渠道成本扣費。",
-    "costUnknownTip": "{{count}} 條承接請求的線路渠道成本未知，渠道成本保底管不到。",
+    "aboveQuoteTip": "{{count}} 條承接請求的線路渠道成本高於報價（最高 {{max}}），這些請求仍按報價扣費。",
+    "costUnknownTip": "{{count}} 條承接請求的線路渠道成本未知，價格檢查無法判斷。",
     "costFilter": "渠道成本",
     "costAboveQuote": "高於報價",
     "costUnknown": "成本未知",
@@ -3471,7 +3471,7 @@
         },
         "billing-rules": {
           "title": "計費規則",
-          "description": "空回覆、近似計費、渠道成本保底與價格同步",
+          "description": "空回覆、近似計費與價格同步",
           "hint": "改動對新請求立即生效"
         },
         "quota-reset": {

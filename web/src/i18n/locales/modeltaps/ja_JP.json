@@ -888,8 +888,8 @@
     "vendorModels": "{{count}} モデル",
     "vendorNoChannel": "{{count}} チャネルなし",
     "viewVendorModels": "モデルを見る",
-    "aboveQuoteTip": "リクエストを受けている {{count}} 本のルートのチャネル原価が提示価格を上回っています（最大 {{max}}）。原価下限をオンにすると、これらのリクエストはチャネル原価で課金されます。",
-    "costUnknownTip": "リクエストを受けている {{count}} 本のルートは原価が不明で、原価下限が効きません。",
+    "aboveQuoteTip": "リクエストを受けている {{count}} 本のルートのチャネル原価が提示価格を上回っています（最大 {{max}}）。これらのリクエストも提示価格で課金されます。",
+    "costUnknownTip": "リクエストを受けている {{count}} 本のルートは原価が不明で、価格チェックで判断できません。",
     "costFilter": "チャネル原価",
     "costAboveQuote": "提示価格超え",
     "costUnknown": "原価不明",
@@ -3467,7 +3467,7 @@
         },
         "billing-rules": {
           "title": "課金ルール",
-          "description": "空の応答、概算カウント、チャネル原価の下限と価格同期",
+          "description": "空の応答、概算カウント、価格同期",
           "hint": "新しいリクエストからすぐに適用されます"
         },
         "quota-reset": {

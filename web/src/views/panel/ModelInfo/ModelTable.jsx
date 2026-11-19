@@ -229,9 +229,8 @@ export function PriceCell({ price, unit, hideUnit = false }) {
 
 PriceCell.propTypes = { price: PropTypes.object, unit: PropTypes.string, hideUnit: PropTypes.bool };
 
-// A mark before the price when supplies that take requests cost more than the quote (they are
-// charged the channel cost with the cost floor on) or have no known cost. A click opens the
-// model's supplies.
+// A mark before the price when supplies that take requests cost more than the quote or have no
+// known cost. A click opens the model's supplies.
 export function CostMark({ summary, unit, onOpen }) {
   const { t } = useTranslation();
   if (!summary || (!summary.above_quote && !summary.cost_unknown)) return null;
