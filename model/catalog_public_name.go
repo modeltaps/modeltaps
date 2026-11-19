@@ -167,6 +167,36 @@ func PublicNamePrices(r *CanonicalResolver, groups [][]*Price) []*Price {
 	return out
 }
 
+// DropOutrankedPublicSpellings removes from each group the prices listed under a public name
+// itself when a list of higher priority (a lower group index) also prices that public name under
+// any spelling. Without it a low-priority list that happens to use bare ids (a discount reseller
+// listing "qwen3.8-27b") would write the public name's price, since PublicNamePrices makes no copy
+// for a name that is itself synced, ahead of the higher-priority list's "alibaba/qwen3.8-27b".
+func DropOutrankedPublicSpellings(r *CanonicalResolver, groups [][]*Price) [][]*Price {
+	best := map[string]int{}
+	for rank, prices := range groups {
+		for _, price := range prices {
+			if price == nil || price.Model == "" {
+				continue
+			}
+			public := r.PublicName(price.Model)
+			if cur, ok := best[public]; !ok || rank < cur {
+				best[public] = rank
+			}
+		}
+	}
+	out := make([][]*Price, len(groups))
+	for rank, prices := range groups {
+		for _, price := range prices {
+			if price != nil && price.Model != "" && r.PublicName(price.Model) == price.Model && best[price.Model] < rank {
+				continue
+			}
+			out[rank] = append(out[rank], price)
+		}
+	}
+	return out
+}
+
 // KeepChannelPricedOrMissing keeps the prices an aggregator price list may write under a public
 // name: names with no price yet, and names whose price an aggregator list wrote. A price from
 // another source (the lab's official price from models.dev, or one an admin set) stays, so the

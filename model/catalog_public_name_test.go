@@ -204,6 +204,33 @@ func TestPublicNamePrices(t *testing.T) {
 	}
 }
 
+// A list of lower priority that uses the bare public name loses it to a list of higher
+// priority that prices the same model under a platform spelling: the copy then comes from the
+// higher list. A bare name no higher list prices is kept.
+func TestDropOutrankedPublicSpellings(t *testing.T) {
+	r := newCanonicalResolver(nil, &CatalogSeed{})
+	groups := [][]*Price{
+		{{Model: "alibaba/qwen3.8-27b", ChannelType: config.ChannelTypeVercelAIGateway, Input: 0.25}},
+		{
+			{Model: "qwen3.8-27b", ChannelType: config.ChannelTypeCheaperInference, Input: 0.0275},
+			{Model: "only-here-1", ChannelType: config.ChannelTypeCheaperInference, Input: 1},
+		},
+	}
+	dropped := DropOutrankedPublicSpellings(r, groups)
+	if len(dropped[0]) != 1 || len(dropped[1]) != 1 || dropped[1][0].Model != "only-here-1" {
+		t.Fatalf("dropped = %v / %v", dropped[0], dropped[1])
+	}
+	copies := PublicNamePrices(r, dropped)
+	if len(copies) != 1 || copies[0].Model != "qwen3.8-27b" || copies[0].Input != 0.25 {
+		t.Errorf("copies = %+v, want qwen3.8-27b at the higher list's price", copies)
+	}
+	// The same bare name in the list of highest priority stays.
+	kept := DropOutrankedPublicSpellings(r, [][]*Price{{groups[1][0]}, {groups[0][0]}})
+	if len(kept[0]) != 1 {
+		t.Errorf("bare name of the highest list dropped: %v", kept)
+	}
+}
+
 // End to end on the channel-save path: the models.dev sync writes catalog rows under public
 // names, and AutoSupplyChannel then attaches each listed spelling to its public model.
 func TestSyncCatalogChannelModelsUsesPublicNames(t *testing.T) {

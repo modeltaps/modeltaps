@@ -216,6 +216,13 @@ func SyncAllChannelsOwnPricing() (int, error) {
 		}
 	}
 
+	resolver, err := model.NewCanonicalResolver()
+	if err != nil {
+		return 0, err
+	}
+	// A public name goes to the list of highest priority that prices it, whatever spelling the
+	// lists use.
+	priceGroups = model.DropOutrankedPublicSpellings(resolver, priceGroups)
 	var list []*model.Price
 	for _, group := range priceGroups {
 		list = append(list, group...)
@@ -225,10 +232,6 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	}
 	synced := len(list)
 
-	resolver, err := model.NewCanonicalResolver()
-	if err != nil {
-		return 0, err
-	}
 	list = append(list, model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, priceGroups))...)
 	// Some lists also use the vendor's own spelling ("claude-fable-5" on Requesty), at the
 	// platform's marked-up price; models in the built-in official table keep the official price.
