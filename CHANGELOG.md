@@ -30,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   catalog name. Prices, cache read and write prices, long context prices and model details sync
   from the same catalog. The balance is the spendable wallet balance and needs a key with the
   `account:read` scope, which can be the channel's management key. The amount the wallet was
-  charged (`usage.cost`) is recorded as the upstream cost of each request.
+  charged (`usage.cost`) is recorded as the upstream cost of each request. Streamed requests,
+  whose chat and completions streams carry no charge, are looked up afterwards by request id
+  (`/v1/usage/requests`, batched every 20 seconds per account, needs the `usage:read` scope) and
+  fill the upstream cost where the response left none.
 
 ## [0.5.0] - 2026-11-19
 

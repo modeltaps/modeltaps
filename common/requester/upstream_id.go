@@ -15,6 +15,7 @@ var upstreamRequestIDHeaders = []string{
 	"x-ms-request-id",   // Azure
 	"xai-request-id",    // xAI
 	"x-goog-request-id", // Google (Vertex / 部分 Gemini 端点)
+	"x-ci-request-id",   // Cheaper Inference
 	"request-id",        // Anthropic
 	"x-request-id",      // OpenAI 及大量兼容网关
 }

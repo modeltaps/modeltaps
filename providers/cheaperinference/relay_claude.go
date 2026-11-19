@@ -27,6 +27,10 @@ func (p *CheaperInferenceProvider) claudeProvider() *claude.ClaudeProvider {
 	provider.DefaultHeaders = sessionHeader
 	provider.Config = getClaudeConfig()
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
+	// The new requester needs the request context and the hook that records the upstream request
+	// id, which SetContext put on the original one; the id is what the charge is looked up by.
+	provider.Requester.Context = p.Requester.Context
+	provider.Requester.ResponseHook = p.Requester.ResponseHook
 	return provider
 }
 
@@ -34,6 +38,12 @@ func (p *CheaperInferenceProvider) CreateClaudeChat(request *claude.ClaudeReques
 	return p.claudeProvider().CreateClaudeChat(request)
 }
 
+// A Messages stream reports the charge in its last message_delta; the lookup is the fallback
+// for a stream that ends without one, and changes nothing when the log already has a cost.
 func (p *CheaperInferenceProvider) CreateClaudeChatStream(request *claude.ClaudeRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
-	return p.claudeProvider().CreateClaudeChatStream(request)
+	stream, errWithCode := p.claudeProvider().CreateClaudeChatStream(request)
+	if errWithCode == nil {
+		p.queueCostLookup()
+	}
+	return stream, errWithCode
 }
