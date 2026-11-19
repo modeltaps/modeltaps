@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -62,10 +62,16 @@ export default function TotpDialog({ open, onOpenChange, status, account, onChan
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const close = () => onOpenChange(false);
+  // Set as the codes appear, not on the next render: the dialog's close handler may still be the
+  // one of the render before, so an Escape right after the codes show must not read stale state.
+  const codesShown = useRef(false);
+  const close = () => {
+    codesShown.current = false;
+    onOpenChange(false);
+  };
   // The recovery codes leave the screen only through "I've saved them".
   const requestClose = (next) => {
-    if (!next && view !== 'codes') close();
+    if (!next && !codesShown.current) close();
   };
 
   const post = async (path, onSuccess) => {
@@ -92,6 +98,7 @@ export default function TotpDialog({ open, onOpenChange, status, account, onChan
 
   const showCodes = (data) => {
     setCodes(Array.isArray(data?.recovery_codes) ? data.recovery_codes : []);
+    codesShown.current = true;
     setView('codes');
     onChanged?.();
   };
