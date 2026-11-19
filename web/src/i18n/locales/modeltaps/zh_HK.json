@@ -5000,13 +5000,16 @@
       "price": {
         "raised": "已漲價 {{model}}：輸入 ${{oldIn}} → ${{newIn}}，輸出 ${{oldOut}} → ${{newOut}}",
         "held": "待審核 {{model}}：輸入 ${{oldIn}} → ${{newIn}}，輸出 ${{oldOut}} → ${{newOut}}",
-        "locked": "鎖定價低於上游 {{model}}：輸入 ${{oldIn}} / 上游 ${{newIn}}，輸出 ${{oldOut}} / 上游 ${{newOut}}"
+        "locked": "鎖定價低於上游 {{model}}：輸入 ${{oldIn}} / 上游 ${{newIn}}，輸出 ${{oldOut}} / 上游 ${{newOut}}",
+        "scheduled": "{{model}} 官方價按計劃調整：輸入 ${{oldIn}} → ${{newIn}}，輸出 ${{oldOut}} → ${{newOut}}",
+        "review": "{{model}} 的官方價已於 {{day}} 到期，新價尚未公佈：請核對廠商價格頁，有變化就手動改價"
       },
       "credential": "目前令牌過期後請求會失敗，請在通道裏重新登入",
       "consistency": "{{model}} 是生圖模型，但輸出模態裏沒有圖片"
     },
     "showAll_other": "展開全部 {{count}} 條",
     "showLess": "收起",
+    "pricingPage": "價格頁",
     "openedAt": "{{time}}出現",
     "resolvedAt": "{{time}}自動關閉",
     "dismissedAt": "{{time}}手動關閉",
@@ -5014,7 +5017,8 @@
     "dismissHint": "不再提示這些情況；有新情況時會重新打開",
     "sources": {
       "channel_price_lists": "通道價格表",
-      "models_dev": "公共模型目錄"
+      "models_dev": "公共模型目錄",
+      "official_schedule": "官方調價日程"
     }
   }
 }

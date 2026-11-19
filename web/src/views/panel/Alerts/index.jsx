@@ -151,6 +151,14 @@ export default function Alerts() {
                       {shown.map((x, i) => (
                         <li key={i} className={cn('break-words', x.tone === 'warn' ? 'text-foreground' : 'text-muted-foreground')}>
                           {x.text}
+                          {x.href && (
+                            <>
+                              {' '}
+                              <a href={x.href} target="_blank" rel="noreferrer" className="text-info underline-offset-2 hover:underline">
+                                {t('alerts.pricingPage')}
+                              </a>
+                            </>
+                          )}
                         </li>
                       ))}
                     </ul>

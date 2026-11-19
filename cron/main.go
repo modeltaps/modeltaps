@@ -323,4 +323,28 @@ func applyScheduledPriceChanges() {
 	if len(updated) > 0 {
 		logger.SysLog("Applied scheduled price changes: " + strings.Join(updated, ", "))
 	}
+	fresh, err := model.ReportScheduledPriceDates(time.Now())
+	if err != nil {
+		logger.SysError("Failed to report official price dates: " + err.Error())
+		return
+	}
+	if len(fresh) > 0 {
+		// Upstream price lists follow a vendor's change on the day: fetch them again now
+		// instead of waiting for the nightly sync.
+		go resyncPriceLists()
+	}
+}
+
+// resyncPriceLists runs the automatic price syncs that are on, as the nightly jobs do.
+func resyncPriceLists() {
+	if viper.GetBool("catalog_pricing.auto_sync") {
+		if _, err := model.SyncCatalogPricing(viper.GetString("catalog_pricing.url")); err != nil {
+			logger.SysError("Failed to sync models.dev catalog pricing: " + err.Error())
+		}
+	}
+	if viper.GetBool("channel_pricing.auto_sync") {
+		if _, err := controller.SyncAllChannelsOwnPricing(); err != nil {
+			logger.SysError("Failed to sync channel pricing: " + err.Error())
+		}
+	}
 }

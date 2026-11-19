@@ -5000,13 +5000,16 @@
       "price": {
         "raised": "已涨价 {{model}}：输入 ${{oldIn}} → ${{newIn}}，输出 ${{oldOut}} → ${{newOut}}",
         "held": "待审核 {{model}}：输入 ${{oldIn}} → ${{newIn}}，输出 ${{oldOut}} → ${{newOut}}",
-        "locked": "锁定价低于上游 {{model}}：输入 ${{oldIn}} / 上游 ${{newIn}}，输出 ${{oldOut}} / 上游 ${{newOut}}"
+        "locked": "锁定价低于上游 {{model}}：输入 ${{oldIn}} / 上游 ${{newIn}}，输出 ${{oldOut}} / 上游 ${{newOut}}",
+        "scheduled": "{{model}} 官方价按计划调整：输入 ${{oldIn}} → ${{newIn}}，输出 ${{oldOut}} → ${{newOut}}",
+        "review": "{{model}} 的官方价已于 {{day}} 到期，新价尚未公布：请核对厂商价格页，有变化就手动改价"
       },
       "credential": "当前令牌过期后请求会失败，请在渠道里重新登录",
       "consistency": "{{model}} 是生图模型，但输出模态里没有图片"
     },
     "showAll_other": "展开全部 {{count}} 条",
     "showLess": "收起",
+    "pricingPage": "价格页",
     "openedAt": "{{time}}出现",
     "resolvedAt": "{{time}}自动关闭",
     "dismissedAt": "{{time}}手动关闭",
@@ -5014,7 +5017,8 @@
     "dismissHint": "不再提示这些情况；有新情况时会重新打开",
     "sources": {
       "channel_price_lists": "渠道价格表",
-      "models_dev": "公共模型目录"
+      "models_dev": "公共模型目录",
+      "official_schedule": "官方调价日程"
     }
   }
 }

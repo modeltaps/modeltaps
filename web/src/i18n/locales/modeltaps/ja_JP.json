@@ -4995,13 +4995,16 @@
       "price": {
         "raised": "値上げを適用 {{model}}: 入力 ${{oldIn}} → ${{newIn}}、出力 ${{oldOut}} → ${{newOut}}",
         "held": "確認待ち {{model}}: 入力 ${{oldIn}} → ${{newIn}}、出力 ${{oldOut}} → ${{newOut}}",
-        "locked": "固定価格がアップストリームを下回る {{model}}: 入力 ${{oldIn}} / 上流 ${{newIn}}、出力 ${{oldOut}} / 上流 ${{newOut}}"
+        "locked": "固定価格がアップストリームを下回る {{model}}: 入力 ${{oldIn}} / 上流 ${{newIn}}、出力 ${{oldOut}} / 上流 ${{newOut}}",
+        "scheduled": "{{model}} の公式価格が予定どおり改定: 入力 ${{oldIn}} → ${{newIn}}、出力 ${{oldOut}} → ${{newOut}}",
+        "review": "{{model}} の公式価格は {{day}} に終了し、新しい価格はまだ公表されていません。ベンダーの価格ページを確認し、変わっていれば手動で設定してください"
       },
       "credential": "現在のトークンが切れるとリクエストが失敗します。チャネルで再ログインしてください",
       "consistency": "{{model}} は画像生成モデルですが、出力モダリティに画像がありません"
     },
     "showAll_other": "すべて表示（{{count}} 件）",
     "showLess": "折りたたむ",
+    "pricingPage": "価格ページ",
     "openedAt": "{{time}}に発生",
     "resolvedAt": "{{time}}に自動クローズ",
     "dismissedAt": "{{time}}に手動クローズ",
@@ -5009,7 +5012,8 @@
     "dismissHint": "この内容はもう通知しません。新しい状況があれば再び開きます",
     "sources": {
       "channel_price_lists": "チャネルの価格表",
-      "models_dev": "公開モデルカタログ"
+      "models_dev": "公開モデルカタログ",
+      "official_schedule": "公式価格の改定日程"
     }
   }
 }

@@ -5118,7 +5118,9 @@
       "price": {
         "raised": "Increase applied for {{model}}: input ${{oldIn}} → ${{newIn}}, output ${{oldOut}} → ${{newOut}}",
         "held": "Waiting for review, {{model}}: input ${{oldIn}} → ${{newIn}}, output ${{oldOut}} → ${{newOut}}",
-        "locked": "Locked price below the upstream, {{model}}: input ${{oldIn}} / upstream ${{newIn}}, output ${{oldOut}} / upstream ${{newOut}}"
+        "locked": "Locked price below the upstream, {{model}}: input ${{oldIn}} / upstream ${{newIn}}, output ${{oldOut}} / upstream ${{newOut}}",
+        "scheduled": "Official price of {{model}} changed on schedule: input ${{oldIn}} → ${{newIn}}, output ${{oldOut}} → ${{newOut}}",
+        "review": "The official price of {{model}} ended on {{day}} and no new price is published yet: check the vendor's page and set the price if it changed"
       },
       "credential": "Requests will fail once the current token expires; sign in again on the channel",
       "consistency": "{{model}} generates images, but its output modalities lack image"
@@ -5126,6 +5128,7 @@
     "showAll_one": "Show all {{count}}",
     "showAll_other": "Show all {{count}}",
     "showLess": "Show less",
+    "pricingPage": "Pricing page",
     "openedAt": "Opened {{time}}",
     "resolvedAt": "Closed by itself {{time}}",
     "dismissedAt": "Closed by hand {{time}}",
@@ -5133,7 +5136,8 @@
     "dismissHint": "Stops telling these facts; something new opens it again",
     "sources": {
       "channel_price_lists": "Channel price lists",
-      "models_dev": "Public model catalog"
+      "models_dev": "Public model catalog",
+      "official_schedule": "Official price dates"
     }
   }
 }

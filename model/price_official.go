@@ -192,7 +192,7 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"gpt-6.1-sol":        openAIPrice(2, 0.1, 2.5, 10, openAILongContext),
 		"gpt-6-sol":          openAIPrice(2, 0.2, 2.5, 10, openAILongContext),
 		"gpt-6-luna":         openAIPrice(0.1, 0.01, 0.125, 0.5, openAILongContext),
-		"gpt-5.6-sol":        openAIPrice(4, 0.4, 5, 20, openAILongContext), // promotional price through 2026-11-30; the price after it is not published yet
+		"gpt-5.6-sol":        openAIPrice(4, 0.4, 5, 20, openAILongContext), // promotional price through 2026-11-30; the price after it is not published yet, see officialPriceReviews
 		"gpt-5.6":            openAIPrice(4, 0.4, 5, 20, openAILongContext), // alias of gpt-5.6-sol
 		"gpt-5.6-terra":      openAIPrice(2, 0.2, 2.5, 12, openAILongContext),
 		"gpt-5.6-luna":       openAIPrice(0.2, 0.02, 0.25, 1.2, openAILongContext),

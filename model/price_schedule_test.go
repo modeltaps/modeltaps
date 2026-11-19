@@ -101,3 +101,61 @@ func TestApplyScheduledPriceChanges(t *testing.T) {
 		t.Fatalf("a second run should be a no-op, got %v err=%v", again, err)
 	}
 }
+
+func TestOfficialPriceReviewsAreValid(t *testing.T) {
+	base := officialTokenPrices()
+	for _, review := range officialPriceReviews() {
+		if _, ok := base[review.Model]; !ok {
+			t.Errorf("%s: a review needs the current price in officialTokenPrices", review.Model)
+		}
+		if review.On.Location() != time.UTC || review.On.Hour() != 0 || review.Source == "" {
+			t.Errorf("%s: a review starts at 00:00 UTC and cites the vendor's page, got %+v", review.Model, review)
+		}
+	}
+}
+
+func TestScheduledPriceItems(t *testing.T) {
+	all := func(string) bool { return true }
+	if got := scheduledPriceItems(time.Date(2026, time.November, 30, 23, 0, 0, 0, time.UTC), all); len(got) != 0 {
+		t.Fatalf("nothing is due before the dates, got %v", got)
+	}
+	got := scheduledPriceItems(time.Date(2026, time.December, 1, 0, 7, 0, 0, time.UTC), all)
+	want := map[string]bool{
+		"scheduled|gemini-4-argon|2|10|4|20": true,
+		"review|gpt-5.6-sol|2026-12-01|https://developers.openai.com/api/docs/models/gpt-5.6-sol": true,
+		"review|gpt-5.6|2026-12-01|https://developers.openai.com/api/docs/models/gpt-5.6-sol":     true,
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for _, item := range got {
+		if !want[item] {
+			t.Fatalf("unexpected item %q in %v", item, got)
+		}
+	}
+	// A change leaves the alert after two weeks; a review stays until a release replaces it.
+	later := scheduledPriceItems(time.Date(2026, time.December, 20, 0, 0, 0, 0, time.UTC), all)
+	if len(later) != 2 || later[0][:7] != "review|" {
+		t.Fatalf("only the reviews should be left, got %v", later)
+	}
+	// Models nobody is served are not told.
+	if got := scheduledPriceItems(time.Date(2026, time.December, 1, 1, 0, 0, 0, time.UTC), func(m string) bool { return m == "gpt-5.6-sol" }); len(got) != 1 {
+		t.Fatalf("only the served model should be told, got %v", got)
+	}
+}
+
+func TestReportScheduledPriceDatesTellsOnce(t *testing.T) {
+	setupModelInfoTestDB(t)
+	if err := DB.AutoMigrate(&Alert{}); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, time.December, 1, 0, 7, 0, 0, time.UTC)
+	first, err := ReportScheduledPriceDates(now)
+	if err != nil || len(first) == 0 {
+		t.Fatalf("the first run should report the dates, got %v err=%v", first, err)
+	}
+	again, err := ReportScheduledPriceDates(now.Add(time.Hour))
+	if err != nil || len(again) != 0 {
+		t.Fatalf("an hour later nothing is new, got %v err=%v", again, err)
+	}
+}
