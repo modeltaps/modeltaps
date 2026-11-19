@@ -632,6 +632,11 @@
       "color": true,
       "scale": 1
     },
+    "cheaperinference": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "nace": {
       "mono": true,
       "color": true,
@@ -815,7 +820,8 @@
     "79": "longcat",
     "80": "volcengine",
     "81": "byteplus",
-    "82": "venice"
+    "82": "venice",
+    "83": "cheaperinference"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -942,6 +948,7 @@
     "byteplus.com": "byteplus",
     "bytepluses.com": "byteplus",
     "cerebras.ai": "cerebras",
+    "cheaperinference.com": "cheaperinference",
     "chutes.ai": "chutes",
     "claude.ai": "claude",
     "cloudflare.com": "cloudflare",

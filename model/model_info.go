@@ -24,6 +24,8 @@ const (
 	ModelInfoSourceVercel     = "vercel"
 	ModelInfoSourceRequesty   = "requesty"
 	ModelInfoSourceVenice     = "venice"
+	// Cheaper Inference's public model catalog.
+	ModelInfoSourceCheaperInference = "cheaperinference"
 	// ModelInfoSourceMigrated marks rows the supply migration created for names channels listed.
 	ModelInfoSourceMigrated = "migrated"
 )

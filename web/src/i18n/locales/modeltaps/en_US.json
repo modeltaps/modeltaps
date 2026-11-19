@@ -1177,7 +1177,8 @@
       "projectIdOptional": "Optional. Leave blank to detect it automatically or generate one at random, e.g. my-project-123",
       "vertexExpressKey": "Enter an API key (from the Google Cloud Console)",
       "remark": "A note for admins, such as where the key comes from or when it expires. Kept per channel and not shared across a tag.",
-      "need2response_models": "One model per line (commas also work). Chat completions requests for these models are sent to the Responses API and converted back. Entries are added to the built-in list (o1-pro, o3-pro, o3 / o4-mini deep research, codex-mini-latest); put - before a model to stop converting it on this channel, for upstreams that serve it on chat completions. Leave empty to use the built-in list."
+      "need2response_models": "One model per line (commas also work). Chat completions requests for these models are sent to the Responses API and converted back. Entries are added to the built-in list (o1-pro, o3-pro, o3 / o4-mini deep research, codex-mini-latest); put - before a model to stop converting it on this channel, for upstreams that serve it on chat completions. Leave empty to use the built-in list.",
+      "manageKeyCheaperInference": "Optional. A Cheaper Inference key with the account:read scope shows the wallet balance; the key above is tried when this is empty."
     },
     "fetchModelsFrom": "Fetch models from {{source}}",
     "fetchModelsFromChannel": "Fetch models from channel",
@@ -1329,6 +1330,17 @@
         "name": "Automatic cache breakpoints",
         "description": "On (default): repeated long context, as coding agents send it, is read from the cache at a tenth of the input price; the first write costs 25% more. Off: requests are sent as they are.",
         "on": "On",
+        "off": "Off"
+      }
+    },
+    "cheaperInferenceCache": {
+      "name": "Cheaper Inference prompt caching",
+      "description": "How OpenAI format requests are marked for caching (the x-ci-prompt-cache header). Claude format requests keep the client's own cache breakpoints.",
+      "promptCache": {
+        "name": "Cache breakpoints",
+        "description": "On (default): breakpoints are added at the system and tools prefix and at the last block, so repeated long context is read from the cache at a tenth of the input price; the first write costs 25% more. As sent: the client's own breakpoints only. Off: the client's breakpoints are removed.",
+        "on": "On",
+        "passthrough": "As sent",
         "off": "Off"
       }
     }

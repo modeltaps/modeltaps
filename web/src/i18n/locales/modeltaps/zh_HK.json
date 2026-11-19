@@ -1162,7 +1162,8 @@
       "projectIdOptional": "可選，留空將自動檢測或隨機生成。例如：my-project-123",
       "vertexExpressKey": "請輸入 API Key（從 Google Cloud Console 獲取）",
       "remark": "供管理員查看的備註，例如密鑰來源、到期時間。每個渠道單獨保存，不隨標籤分組同步。",
-      "need2response_models": "一行一個模型名（也可以用逗號分隔）。這些模型的 chat/completions 請求會改走 Responses 接口，再轉換回 chat 格式。填寫的模型會加到內置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不對該模型做轉換，適用於上游在 chat/completions 上就能提供該模型的情況。留空則使用內置列表。"
+      "need2response_models": "一行一個模型名（也可以用逗號分隔）。這些模型的 chat/completions 請求會改走 Responses 接口，再轉換回 chat 格式。填寫的模型會加到內置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不對該模型做轉換，適用於上游在 chat/completions 上就能提供該模型的情況。留空則使用內置列表。",
+      "manageKeyCheaperInference": "選填。填一把有 account:read 權限的 Cheaper Inference 密鑰可顯示錢包餘額；不填時用上面的密鑰嘗試。"
     },
     "fetchModelsFrom": "從{{source}}獲取模型列表",
     "fetchModelsFromChannel": "從渠道獲取模型列表",
@@ -1314,6 +1315,17 @@
         "name": "自動快取斷點",
         "description": "開（預設）：編程 Agent 這類反覆發送的長上下文按輸入價的一成從快取讀取，首次寫入多付 25%。關：請求原樣發送。",
         "on": "開",
+        "off": "關"
+      }
+    },
+    "cheaperInferenceCache": {
+      "name": "Cheaper Inference 提示快取",
+      "description": "OpenAI 格式請求怎樣標記快取（x-ci-prompt-cache 請求頭）。Claude 格式請求保留用戶端自己的快取斷點。",
+      "promptCache": {
+        "name": "快取斷點",
+        "description": "開（預設）：在系統提示和工具定義之後、最後一個內容塊處加斷點，重複發送的長上下文按輸入價的十分之一讀快取，首次寫入貴 25%。原樣：只用用戶端自己的斷點。關：去掉用戶端的斷點。",
+        "on": "開",
+        "passthrough": "原樣",
         "off": "關"
       }
     }

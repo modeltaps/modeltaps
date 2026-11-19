@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Cache writes Venice reports under `prompt_tokens_details.cache_creation_input_tokens` are
   billed as cache writes. The brand icons move to `@lobehub/icons-static-svg` 1.104.0 for
   Venice's mark.
+- Cheaper Inference channels. Chat completions, responses and embeddings use its OpenAI
+  compatible API; Claude format requests go to its Messages endpoint as they are, keeping the
+  client's cache breakpoints. OpenAI format requests ask it to add cache breakpoints
+  (`x-ci-prompt-cache: on`, which the channel's plugin settings can set to as sent or off), and
+  every request names its session (`x-ci-prompt-cache-session`, the gateway's hashed session key)
+  so a conversation stays on the route that holds its cache. Fetch models adds the visible text
+  and embedding models from the public catalog, without the batch variants, each under its
+  vendor-qualified alias (`anthropic/claude-opus-5-5`) where it has one, so it maps to the
+  catalog name. Prices, cache read and write prices, long context prices and model details sync
+  from the same catalog. The balance is the spendable wallet balance and needs a key with the
+  `account:read` scope, which can be the channel's management key. The amount the wallet was
+  charged (`usage.cost`) is recorded as the upstream cost of each request.
 
 ## [0.5.0] - 2026-11-19
 

@@ -661,6 +661,8 @@ const (
 	ChannelTypeVolcengine  = 80
 	ChannelTypeBytePlus    = 81
 	ChannelTypeVenice      = 82
+	// A router with OpenAI and Anthropic compatible endpoints.
+	ChannelTypeCheaperInference = 83
 )
 
 const (

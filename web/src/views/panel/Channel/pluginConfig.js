@@ -338,6 +338,28 @@ const pluginConfig = {
         }
       }
     }
+  },
+  // Cheaper Inference: x-ci-prompt-cache on OpenAI format requests. The backend sends "on" unless
+  // this says passthrough or off; Messages requests keep the client's own breakpoints.
+  83: {
+    cheaperinference: {
+      name: `${P}.cheaperInferenceCache.name`,
+      description: `${P}.cheaperInferenceCache.description`,
+      params: {
+        prompt_cache: {
+          name: `${P}.cheaperInferenceCache.promptCache.name`,
+          description: `${P}.cheaperInferenceCache.promptCache.description`,
+          type: 'select',
+          default: 'on',
+          required: false,
+          options: [
+            { value: 'on', label: `${P}.cheaperInferenceCache.promptCache.on` },
+            { value: 'passthrough', label: `${P}.cheaperInferenceCache.promptCache.passthrough` },
+            { value: 'off', label: `${P}.cheaperInferenceCache.promptCache.off` }
+          ]
+        }
+      }
+    }
   }
 };
 

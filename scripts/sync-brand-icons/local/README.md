@@ -12,3 +12,4 @@ and drop the local file once the package has the brand.
 | `openbmb` | OpenBMB | Official site icon, openbmb.cn `/favicon.svg`. |
 | `byteplus` | BytePlus | Official footer mark on byteplus.com (`byteplus_logo_footer.svg`, white); colored with the favicon's blue `#0061FF`. |
 | `nace` | Nace AI | Official site icon, nace.ai `/icon.svg`; the one-color version keeps the letters as cut-outs. |
+| `cheaperinference` | Cheaper Inference | Official site icon, cheaperinference.com `/icon.svg` (black mark on a `#E5AC82` disc); the one-color version is the mark alone, as on the site's loading screen. |

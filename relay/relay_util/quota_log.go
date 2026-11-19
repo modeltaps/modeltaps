@@ -264,8 +264,10 @@ func WithUpstreamRequestID(ctx context.Context, c *gin.Context) context.Context 
 // upstreamCostTypes are the channel types whose usage.cost is known to be the amount charged to
 // the account in USD. A cost from any other upstream is ignored: its unit is not verified.
 // OpenRouter: https://openrouter.ai/docs/use-cases/usage-accounting
+// Cheaper Inference: https://www.cheaperinference.com/docs (the wallet charge, in USD)
 var upstreamCostTypes = map[int]bool{
-	config.ChannelTypeOpenRouter: true,
+	config.ChannelTypeOpenRouter:       true,
+	config.ChannelTypeCheaperInference: true,
 }
 
 func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {

@@ -509,6 +509,14 @@ export const CHANNEL_OPTIONS = {
     url: 'https://venice.ai/',
     keyUrl: 'https://venice.ai/settings/api'
   },
+  83: {
+    key: 83,
+    text: 'Cheaper Inference',
+    value: 83,
+    color: 'default',
+    url: 'https://www.cheaperinference.com/',
+    keyUrl: 'https://www.cheaperinference.com/dashboard/keys'
+  },
   8: {
     key: 8,
     text: 'OpenAI compatible',
@@ -530,7 +538,7 @@ export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 export const CHANNEL_TYPE_CATEGORIES = [
   { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 77, 78, 79, 26, 15, 18, 19] },
   { key: 'cloud', types: [3, 55, 32, 42, 61, 80, 81, 54, 35] },
-  { key: 'gateway', types: [20, 62, 63, 82, 45, 31, 52, 38] },
+  { key: 'gateway', types: [20, 62, 63, 82, 83, 45, 31, 52, 38] },
   { key: 'inference', types: [64, 65, 66, 67, 68, 69, 70, 71, 74, 75, 76, 72, 73] },
   { key: 'subscription', types: [58, 59, 57, 60] },
   { key: 'selfhosted', types: [8, 39] },

@@ -1162,7 +1162,8 @@
       "projectIdOptional": "可选，留空将自动检测或随机生成。例如：my-project-123",
       "vertexExpressKey": "请输入 API Key（从 Google Cloud Console 获取）",
       "remark": "给管理员看的备注，例如密钥来源、到期时间。每个渠道单独保存，不随标签分组同步。",
-      "need2response_models": "一行一个模型名（也可以用逗号分隔）。这些模型的 chat/completions 请求会改走 Responses 接口，再转换回 chat 格式。填写的模型会加到内置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不对该模型做转换，适用于上游在 chat/completions 上就能提供该模型的情况。留空则使用内置列表。"
+      "need2response_models": "一行一个模型名（也可以用逗号分隔）。这些模型的 chat/completions 请求会改走 Responses 接口，再转换回 chat 格式。填写的模型会加到内置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不对该模型做转换，适用于上游在 chat/completions 上就能提供该模型的情况。留空则使用内置列表。",
+      "manageKeyCheaperInference": "选填。填一把有 account:read 权限的 Cheaper Inference 密钥可显示钱包余额；不填时用上面的密钥尝试。"
     },
     "fetchModelsFrom": "从{{source}}获取模型列表",
     "fetchModelsFromChannel": "从渠道获取模型列表",
@@ -1314,6 +1315,17 @@
         "name": "自动缓存断点",
         "description": "开（默认）：编程 Agent 这类反复发送的长上下文按输入价的一成从缓存读取，首次写入多付 25%。关：请求原样发送。",
         "on": "开",
+        "off": "关"
+      }
+    },
+    "cheaperInferenceCache": {
+      "name": "Cheaper Inference 提示缓存",
+      "description": "OpenAI 格式请求怎样标记缓存（x-ci-prompt-cache 请求头）。Claude 格式请求保留客户端自己的缓存断点。",
+      "promptCache": {
+        "name": "缓存断点",
+        "description": "开（默认）：在系统提示和工具定义之后、最后一个内容块处加断点，重复发送的长上下文按输入价的十分之一读缓存，首次写入贵 25%。原样：只用客户端自己的断点。关：去掉客户端的断点。",
+        "on": "开",
+        "passthrough": "原样",
         "off": "关"
       }
     }

@@ -1156,7 +1156,8 @@
       "projectIdOptional": "任意。空欄の場合は自動検出またはランダムに生成されます。例：my-project-123",
       "vertexExpressKey": "API キーを入力してください（Google Cloud Console で取得）",
       "remark": "管理者向けのメモ（キーの入手元や有効期限など）。チャネルごとに保存され、タグ内では共有されません。",
-      "need2response_models": "1 行に 1 モデル（カンマ区切りも可）。これらのモデルへの chat/completions リクエストは Responses API に送られ、chat 形式に変換して返されます。入力したモデルは組み込みリスト（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）に追加されます。モデル名の前に - を付けると、このチャネルではそのモデルを変換しません（上流が chat/completions で提供している場合向け）。空欄の場合は組み込みリストを使います。"
+      "need2response_models": "1 行に 1 モデル（カンマ区切りも可）。これらのモデルへの chat/completions リクエストは Responses API に送られ、chat 形式に変換して返されます。入力したモデルは組み込みリスト（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）に追加されます。モデル名の前に - を付けると、このチャネルではそのモデルを変換しません（上流が chat/completions で提供している場合向け）。空欄の場合は組み込みリストを使います。",
+      "manageKeyCheaperInference": "任意。account:read スコープのある Cheaper Inference キーを入力するとウォレット残高を表示します。未入力の場合は上のキーで試します。"
     },
     "fetchModelsFrom": "{{source}} からモデル一覧を取得",
     "fetchModelsFromChannel": "チャネルからモデル一覧を取得",
@@ -1308,6 +1309,17 @@
         "name": "自動キャッシュブレークポイント",
         "description": "オン（既定）：コーディングエージェントのように繰り返し送る長いコンテキストを入力価格の 1 割でキャッシュから読み込みます。最初の書き込みは 25% 高くなります。オフ：リクエストをそのまま送ります。",
         "on": "オン",
+        "off": "オフ"
+      }
+    },
+    "cheaperInferenceCache": {
+      "name": "Cheaper Inference のプロンプトキャッシュ",
+      "description": "OpenAI 形式のリクエストにキャッシュの印をどう付けるか（x-ci-prompt-cache ヘッダー）。Claude 形式のリクエストはクライアント自身のキャッシュブレークポイントをそのまま使います。",
+      "promptCache": {
+        "name": "キャッシュブレークポイント",
+        "description": "オン（既定）：システムプロンプトとツール定義の後、最後のブロックにブレークポイントを追加し、繰り返し送られる長いコンテキストを入力価格の 10 分の 1 でキャッシュから読みます。初回の書き込みは 25% 高くなります。そのまま：クライアント自身のブレークポイントのみ。オフ：クライアントのブレークポイントを外します。",
+        "on": "オン",
+        "passthrough": "そのまま",
         "off": "オフ"
       }
     }

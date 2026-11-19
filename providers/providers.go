@@ -13,6 +13,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/baidu"
 	"github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/bedrock"
+	"github.com/modeltaps/modeltaps/providers/cheaperinference"
 	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/providers/claudecode"
 	"github.com/modeltaps/modeltaps/providers/cloudflareAI"
@@ -112,6 +113,7 @@ func init() {
 		config.ChannelTypeRequesty:        requesty.RequestyProviderFactory{},
 		config.ChannelTypeVenice:          venice.VeniceProviderFactory{},
 	}
+	providerFactories[config.ChannelTypeCheaperInference] = cheaperinference.CheaperInferenceProviderFactory{}
 	for channelType, p := range preset.Presets {
 		providerFactories[channelType] = preset.ProviderFactory{Preset: p}
 	}

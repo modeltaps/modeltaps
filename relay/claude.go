@@ -73,6 +73,7 @@ var AllowChannelType = []int{
 	config.ChannelTypeVercelAIGateway,
 	config.ChannelTypeRequesty,
 	config.ChannelTypeVenice,
+	config.ChannelTypeCheaperInference,
 }
 
 // The preset platforms serve Claude format requests through the Claude to OpenAI conversion.

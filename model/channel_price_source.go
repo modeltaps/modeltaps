@@ -84,7 +84,18 @@ func init() {
 	SetChannelPriceSource(config.ChannelTypeVercelAIGateway, ChannelPriceSource{Name: "Vercel AI Gateway", Page: ExactPage("https://vercel.com/ai-gateway/models/{name}")})
 	SetChannelPriceSource(config.ChannelTypeRequesty, ChannelPriceSource{Name: "Requesty", Page: requestyPage})
 	// Venice's model pages take the id as it is (checked 2026-11-19).
+	// Cheaper Inference's model pages take the model's own id ("claude-opus-5.5"), not the
+	// vendor-qualified alias a channel lists it under, which has its markets page (checked
+	// 2026-11-19).
+	SetChannelPriceSource(config.ChannelTypeCheaperInference, ChannelPriceSource{Name: "Cheaper Inference", Page: cheaperInferencePage})
 	SetChannelPriceSource(config.ChannelTypeVenice, ChannelPriceSource{Name: "Venice", Page: ExactPage("https://venice.ai/models/{id}")})
+}
+
+func cheaperInferencePage(model string) (string, bool) {
+	if strings.Contains(model, "/") {
+		return "https://www.cheaperinference.com/markets", false
+	}
+	return fillPageTemplate("https://www.cheaperinference.com/models/{id}", model), true
 }
 
 func requestyPage(model string) (string, bool) {

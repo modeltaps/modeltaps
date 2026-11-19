@@ -837,6 +837,19 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Venice' }]
     },
     modelGroup: 'Venice'
+  },
+  83: {
+    input: {
+      models: ['anthropic/claude-opus-5-5', 'openai/gpt-5.5', 'google/gemini-3.5-flash'],
+      test_model: 'google/gemini-3.5-flash'
+    },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Cheaper Inference' }]
+    },
+    prompt: {
+      manage_key: 'channelForm.prompt.manageKeyCheaperInference'
+    },
+    modelGroup: 'Cheaper Inference'
   }
 };
 

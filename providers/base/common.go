@@ -90,6 +90,10 @@ type BaseProvider struct {
 	// a field the client sent unless the channel sets overwrite. Channels whose custom parameters
 	// are per model take no defaults. Requesty uses it for its automatic cache breakpoints.
 	DefaultCustomParams map[string]interface{}
+	// DefaultHeaders adds request headers a provider sends by default. It runs before the
+	// channel's custom headers and header overrides, which win, and gets the request context
+	// (nil for background calls such as a balance check).
+	DefaultHeaders func(c *gin.Context, headers map[string]string)
 }
 
 // 获取基础URL
@@ -119,6 +123,9 @@ func (p *BaseProvider) CommonRequestHeaders(headers map[string]string) {
 
 	if headers["Content-Type"] == "" {
 		headers["Content-Type"] = "application/json"
+	}
+	if p.DefaultHeaders != nil {
+		p.DefaultHeaders(p.Context, headers)
 	}
 	// 自定义header
 	if p.Channel.ModelHeaders != nil {
