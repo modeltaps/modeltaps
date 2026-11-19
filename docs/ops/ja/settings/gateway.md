@@ -408,7 +408,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 関連する設定：[同じセッションを 1 つのチャネルに固定](./gateway.md#SessionAffinityEnabled)
 
-## 自動ルーティング
+## ルーティングポリシー
 
 <a id="RoutingDecisionBillingEnabled"></a>
 
@@ -416,7 +416,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 キー `RoutingDecisionBillingEnabled` · 型 bool · 既定値 `true`
 
-場所：プラットフォーム設定 › ゲートウェイ › 自動ルーティング
+場所：プラットフォーム設定 › ゲートウェイ › ルーティングポリシー
 
 自動ルーティングポリシーがモデルを選ぶための呼び出しを、判定モデルの価格で呼び出し元に課金します。セッションごとに 1 回、独立したログとして記録します。オフでも判定は行われますが、費用はサイト持ちで消費ログは残りません。
 
@@ -428,7 +428,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 キー `UserRoutingPolicyEnabled` · 型 bool · 既定値 `true`
 
-場所：プラットフォーム設定 › ゲートウェイ › 自動ルーティング
+場所：プラットフォーム設定 › ゲートウェイ › ルーティングポリシー
 
 ユーザーと組織が自分のルーティングポリシーを作り、policy/<名前> で呼び出せます。ユーザーはワークベンチの「ルーティングポリシー」で個人ポリシーを、組織のオーナーと管理者は組織ポリシーを作成し、独自のポリシーは自分のキーについて同名のプラットフォームポリシーより優先されます。オフにすると独自のポリシーは残りますが適用されず、プラットフォームポリシーだけが解決されます。
 
@@ -440,7 +440,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 キー `PersonalRoutingPolicyMaxCount` · 型 int · 範囲 0– · 既定値 `20`
 
-場所：プラットフォーム設定 › ゲートウェイ › 自動ルーティング
+場所：プラットフォーム設定 › ゲートウェイ › ルーティングポリシー
 
 1 人のユーザーが作れる個人ルーティングポリシーの数です。上限を下げても既存のポリシーは残り、新規作成だけが拒否されます。0 なら無制限です。
 
@@ -457,7 +457,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 キー `OrganizationRoutingPolicyMaxCount` · 型 int · 範囲 0– · 既定値 `20`
 
-場所：プラットフォーム設定 › ゲートウェイ › 自動ルーティング
+場所：プラットフォーム設定 › ゲートウェイ › ルーティングポリシー
 
 1 つの組織が作れるルーティングポリシーの数です。上限を下げても既存のポリシーは残り、新規作成だけが拒否されます。0 なら無制限です。
 

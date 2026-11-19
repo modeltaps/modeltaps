@@ -408,7 +408,7 @@ Examples:
 
 See also: [Keep each session on one channel](./gateway.md#SessionAffinityEnabled)
 
-## Auto routing
+## Routing policies
 
 <a id="RoutingDecisionBillingEnabled"></a>
 
@@ -416,7 +416,7 @@ See also: [Keep each session on one channel](./gateway.md#SessionAffinityEnabled
 
 Key `RoutingDecisionBillingEnabled` · Type bool · Default `true`
 
-Where: Platform settings › Gateway › Auto routing
+Where: Platform settings › Gateway › Routing policies
 
 Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. It is charged once per session, as a log entry of its own. When off, the decision still runs, but the site pays for it and no consume log is written.
 
@@ -428,7 +428,7 @@ See also: [Own routing policies](./gateway.md#UserRoutingPolicyEnabled)
 
 Key `UserRoutingPolicyEnabled` · Type bool · Default `true`
 
-Where: Platform settings › Gateway › Auto routing
+Where: Platform settings › Gateway › Routing policies
 
 Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.
 
@@ -440,7 +440,7 @@ See also: [Policies per user](./gateway.md#PersonalRoutingPolicyMaxCount) · [Po
 
 Key `PersonalRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Platform settings › Gateway › Auto routing
+Where: Platform settings › Gateway › Routing policies
 
 How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 
@@ -457,7 +457,7 @@ See also: [Own routing policies](./gateway.md#UserRoutingPolicyEnabled) · [Poli
 
 Key `OrganizationRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Platform settings › Gateway › Auto routing
+Where: Platform settings › Gateway › Routing policies
 
 How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 

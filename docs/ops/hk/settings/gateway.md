@@ -408,7 +408,7 @@ outline: deep
 
 相關設定：[同一會話固定到一個渠道](./gateway.md#SessionAffinityEnabled)
 
-## 自動路由
+## 路由策略
 
 <a id="RoutingDecisionBillingEnabled"></a>
 
@@ -416,7 +416,7 @@ outline: deep
 
 設定名 `RoutingDecisionBillingEnabled` · 類型 bool · 預設值 `true`
 
-位置：平台設定 › 網關 › 自動路由
+位置：平台設定 › 網關 › 路由策略
 
 自動路由策略為選模型而做的呼叫，按決策模型的價格向呼叫方計費。每個會話計一次，單獨記一條日誌。關閉後決策照常進行，但費用由站點承擔，也不寫消費日誌。
 
@@ -428,7 +428,7 @@ outline: deep
 
 設定名 `UserRoutingPolicyEnabled` · 類型 bool · 預設值 `true`
 
-位置：平台設定 › 網關 › 自動路由
+位置：平台設定 › 網關 › 路由策略
 
 用戶和組織可以建立自己的路由策略，用 policy/<名字> 呼叫。用戶在工作台「路由策略」裏建立個人策略，組織 Owner / Admin 建立組織策略；自建策略在自己的 API Key 上覆蓋同名的平台策略。關閉後自建策略保留但不再生效，只有平台策略能解析。
 
@@ -440,7 +440,7 @@ outline: deep
 
 設定名 `PersonalRoutingPolicyMaxCount` · 類型 int · 範圍 0– · 預設值 `20`
 
-位置：平台設定 › 網關 › 自動路由
+位置：平台設定 › 網關 › 路由策略
 
 一個用戶最多能建立多少條個人路由策略。調低上限時已有的策略保留，只拒絕新建。0 表示不限。
 
@@ -457,7 +457,7 @@ outline: deep
 
 設定名 `OrganizationRoutingPolicyMaxCount` · 類型 int · 範圍 0– · 預設值 `20`
 
-位置：平台設定 › 網關 › 自動路由
+位置：平台設定 › 網關 › 路由策略
 
 一個組織最多能建立多少條路由策略。調低上限時已有的策略保留，只拒絕新建。0 表示不限。
 
