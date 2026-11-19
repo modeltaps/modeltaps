@@ -4198,7 +4198,7 @@
       "promptCache_off": "オフ",
       "promptCacheAutoHint": "チャネルの設定に従います。チャネルがキャッシュブレークポイントを付ける場合、Claude リクエストに付きます。",
       "promptCacheOnHint": "キャッシュブレークポイントのない Claude リクエストに付けます。繰り返し送る長いプロンプトは大幅に安くなり、一度だけ送るプロンプトは 25% 高くなります。",
-      "promptCacheOffHint": "すべてのリクエストからキャッシュマーカーを取り除き、追加もしません。OpenAI や DeepSeek など、プロバイダー独自のプレフィックスキャッシュは引き続き働きます。",
+      "promptCacheOffHint": "クライアント自身が付けたものも含め、キャッシュマーカーをすべて取り除き、追加もしません。OpenAI や DeepSeek など、プロバイダー独自のプレフィックスキャッシュは引き続き働きます。",
       "promptCacheHeaderHint": "リクエストごとに X-Modeltaps-Prompt-Cache ヘッダー（auto、on、off）で別の設定を選べます。",
       "limit": "利用上限",
       "limitHint": "空欄で上限なし。上限はこのキーだけに適用され、アカウント残高の制限も受けます。",

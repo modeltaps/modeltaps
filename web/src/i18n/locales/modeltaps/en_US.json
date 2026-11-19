@@ -4314,7 +4314,7 @@
       "promptCache_off": "Off",
       "promptCacheAutoHint": "Follows the channel's setting: Claude requests get cache breakpoints where the channel adds them.",
       "promptCacheOnHint": "Adds cache breakpoints to Claude requests that carry none. A repeated long prompt then costs far less; a prompt sent only once costs 25% more.",
-      "promptCacheOffHint": "Removes cache markers from every request and adds none. Providers that cache prefixes on their own, such as OpenAI and DeepSeek, still do.",
+      "promptCacheOffHint": "Removes every cache marker, including the ones the client adds itself, and adds none. Providers that cache prefixes on their own, such as OpenAI and DeepSeek, still do.",
       "promptCacheHeaderHint": "One request can choose differently with the X-Modeltaps-Prompt-Cache header (auto, on or off).",
       "limit": "Spending limit",
       "limitHint": "Leave empty for no limit. The limit only caps this key; your account balance still applies.",

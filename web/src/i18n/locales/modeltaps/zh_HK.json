@@ -4202,7 +4202,7 @@
       "promptCache_off": "關",
       "promptCacheAutoHint": "跟隨渠道設定：渠道會加快取斷點時，Claude 請求就帶上斷點。",
       "promptCacheOnHint": "給沒帶快取斷點的 Claude 請求加上斷點。重複發送的長提示詞便宜很多；只發一次的提示詞貴 25%。",
-      "promptCacheOffHint": "移除所有請求裡的快取標記，也不再添加。OpenAI、DeepSeek 等廠商自帶的前綴快取仍會生效。",
+      "promptCacheOffHint": "移除所有快取標記（包括客戶端自己加的），也不再添加。OpenAI、DeepSeek 等廠商自帶的前綴快取仍會生效。",
       "promptCacheHeaderHint": "單個請求可以用 X-Modeltaps-Prompt-Cache 請求頭另選（auto、on 或 off）。",
       "limit": "額度上限",
       "limitHint": "留空不限額。額度只限制這把 Key，實際使用還受帳戶餘額限制。",

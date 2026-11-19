@@ -4202,7 +4202,7 @@
       "promptCache_off": "关",
       "promptCacheAutoHint": "跟随渠道设置：渠道会加缓存断点时，Claude 请求就带上断点。",
       "promptCacheOnHint": "给没带缓存断点的 Claude 请求加上断点。重复发送的长提示词便宜很多；只发一次的提示词贵 25%。",
-      "promptCacheOffHint": "去掉所有请求里的缓存标记，也不再添加。OpenAI、DeepSeek 等厂商自带的前缀缓存仍会生效。",
+      "promptCacheOffHint": "去掉所有缓存标记（包括客户端自己加的），也不再添加。OpenAI、DeepSeek 等厂商自带的前缀缓存仍会生效。",
       "promptCacheHeaderHint": "单个请求可以用 X-Modeltaps-Prompt-Cache 请求头另选（auto、on 或 off）。",
       "limit": "额度上限",
       "limitHint": "留空不限额。额度只限制这把 Key，实际使用还受账户余额限制。",
