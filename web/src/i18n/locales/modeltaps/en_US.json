@@ -1052,7 +1052,31 @@
   },
   "command": {
     "search": "Search",
-    "thisPage": "On this page"
+    "thisPage": "On this page",
+    "synonyms": {
+      "failover": "retries|retry|supply mode",
+      "fallback": "retries|backup group",
+      "load balancing": "weight|supply mode",
+      "load balance": "weight|supply mode",
+      "model ratio": "catalog price|group ratio",
+      "completion ratio": "catalog price",
+      "stripe": "payment gateways",
+      "epay": "payment gateways",
+      "alipay": "payment gateways",
+      "wechat pay": "payment gateways",
+      "concurrency": "api rate",
+      "rate limit": "api rate|rate limit",
+      "rpm": "api rate",
+      "tpm": "api rate",
+      "2fa": "sign-in & security|passkey",
+      "mfa": "sign-in & security|passkey",
+      "totp": "sign-in & security|passkey",
+      "token": "api key",
+      "request timeout": "retry time limit|timeout",
+      "paypal": "payment gateways",
+      "creem": "payment gateways"
+    },
+    "advanced": "Advanced"
   },
   "common": {
     "error": "Something went wrong",

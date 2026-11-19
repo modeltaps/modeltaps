@@ -8,7 +8,7 @@ import {
 } from 'views/panel/Setting/registry';
 import { ACCOUNT_GROUPS, ORG_TREE, accountSettingsUrl, orgSettingsUrl } from 'views/panel/Settings/sections';
 import { LEGACY_ADMIN_PATHS } from 'routes/legacyPaths';
-import { OBJECT_PAGES, catalogEntries, settingLabel, settingSearchText } from '@/components/settings/catalog';
+import { OBJECT_PAGES, catalogEntries, settingLabel, settingSearchTiers } from '@/components/settings/catalog';
 import { settingHref } from '@/components/settings/SettingHelp';
 import {
   ORG_SETTINGS_PREFIX,
@@ -412,9 +412,9 @@ export function commandSections({ isAdmin = false, isRoot = false, orgSlug = nul
 // Command palette entries for the platform settings cards and for every setting of the settings
 // catalog (each field of a card, and the object fields with the page they are set on). They only
 // show while typing (`searchOnly`), so the palette indexes them without listing them all; the
-// groups are admin menu items and already listed. Field entries carry their search text
-// (`search(t)`: key, label, description, keywords) and their catalog entry (`setting`) for the
-// palette's @ filters.
+// groups are admin menu items and already listed. Field entries carry their search words in tiers
+// (`search(t)`: label; key and keywords; description, see commandScore.js) and their catalog entry
+// (`setting`) for the palette's @ filters.
 export function settingsCommandItems({ isRoot = false } = {}) {
   const groups = PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
   const visible = new Set(groups.map((group) => group.id));
@@ -439,7 +439,7 @@ export function settingsCommandItems({ isRoot = false } = {}) {
           ? `${t(groupLabelKey(entry.group))} › ${t(cardTitleKey(entry.card), { defaultValue: entry.card })}`
           : t(`settingsUi.catalog.objects.${entry.scope}`, { defaultValue: entry.scope }),
       detail: entry.key,
-      search: (t) => settingSearchText(t, entry.key),
+      search: (t) => settingSearchTiers(t, entry.key),
       setting: entry,
       searchOnly: true,
       href: settingHref(entry.key)

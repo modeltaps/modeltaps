@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
-import { matchesQuery } from '@/components/settings/settingsSearch';
+import { normalizeSynonyms, packTiers, scoreTiers, unpackTiers } from './commandScore';
 import { commandSections, navLabel } from './nav-config';
 import { orgSlugOf } from 'routes/paths';
 
@@ -19,18 +19,17 @@ import { orgSlugOf } from 'routes/paths';
 // the page's cards (getPageEntries, read when the palette opens) and matches everything written
 // on them.
 
-// Values of "On this page" entries start with this; they match when every word of the query is
-// in the card's text (fuzzy matching over a whole card would match almost anything). Everything
-// else keeps cmdk's fuzzy matching.
+// Values of "On this page" entries start with this; their keywords are the card's title, group and
+// text in the scoring tiers (commandScore.js).
 const PAGE_ENTRY = 'page-card:';
 
 // Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
-// text in the keywords. They match when every word of the query is in that text, like page cards.
+// words in tiers in the keywords.
 const FIELD_ENTRY = 'setting-field:';
 
 // Filters a query may start with: @key:<part of a key>, @object:<scope> (site, channel, model,
-// supply, allocation, user_group, routing_policy, organization, token) and @advanced (rarely
-// changed settings, left out otherwise). The rest of the query is matched as words.
+// supply, allocation, user_group, routing_policy, organization, token) and @advanced (only the
+// rarely changed settings). The rest of the query is matched as words.
 export function parseSettingFilters(search) {
   const filters = { key: null, object: null, advanced: false, any: false };
   const words = [];
@@ -52,30 +51,53 @@ export function parseSettingFilters(search) {
 
 export const settingFieldValue = (entry) => `${FIELD_ENTRY}${entry.key}|${entry.scope}|${entry.advanced ? 1 : 0}`;
 
-export function commandFilter(value, search, keywords) {
-  const { filters, text } = parseSettingFilters(search);
-  if (value.startsWith(FIELD_ENTRY)) {
-    const [key, scope, advanced] = value.slice(FIELD_ENTRY.length).split('|');
-    if (filters.key && !key.toLowerCase().includes(filters.key)) return 0;
-    if (filters.object && scope !== filters.object) return 0;
-    if (advanced === '1' && !filters.advanced) return 0;
-    if (!text) return filters.any ? 1 : 0;
-    return matchesQuery([key, ...(keywords || [])].join(' '), text) ? 1 : 0;
-  }
-  // The @ filters only apply to settings.
-  if (filters.any) return 0;
-  if (value.startsWith(PAGE_ENTRY)) return matchesQuery([value.slice(PAGE_ENTRY.length), ...(keywords || [])].join(' '), search) ? 1 : 0;
-  return defaultFilter(value, search, keywords);
+// Advanced settings are found too, a little below the others.
+const ADVANCED_WEIGHT = 0.9;
+// Menu entries (pages, cards) are named by their value; scattered letters still find them for a
+// Latin query ("chnl" → Channels), at a score below any word match.
+const FUZZY_WEIGHT = 0.15;
+const LATIN = /^[\x20-\x7e]+$/;
+
+// The palette's filter (cmdk), with the synonym table of the current language.
+export function makeCommandFilter(synonyms = {}) {
+  return function commandFilter(value, search, keywords) {
+    const { filters, text } = parseSettingFilters(search);
+    if (value.startsWith(FIELD_ENTRY)) {
+      const [key, scope, advanced] = value.slice(FIELD_ENTRY.length).split('|');
+      if (filters.key && !key.toLowerCase().includes(filters.key)) return 0;
+      if (filters.object && scope !== filters.object) return 0;
+      if (filters.advanced && advanced !== '1') return 0;
+      if (!text) return filters.any ? 1 : 0;
+      const score = scoreTiers(text, unpackTiers(keywords), synonyms);
+      return advanced === '1' ? score * ADVANCED_WEIGHT : score;
+    }
+    // The @ filters only apply to settings.
+    if (filters.any) return 0;
+    if (value.startsWith(PAGE_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
+    const score = scoreTiers(search, { primary: [value], secondary: keywords || [] }, synonyms);
+    if (score > 0 || !LATIN.test(search)) return score;
+    return defaultFilter(value, search, keywords) * FUZZY_WEIGHT;
+  };
 }
+
+export const commandFilter = makeCommandFilter();
+
+const GROUP_CLASS = 'px-1 py-1 text-xs font-medium text-muted-foreground [&_[cmdk-group-items]]:mt-1 [&_[cmdk-group-items]]:space-y-0.5';
 
 export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
   const { currentOrg, orgRole, routingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
+  // The synonyms of the current language plus the English ones: people type terms of other
+  // gateways in either.
+  const filter = useMemo(() => {
+    const table = (lng) => i18n.getResource(lng, 'translation', 'command.synonyms');
+    return makeCommandFilter(normalizeSynonyms(table('en_US'), table(i18n.language)));
+  }, [i18n, i18n.language]);
 
   useEffect(() => {
     if (!open) setSearch('');
@@ -105,6 +127,86 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
     features: { routingPolicy: routingPolicyEnabled }
   });
 
+  // Every group with its entries: value and keywords as the filter reads them. While typing the
+  // groups and their entries are ordered here by score: cmdk 1.1.1 never reorders groups (it looks
+  // them up by an id they do not carry) and moves entries behind React's back.
+  const pageGroup = typing &&
+    pageEntries.length > 0 && {
+      id: 'page',
+      heading: t('command.thisPage'),
+      entries: pageEntries.map((entry) => ({
+        key: entry.id,
+        value: `${PAGE_ENTRY}${entry.id}`,
+        keywords: packTiers({ primary: [entry.title], secondary: [entry.group], tertiary: [entry.text] }),
+        href: entry.to,
+        content: (
+          <>
+            <FileText className="size-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{entry.group}</span>
+          </>
+        )
+      }))
+    };
+  const sectionGroups = sections.map((section) => ({
+    id: section.id,
+    heading: section.labelKey ? t(section.labelKey) : undefined,
+    entries: section.items
+      .filter((item) => !item.searchOnly || typing)
+      .map((item) => {
+        const Icon = item.icon;
+        if (item.setting) {
+          return {
+            key: `${section.id}-${item.id}`,
+            value: settingFieldValue(item.setting),
+            keywords: packTiers(item.search(t)),
+            href: item.href,
+            content: (
+              <>
+                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate">
+                  {item.label(t)}
+                  <span className="ml-2 text-xs text-muted-foreground">{item.prefix(t)}</span>
+                  {item.setting.advanced && (
+                    <span className="ml-1.5 rounded bg-muted px-1 py-px text-[10px] text-muted-foreground">{t('command.advanced')}</span>
+                  )}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{item.detail}</span>
+              </>
+            )
+          };
+        }
+        const label = navLabel(t, item);
+        return {
+          key: `${section.id}-${item.id}`,
+          value: `${section.admin ? `${t('nav.context.admin')} ` : ''}${label} ${item.id}`,
+          keywords: undefined,
+          href: item.href,
+          content: (
+            <>
+              <Icon className="size-4 text-muted-foreground" />
+              {label}
+            </>
+          )
+        };
+      })
+  }));
+  const groups = [pageGroup, ...sectionGroups].filter(Boolean);
+  if (typing) {
+    // Entries and groups by score, best first (ties keep the menu order). cmdk would also move the
+    // entries in the DOM; doing it in React keeps the two orders the same.
+    const byScore = (list, score) =>
+      list
+        .map((x, i) => ({ x, i, score: score(x) }))
+        .sort((a, b) => b.score - a.score || a.i - b.i)
+        .map((y) => ({ ...y.x, score: y.score }));
+    const sorted = byScore(
+      groups.map((group) => ({ ...group, entries: byScore(group.entries, (entry) => filter(entry.value, search, entry.keywords)) })),
+      (group) => group.entries[0]?.score || 0
+    );
+    groups.splice(0, groups.length, ...sorted);
+  }
+
   const go = (url) => {
     setOpen(false);
     navigate(url);
@@ -118,7 +220,7 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
       overlayClassName="fixed inset-0 z-[1300] bg-black/40 backdrop-blur-sm"
       contentClassName="fixed left-1/2 top-[20%] z-[1301] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
     >
-      <Command className="flex flex-col" filter={commandFilter}>
+      <Command className="flex flex-col" filter={filter}>
         <div className="border-b border-border px-3">
           <Command.Input
             value={search}
@@ -129,67 +231,19 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
         </div>
         <Command.List className="max-h-80 overflow-y-auto p-2">
           <Command.Empty className="py-6 text-center text-sm text-muted-foreground">{t('command.empty')}</Command.Empty>
-          {typing && pageEntries.length > 0 && (
-            <Command.Group
-              heading={t('command.thisPage')}
-              className="px-1 py-1 text-xs font-medium text-muted-foreground [&_[cmdk-group-items]]:mt-1 [&_[cmdk-group-items]]:space-y-0.5"
-            >
-              {pageEntries.map((entry) => (
+          {groups.map((group) => (
+            <Command.Group key={group.id} heading={group.heading} className={GROUP_CLASS}>
+              {group.entries.map((entry) => (
                 <Command.Item
-                  key={entry.id}
-                  value={`${PAGE_ENTRY}${entry.id} ${entry.title} ${entry.group}`}
-                  keywords={[entry.text]}
-                  onSelect={() => go(entry.to)}
+                  key={entry.key}
+                  value={entry.value}
+                  keywords={entry.keywords}
+                  onSelect={() => go(entry.href)}
                   className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
                 >
-                  <FileText className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{entry.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{entry.group}</span>
+                  {entry.content}
                 </Command.Item>
               ))}
-            </Command.Group>
-          )}
-          {sections.map((section) => (
-            <Command.Group
-              key={section.id}
-              heading={section.labelKey ? t(section.labelKey) : undefined}
-              className="px-1 py-1 text-xs font-medium text-muted-foreground [&_[cmdk-group-items]]:mt-1 [&_[cmdk-group-items]]:space-y-0.5"
-            >
-              {section.items
-                .filter((item) => !item.searchOnly || typing)
-                .map((item) => {
-                  const Icon = item.icon;
-                  const label = navLabel(t, item);
-                  if (item.setting) {
-                    return (
-                      <Command.Item
-                        key={`${section.id}-${item.id}`}
-                        value={settingFieldValue(item.setting)}
-                        keywords={[item.search(t)]}
-                        onSelect={() => go(item.href)}
-                        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
-                      >
-                        <Icon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 flex-1 truncate">
-                          {item.label(t)}
-                          <span className="ml-2 text-xs text-muted-foreground">{item.prefix(t)}</span>
-                        </span>
-                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{item.detail}</span>
-                      </Command.Item>
-                    );
-                  }
-                  return (
-                    <Command.Item
-                      key={`${section.id}-${item.id}`}
-                      value={`${section.admin ? `${t('nav.context.admin')} ` : ''}${label} ${item.id}`}
-                      onSelect={() => go(item.href)}
-                      className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
-                    >
-                      <Icon className="size-4 text-muted-foreground" />
-                      {label}
-                    </Command.Item>
-                  );
-                })}
             </Command.Group>
           ))}
         </Command.List>

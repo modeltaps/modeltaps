@@ -44,20 +44,23 @@ export function settingEnumDescription(t, key, value) {
   return option?.description ? t(tk(key, `enum.${value}.description`), { defaultValue: option.description }) : undefined;
 }
 
-// Search words: the key, the English and translated label, description and keywords.
-export function settingSearchText(t, key) {
+// Search words in the palette's tiers (see components/chrome/commandScore.js): the translated and
+// English label; the key and keywords; the description.
+export function settingSearchTiers(t, key) {
   const entry = catalogEntry(key);
-  if (!entry) return '';
+  if (!entry) return { primary: [], secondary: [], tertiary: [] };
   const translated = t(tk(key, 'keywords'), { returnObjects: true, defaultValue: [] });
-  return [
-    entry.key,
-    entry.label,
-    settingLabel(t, key),
-    entry.description,
-    settingDescription(t, key),
-    ...(entry.keywords || []),
-    ...(Array.isArray(translated) ? translated : [])
-  ].join(' ');
+  return {
+    primary: [settingLabel(t, key), entry.label],
+    secondary: [entry.key, ...(entry.keywords || []), ...(Array.isArray(translated) ? translated : [])],
+    tertiary: [settingDescription(t, key), entry.description]
+  };
+}
+
+// All search words of a setting as one text.
+export function settingSearchText(t, key) {
+  const { primary, secondary, tertiary } = settingSearchTiers(t, key);
+  return [...primary, ...secondary, ...tertiary].join(' ');
 }
 
 // The first sentence of a description: what shows under a field; the rest goes into its help.
