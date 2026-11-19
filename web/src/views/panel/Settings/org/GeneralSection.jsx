@@ -158,7 +158,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
           onCheckedChange={setUsageVisible}
         />
         {logIoSiteEnabled && (
-          <div data-highlight="log-io">
+          <div data-highlight="log-io" className="px-4 py-3">
             <SelectRow
               id="org-log-io"
               label={t('orgPage.settings.logIOPolicy')}
