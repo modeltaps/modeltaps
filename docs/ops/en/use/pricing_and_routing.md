@@ -82,6 +82,26 @@ With a margin set (the line is above 1), new supplies above the line wait for re
 
 Discount groups are not checked: a discount is your own choice. The Pricing card still shows which channels lose money on each group.
 
+## Checking prices against upstream bills
+
+A price list can be wrong in ways no sync notices: it lags a vendor's change, a promotion ended, or a relay adds a markup. The upstream's own bill settles it. Every hour Modeltaps compares the last three days of what upstreams billed with the expected cost it logged from the price list (the channel's list price, without its fee):
+
+- **Per model**, from the cost OpenRouter reports for every request.
+- **Per account**, from the daily bill of OpenAI, Anthropic and OpenRouter channels that have an **Upstream management key**. The bill covers the whole account, so use of the same account outside this site makes it look higher.
+
+A difference of 10% or more, over at least 10 requests and $0.10, opens an **Upstream charges** alert on the channel (Platform admin → **Alerts**) and sends one price change notice. The alert links to the channel's **Stats** tab, which shows both amounts per model and per day.
+
+- **Billed more than expected:** requests may lose money. Correct the channel's price, its fee rate or its cost ratio.
+- **Billed less than expected:** the cost is set too high, which can hold back supplies at the price check. Lower it the same way.
+
+The alert closes by itself once the costs match again. Gemini and Vertex AI have no bill to compare yet.
+
+## Official price dates
+
+Some vendors announce a price that starts on a date, or an introductory price that ends on one. The built-in official prices carry these dates: on the day, the price changes by itself (unless you edited or locked it), admins get an alert under **Official price dates**, and the price lists are fetched again at once instead of at night.
+
+When an introductory price ends and the vendor has not published the next one, the alert asks you to check the vendor's pricing page, which it links. Set the new price by hand if it changed; the alert stays open until a release carries the new price.
+
 ## Examples
 
 ### 1. Sell at 12% over the official price

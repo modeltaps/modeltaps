@@ -209,7 +209,7 @@ func CheckUpstreamCosts(now time.Time) error {
 	if b.Len() > 0 {
 		logger.SysLog("upstream cost check: new differences between expected and billed costs")
 		notify.SendKind(notify.KindPriceChange, "Upstream charges differ from the price list", b.String()+
-			"\nCompare them on the channel's Performance tab and correct the channel's price, fee rate or cost ratio.")
+			"\nCompare them on the channel's Stats tab and correct the channel's price, fee rate or cost ratio.")
 	}
 	return nil
 }

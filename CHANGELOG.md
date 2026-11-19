@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading from 0.4.0
+
+Read these before upgrading; everything else needs no action.
+
+- **Docker Compose:** the bundled Redis requires a password. Add `REDIS_PASSWORD` to `.env`
+  (`openssl rand -hex 32`); `docker compose up` stops without it.
+- **Own routing policies** (personal and organization) are reached only as `policy/<name>`.
+  Clients that call one by its bare name must add the prefix; a bare name now means a managed
+  policy or a model.
+- **Scripts calling these endpoints with GET** must use POST: `/api/channel/test`,
+  `/api/channel/test/:id`, `/api/channel/check/:id`, `/api/channel/update_balance`,
+  `/api/channel/update_balance/:id`, `/api/user/logout`, `/api/user/token`, `/api/verification`,
+  `/api/reset_password` and the console bind calls for email, WeChat and LinuxDo.
+- **Behind a reverse proxy that rewrites the Host header,** set the server address in the
+  settings: cookie-authenticated changes must come from the site's own origin.
+- **Image storage** moves from the `storage:` section of `config.yaml` (or `STORAGE_*`) into the
+  platform settings on the first start, keeping one store; the section is not read afterwards.
+  Set `ENCRYPTION_KEY` beforehand to have its secrets stored encrypted.
+- **Billing:** the "Never charge below the channel cost" switch is removed. Requests are charged
+  the catalog price times the group ratio; to keep a margin, raise the default group's ratio.
+
 ### Added
 
 - Requests can list fallback models of their own in a top-level `models` array (as OpenRouter
@@ -75,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   upstream charges are compared with the expected cost from the price list: per model from the
   costs OpenRouter reports per request, and per account from the daily bills of OpenAI, Anthropic
   and OpenRouter channels with a management key. A difference of 10% or more (at least 10 requests
-  and $0.10) opens an **Upstream charges** alert on the channel, linked to its Performance tab,
+  and $0.10) opens an **Upstream charges** alert on the channel, linked to its **Stats** tab,
   and sends a price change notice; the alert closes once the costs match again.
 - Official price dates: when a scheduled official price change takes effect, or a price ends
   without a published successor, admins get an alert under **Official price dates** and the price
@@ -184,12 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Upgrade notes: the bundled Docker Compose Redis now requires `REDIS_PASSWORD` in `.env`
-  (`openssl rand -hex 32`); `docker compose up` stops without it. These endpoints are POST now
-  and scripts calling them with GET must change: `/api/channel/test`, `/api/channel/test/:id`,
-  `/api/channel/check/:id`, `/api/channel/update_balance`, `/api/channel/update_balance/:id`,
-  `/api/user/logout`, `/api/user/token`, `/api/verification`, `/api/reset_password` and the
-  console bind calls for email, WeChat and LinuxDo.
+- The bundled Docker Compose Redis requires a password, and the state-changing endpoints listed
+  under **Upgrading from 0.4.0** accept POST only.
 - Two-factor sign-in: password and email-code sign-in can ask for a code from an authenticator
   app, turned on per user in the security settings with ten one-time recovery codes. Root's
   emergency password login asks for it too once root turns it on; passkey, OIDC and API key
