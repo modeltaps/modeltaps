@@ -544,15 +544,23 @@ func organizationFields() []Setting {
 			Keywords: []string{"spending cap", "member limit", "budget"},
 		},
 		{
-			Key: "organization.log_io_default", Scope: ScopeOrganization, Group: "organizations", Card: "general", Field: "setting.log_io_default",
-			Type: TypeBool, Default: "off",
-			Label: "Retain request and response bodies",
-			Description: "Whether the bodies of the organization's API requests and responses are stored, for all its keys at once. " +
-				"Keys and members cannot change it. Stored bodies never include API keys or auth headers, are deleted after " +
-				"30 days, and only owners, admins and platform admins can read them. Members are told who turned it on and when. " +
-				"Shown only while the site allows retention.",
-			Related:  []string{"LogIOEnabled"},
-			Keywords: []string{"log io", "retention", "request body", "privacy", "audit"},
+			Key: "organization.log_io_policy", Scope: ScopeOrganization, Group: "organizations", Card: "general", Field: "setting.log_io_policy",
+			Type: TypeEnum, Default: "member",
+			Enum: []EnumValue{
+				{Value: "member", Label: "Each key decides", Description: "A key's own switch decides; members set it on the keys they create, owners and admins on any key."},
+				{Value: "on", Label: "Keep for every key", Description: "Every organization key keeps its bodies; the keys' switches are locked."},
+				{Value: "off", Label: "Keep for no key", Description: "No organization key keeps its bodies; the keys' switches are locked."},
+			},
+			Label: "Request and response retention",
+			Description: "Whether the organization's API keys keep the bodies of their requests and responses. Stored bodies never " +
+				"include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. " +
+				"Members are told on their keys who turned retention on and when. Shown only while the site allows retention.",
+			Examples: []Example{
+				{Value: "off", Effect: "Zero data retention for the whole organization: a member cannot turn it on for a key."},
+				{Value: "member", Effect: "A member turns it on for the key of an app being debugged; the other keys keep nothing."},
+			},
+			Related:  []string{"LogIOEnabled", "token.log_io"},
+			Keywords: []string{"log io", "retention", "request body", "privacy", "audit", "zero data retention"},
 		},
 	}
 }
@@ -584,6 +592,20 @@ func tokenFields() []Setting {
 			},
 			Related:  []string{"token.group", "user_group.ratio"},
 			Keywords: []string{"fallback group", "failover", "backup"},
+		},
+		{
+			Key: "token.log_io", Scope: ScopeToken, Group: "tokens", Card: "access", Field: "log_io",
+			Type: TypeBool, Default: "the owner's default for new keys (off for organization keys)",
+			Label: "Keep request and response bodies",
+			Description: "Whether the key's requests keep their full request and response bodies, to read in the log details. " +
+				"A new personal key starts with the user's default for new keys; changing that default leaves existing keys " +
+				"alone unless the user applies it to them. On an organization key the organization's policy can lock it. Shown " +
+				"only while the site allows retention.",
+			Examples: []Example{
+				{Value: "true", Effect: "The key of an app under test keeps what it sent and got back for 30 days; the user's other keys keep nothing."},
+			},
+			Related:  []string{"LogIOEnabled", "organization.log_io_policy"},
+			Keywords: []string{"log io", "retention", "request body", "prompt logging", "privacy"},
 		},
 		{
 			Key: "token.model_limits", Scope: ScopeToken, Group: "tokens", Card: "access", Field: "setting.limits.limit_model_setting",

@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 )
@@ -24,6 +26,9 @@ type OrganizationAuditLog struct {
 const (
 	OrgAuditActionLogIOUpdate = "org.log_io_update"
 	OrgAuditActionLogIOView   = "log.view_detail"
+	// OrgAuditActionTokenLogIOUpdate records a change of one organization API key's own retention
+	// switch, while the organization lets members choose (ORG-10).
+	OrgAuditActionTokenLogIOUpdate = "token.log_io_update"
 
 	// legacyLogIOAuditContent is how changes of the LogIO default were recorded (as
 	// org.update_setting) before they got an action of their own.
@@ -36,6 +41,36 @@ func GetLatestOrgLogIOUpdate(organizationId int) (*OrganizationAuditLog, error) 
 	var logs []*OrganizationAuditLog
 	err := DB.Where("organization_id = ?", organizationId).
 		Where("action = ? OR (action = ? AND content LIKE ?)", OrgAuditActionLogIOUpdate, "org.update_setting", legacyLogIOAuditContent).
+		Order("id desc").Limit(1).Find(&logs).Error
+	if err != nil || len(logs) == 0 {
+		return nil, err
+	}
+	fillAuditActorNames(logs)
+	return logs[0], nil
+}
+
+// orgTokenLogIOAuditContent is the content of OrgAuditActionTokenLogIOUpdate; the key id is
+// matched to find a key's latest change.
+const orgTokenLogIOAuditContent = "Set request and response retention of organization API key %s (ID: %d) to %s"
+
+// RecordOrgTokenLogIOUpdate records that actorId switched the key's retention.
+func RecordOrgTokenLogIOUpdate(organizationId, actorId int, token *Token, siteEnabled bool) {
+	value := "off"
+	if token.LogIO != nil && *token.LogIO {
+		value = "on"
+	}
+	RecordOrgAudit(organizationId, actorId, OrgAuditActionTokenLogIOUpdate, fmt.Sprintf(orgTokenLogIOAuditContent, token.Name, token.Id, value))
+	if value == "on" && siteEnabled {
+		logger.SysLog(fmt.Sprintf("organization %d: user %d turned on storing request and response bodies of organization API key %d", organizationId, actorId, token.Id))
+	}
+}
+
+// GetLatestOrgTokenLogIOUpdate returns the newest change of the key's own retention switch, with
+// the actor's username, or nil when there is none.
+func GetLatestOrgTokenLogIOUpdate(organizationId, tokenId int) (*OrganizationAuditLog, error) {
+	var logs []*OrganizationAuditLog
+	err := DB.Where("organization_id = ? AND action = ? AND content LIKE ?", organizationId, OrgAuditActionTokenLogIOUpdate,
+		fmt.Sprintf("%%(ID: %d) to %%", tokenId)).
 		Order("id desc").Limit(1).Find(&logs).Error
 	if err != nil || len(logs) == 0 {
 		return nil, err

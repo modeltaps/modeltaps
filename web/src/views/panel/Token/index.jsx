@@ -816,6 +816,8 @@ export default function Token() {
             onCopy={copyText}
             allowManagement={!isOrgContext}
             allowOrgOwned={isOrgContext && isOrgAdminRole(orgRole)}
+            orgContext={isOrgContext}
+            logIO={logIO}
           />
         )}
 

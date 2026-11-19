@@ -634,6 +634,7 @@ func postMigrations() []*gormigrate.Migration {
 		dropChatLinkOptions(),
 		dropPauseRulesEnabledOption(),
 		foldLogIOSiteDefaults(),
+		migrateLogIOToKeys(),
 	}
 }
 
@@ -2218,10 +2219,10 @@ func foldLogIOSiteDefaults() *gormigrate.Migration {
 				}
 				for _, org := range orgs {
 					setting := org.Setting.Data()
-					if setting.LogIODefault != nil {
+					if setting.LegacyLogIODefault != nil {
 						continue
 					}
-					setting.LogIODefault = &on
+					setting.LegacyLogIODefault = &on
 					org.Setting.Set(setting)
 					if err := tx.Unscoped().Model(&Organization{}).Where("id = ?", org.Id).Update("setting", org.Setting).Error; err != nil {
 						return err
@@ -2231,6 +2232,76 @@ func foldLogIOSiteDefaults() *gormigrate.Migration {
 			for _, key := range []string{"LogIODefaultUser", "OrganizationLogIODefault"} {
 				if err := tx.Where(&Option{Key: key}).Delete(&Option{}).Error; err != nil {
 					return err
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
+	}
+}
+
+// migrateLogIOToKeys moves request and response retention onto the API keys (ORG-10). Every key
+// gets the value that applied to it, so nothing changes: a personal key its user's switch (which
+// becomes the default for new keys), an organization key its organization's. The organization
+// switch becomes a policy: on and off lock every key, unset lets each key decide (all of them off
+// now). The key column was ignored before, so old values in it are overwritten.
+func migrateLogIOToKeys() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611191401",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("tokens") {
+				return nil
+			}
+			if err := tx.Unscoped().Model(&Token{}).Where("1 = 1").Update("log_io", false).Error; err != nil {
+				return err
+			}
+			if tx.Migrator().HasTable("users") {
+				var users []*User
+				if err := tx.Unscoped().Select("id", "setting").Where("type <> ?", config.UserTypeOrgShadow).Find(&users).Error; err != nil {
+					return err
+				}
+				var on []int
+				for _, user := range users {
+					if setting := user.Setting.Data(); setting.NewKeyLogIO() {
+						on = append(on, user.Id)
+					}
+				}
+				for start := 0; start < len(on); start += 500 {
+					end := min(start+500, len(on))
+					if err := tx.Unscoped().Model(&Token{}).Where("created_by = 0 AND user_id IN ?", on[start:end]).
+						Update("log_io", true).Error; err != nil {
+						return err
+					}
+				}
+			}
+			if !tx.Migrator().HasTable("organizations") {
+				return nil
+			}
+			var orgs []*Organization
+			if err := tx.Unscoped().Select("id", "shadow_user_id", "setting").Find(&orgs).Error; err != nil {
+				return err
+			}
+			for _, org := range orgs {
+				setting := org.Setting.Data()
+				if setting.LogIOPolicy == "" {
+					switch {
+					case setting.LegacyLogIODefault == nil:
+						setting.LogIOPolicy = LogIOPolicyMember
+					case *setting.LegacyLogIODefault:
+						setting.LogIOPolicy = LogIOPolicyOn
+					default:
+						setting.LogIOPolicy = LogIOPolicyOff
+					}
+				}
+				setting.LegacyLogIODefault = nil
+				org.Setting.Set(setting)
+				if err := tx.Unscoped().Model(&Organization{}).Where("id = ?", org.Id).Update("setting", org.Setting).Error; err != nil {
+					return err
+				}
+				if setting.LogIOPolicy == LogIOPolicyOn {
+					if err := tx.Unscoped().Model(&Token{}).Where("user_id = ?", org.ShadowUserId).Update("log_io", true).Error; err != nil {
+						return err
+					}
 				}
 			}
 			return nil

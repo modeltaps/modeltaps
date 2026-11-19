@@ -31,8 +31,13 @@ type OrganizationSetting struct {
 	ModelWhitelist []string `json:"model_whitelist,omitempty"`
 	// ModelAccessListId is the named list attached as the organization default (ORG-15); it wins over ModelWhitelist
 	ModelAccessListId int `json:"model_access_list_id,omitempty"`
-	// LogIODefault 组织令牌「完整请求/响应留存」开关;nil 表示未设置,按关闭处理
-	LogIODefault *bool `json:"log_io_default,omitempty"`
+	// LogIOPolicy is how the organization's API keys keep request and response bodies (ORG-10):
+	// LogIOPolicyMember (empty too) lets each key's own switch decide, LogIOPolicyOn and
+	// LogIOPolicyOff lock every key on or off.
+	LogIOPolicy string `json:"log_io_policy,omitempty"`
+	// LegacyLogIODefault is the former organization-wide switch, read once by
+	// migrateLogIOToKeys and cleared.
+	LegacyLogIODefault *bool `json:"log_io_default,omitempty"`
 	// Budget 组织级周期预算(T1):跨全体成员合计上限;nil 或 limit<=0 表示不限
 	Budget *QuotaResetSetting `json:"budget,omitempty"`
 }
@@ -46,7 +51,7 @@ type Organization struct {
 	Status       int            `json:"status" gorm:"type:int;default:1"`
 	ShadowUserId int            `json:"-" gorm:"type:int;not null;uniqueIndex"`    // 影子记账账户 users.id,仅服务端使用,不对外暴露
 	CreatedBy    int            `json:"created_by" gorm:"type:int;not null;index"` // 创建者(首任 Owner)用户ID
-	MaxMembers   *int           `json:"max_members" gorm:"type:int"`              // NULL=使用站点默认值 config.OrganizationDefaultMaxMembers;0=不限制;正数=上限
+	MaxMembers   *int           `json:"max_members" gorm:"type:int"`               // NULL=使用站点默认值 config.OrganizationDefaultMaxMembers;0=不限制;正数=上限
 	CreatedTime  int64          `json:"created_time" gorm:"bigint"`
 	UpdatedTime  int64          `json:"updated_time" gorm:"bigint"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
@@ -136,10 +141,36 @@ func (org *Organization) IsUsageVisibleToMembers() bool {
 	return visible != nil && *visible
 }
 
-// ResolveLogIODefault 返回组织令牌是否留存完整请求/响应(组织未设置时为关)
-func (org *Organization) ResolveLogIODefault() bool {
-	setting := org.Setting.Data()
-	return setting.LogIODefault != nil && *setting.LogIODefault
+// Values of OrganizationSetting.LogIOPolicy.
+const (
+	LogIOPolicyMember = "member"
+	LogIOPolicyOn     = "on"
+	LogIOPolicyOff    = "off"
+)
+
+// ValidLogIOPolicy reports whether policy is one of the LogIOPolicy values.
+func ValidLogIOPolicy(policy string) bool {
+	return policy == LogIOPolicyMember || policy == LogIOPolicyOn || policy == LogIOPolicyOff
+}
+
+// GetLogIOPolicy is the organization's retention policy, LogIOPolicyMember when it never chose.
+func (org *Organization) GetLogIOPolicy() string {
+	if policy := org.Setting.Data().LogIOPolicy; ValidLogIOPolicy(policy) {
+		return policy
+	}
+	return LogIOPolicyMember
+}
+
+// ApplyOrgLogIOPolicy is whether an organization API key keeps bodies under policy: a locked
+// policy decides, otherwise the key's own switch.
+func ApplyOrgLogIOPolicy(policy string, keyOn bool) bool {
+	switch policy {
+	case LogIOPolicyOn:
+		return true
+	case LogIOPolicyOff:
+		return false
+	}
+	return keyOn
 }
 
 var orgSlugInvalidChars = regexp.MustCompile(`[^a-z0-9-]+`)
@@ -205,8 +236,8 @@ func (org *Organization) UpdateSetting() error {
 	org.UpdatedTime = utils.GetTimestamp()
 	err := DB.Model(org).Select("setting", "updated_time").Updates(org).Error
 	if err == nil {
-		// 组织默认变更后失效解析缓存(键为影子账户ID),确保组织令牌「继承」按新默认回退
-		InvalidateOwnerLogIODefaultCache(org.ShadowUserId)
+		// 留存策略进入令牌解析缓存(键为影子账户ID),变更后失效
+		InvalidateOrgLogIOPolicyCache(org.ShadowUserId)
 		// 组织级白名单缺省/预算配置进入成员守护视图,变更后须失效全体成员的守护缓存
 		invalidateOrgGuardrailCacheAllMembers(org)
 	}

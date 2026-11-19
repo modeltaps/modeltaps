@@ -10,14 +10,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
-import { ToggleRow } from '../../Setting/parts';
+import { SelectRow, ToggleRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ORG GENERAL ||============================== //
 // Organization profile card (Admin+): name, avatar, usage visibility and request / response
 // retention, saved by the card footer. The danger zone is its own group (DangerSection).
 
-// 服务端可能回 "inherit"|"on"|"off" 字符串,也可能回 *bool;未设置不留存,按 off 显示。
-const triFromServer = (v) => (v === 'on' || v === true ? 'on' : 'off');
+// The retention policy of the organization's API keys (ORG-10): each key decides, or every key
+// locked on or off. Never chosen means each key decides.
+const LOG_IO_POLICIES = ['member', 'on', 'off'];
+const policyFromServer = (v) => (LOG_IO_POLICIES.includes(v) ? v : 'member');
 
 // 脏值比较统一归一为字符串,null / undefined / '' 视为相等(as isDirty in Setting/parts.jsx)。
 const sameValue = (a, b) => String(a ?? '') === String(b ?? '');
@@ -37,8 +39,8 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
   const [avatarUrl, setAvatarUrl] = useState('');
   // 成员可见全员用量:组织上的普通开关,未设置即关闭
   const [usageVisible, setUsageVisible] = useState(false);
-  // 组织留存开关(on / off),经 PUT /api/org/:id 写入。
-  const [logIoDefault, setLogIoDefault] = useState('off');
+  // 组织留存策略(member / on / off),经 PUT /api/org/:id 写入。
+  const [logIoPolicy, setLogIoPolicy] = useState('member');
   const [saving, setSaving] = useState(false);
   // 表单基线:随 org 回流刷新,用于把保存按钮按脏值置灰
   const [baseline, setBaseline] = useState(null);
@@ -49,12 +51,12 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
       name: org.name || '',
       avatarUrl: org.avatar_url || '',
       usageVisible: org.setting?.usage_visible_to_members === true,
-      logIoDefault: triFromServer(org.setting?.log_io_default)
+      logIoPolicy: policyFromServer(org.setting?.log_io_policy)
     };
     setName(next.name);
     setAvatarUrl(next.avatarUrl);
     setUsageVisible(next.usageVisible);
-    setLogIoDefault(next.logIoDefault);
+    setLogIoPolicy(next.logIoPolicy);
     setBaseline(next);
   }, [org]);
 
@@ -64,7 +66,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     (!sameValue(name.trim(), baseline.name.trim()) ||
       !sameValue(avatarUrl, baseline.avatarUrl) ||
       !sameValue(usageVisible, baseline.usageVisible) ||
-      !sameValue(logIoDefault, baseline.logIoDefault));
+      !sameValue(logIoPolicy, baseline.logIoPolicy));
 
   const saveProfile = async () => {
     if (!name.trim()) {
@@ -75,8 +77,8 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     try {
       const payload = { name: name.trim(), avatar_url: avatarUrl.trim() };
       if (!sameValue(usageVisible, baseline?.usageVisible)) payload.usage_visible_to_members = usageVisible;
-      // 未拨动过留存开关时不带该字段,后端保持原有三态
-      if (!sameValue(logIoDefault, baseline?.logIoDefault)) payload.log_io_default = logIoDefault;
+      // 未改动留存策略时不带该字段,后端保持原值
+      if (!sameValue(logIoPolicy, baseline?.logIoPolicy)) payload.log_io_policy = logIoPolicy;
       const res = await API.put(`/api/org/${orgId}/`, payload);
       const { success, message } = res.data;
       if (success) {
@@ -84,7 +86,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
         // 不等 onRefresh 回流,先把基线设为刚提交的值,按钮立即回到禁用
         setName(payload.name);
         setAvatarUrl(payload.avatar_url);
-        setBaseline({ name: payload.name, avatarUrl: payload.avatar_url, usageVisible, logIoDefault });
+        setBaseline({ name: payload.name, avatarUrl: payload.avatar_url, usageVisible, logIoPolicy });
         onRefresh?.();
         refreshOrganizations();
         // 侧栏 / 仪表盘读的是 OrgContext.orgDetail,同步重拉一次即时生效(UX-25)
@@ -108,7 +110,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     setName(baseline.name);
     setAvatarUrl(baseline.avatarUrl);
     setUsageVisible(baseline.usageVisible);
-    setLogIoDefault(baseline.logIoDefault);
+    setLogIoPolicy(baseline.logIoPolicy);
   };
 
   return (
@@ -157,12 +159,13 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
         />
         {logIoSiteEnabled && (
           <div data-highlight="log-io">
-            <ToggleRow
+            <SelectRow
               id="org-log-io"
-              label={t('orgPage.settings.logIOToggle')}
-              description={t('orgPage.settings.logIOHint', { kb: logIoMaxBodyKb })}
-              checked={logIoDefault === 'on'}
-              onCheckedChange={(next) => setLogIoDefault(next ? 'on' : 'off')}
+              label={t('orgPage.settings.logIOPolicy')}
+              description={t(`orgPage.settings.logIOPolicyHint_${logIoPolicy}`, { kb: logIoMaxBodyKb })}
+              value={logIoPolicy}
+              onChange={setLogIoPolicy}
+              options={LOG_IO_POLICIES.map((p) => ({ value: p, label: t(`orgPage.settings.logIOPolicy_${p}`) }))}
             />
           </div>
         )}

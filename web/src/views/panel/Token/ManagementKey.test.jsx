@@ -2,6 +2,8 @@
 import { createElement } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Provider } from 'react-redux';
+import { legacy_createStore as createStore } from 'redux';
 
 import i18n from 'i18n/i18n';
 import { API } from 'utils/api';
@@ -20,16 +22,20 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const openDialog = (props) =>
+const openDialog = (props, siteInfo = {}) =>
   render(
-    createElement(NewTokenDialog, {
-      onClose: vi.fn(),
-      onCreated: vi.fn(),
-      onOpen: vi.fn(),
-      onCopy: vi.fn(),
-      baseUrl: 'http://x/v1',
-      ...props
-    })
+    createElement(
+      Provider,
+      { store: createStore(() => ({ siteInfo })) },
+      createElement(NewTokenDialog, {
+        onClose: vi.fn(),
+        onCreated: vi.fn(),
+        onOpen: vi.fn(),
+        onCopy: vi.fn(),
+        baseUrl: 'http://x/v1',
+        ...props
+      })
+    )
   );
 
 describe('NewTokenDialog key type', () => {
@@ -146,5 +152,40 @@ describe('management key helpers', () => {
     expect(managementKeyTypeLabel('read')).toBe('apiKey.type.read');
     expect(managementKeyTypeLabel('write')).toBe('apiKey.type.write');
     expect(managementKeyTypeLabel('legacy')).toBe('apiKey.type.legacy');
+  });
+});
+
+// The retention switch of a new key (ORG-10): shown while the site allows retention, starting with
+// the user's default for new keys, and locked by an organization's policy.
+describe('NewTokenDialog retention switch', () => {
+  const siteOn = { log_io_enabled: true };
+
+  it('is hidden while the site keeps no bodies', () => {
+    openDialog({});
+    expect(document.getElementById('nt-log-io')).toBeNull();
+  });
+
+  it('starts a personal key with the default for new keys and sends it', async () => {
+    API.get.mockResolvedValue({ data: { success: true, data: { log_io_default: 'on' } } });
+    API.post.mockResolvedValue({ data: { success: true, data: { id: 9, key: 'abc' } } });
+    openDialog({}, siteOn);
+    await waitFor(() => expect(document.getElementById('nt-log-io').getAttribute('aria-checked')).toBe('true'));
+    fireEvent.change(screen.getByLabelText(i18n.t('token_index.name')), { target: { value: 'k' } });
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.new.create') }));
+    await waitFor(() => expect(API.post).toHaveBeenCalled());
+    expect(API.post.mock.calls[0][1].log_io).toBe(true);
+  });
+
+  it('is locked by an organization policy and not sent', async () => {
+    API.post.mockResolvedValue({ data: { success: true, data: { id: 9, key: 'abc' } } });
+    openDialog({ orgContext: true, logIO: { policy: 'off' } }, siteOn);
+    const toggle = document.getElementById('nt-log-io');
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByText(i18n.t('apiKey.logIO.locked_off'))).toBeTruthy();
+    expect(API.get).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText(i18n.t('token_index.name')), { target: { value: 'k' } });
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.new.create') }));
+    await waitFor(() => expect(API.post).toHaveBeenCalled());
+    expect('log_io' in API.post.mock.calls[0][1]).toBe(false);
   });
 });

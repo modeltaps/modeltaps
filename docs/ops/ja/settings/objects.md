@@ -633,17 +633,28 @@ outline: deep
 
 関連する設定：[組織の予算](./objects.md#organization-budget) · [リセットのタイムゾーン](./billing.md#QuotaResetTimezone) · [週の開始日](./billing.md#QuotaResetWeekStart)
 
-<a id="organization-log_io_default"></a>
+<a id="organization-log_io_policy"></a>
 
-### リクエストとレスポンスの本文を保存
+### リクエストとレスポンスの保存
 
-キー `organization.log_io_default` · 型 bool · 既定値 off
+キー `organization.log_io_policy` · 型 enum · 既定値 member
 
 場所：Organizations › general
 
-組織の API キーのリクエストとレスポンスの本文を保存するかどうかで、すべてのキーに一度に適用され、キーやメンバーは変更できません。保存された本文に API キーや認証ヘッダーは含まれず、30 日後に削除され、オーナー・管理者・プラットフォーム管理者だけが閲覧できます。メンバーには誰がいつオンにしたかが表示されます。サイトが保存を許可しているときだけ表示されます。
+組織の API キーがリクエストとレスポンスの本文を保存するかどうかです。保存した本文に API キーや認証ヘッダーは含まれず、30 日後に削除され、読めるのはオーナーとプラットフォーム管理者だけです。メンバーには、誰がいつ保存をオンにしたかが自分のキーに表示されます。サイトが保存を許可しているときだけ表示されます。
 
-関連する設定：[リクエスト本文の保存を許可](./privacy.md#LogIOEnabled)
+値：
+
+- `member` キーごとに決める：キー自身のスイッチで決まります。メンバーは自分が作ったキーを、オーナーと管理員はどのキーでも設定できます。
+- `on` すべてのキーで保存：組織のすべてのキーが本文を保存し、キーのスイッチはロックされます。
+- `off` どのキーでも保存しない：組織のどのキーも本文を保存せず、キーのスイッチはロックされます。
+
+例：
+
+- `off` 組織全体でゼロデータ保持：メンバーはどのキーでもオンにできません。
+- `member` デバッグ中のアプリのキーだけメンバーがオンにし、他のキーは何も保存しません。
+
+関連する設定：[リクエスト本文の保存を許可](./privacy.md#LogIOEnabled) · [リクエストとレスポンスの本文を保存](./objects.md#token-log_io)
 
 ## API キー
 
@@ -678,6 +689,22 @@ outline: deep
 - `default` グループ vip、バックアップ default：そのモデルの vip のチャネルがすべて失敗すると、リクエストは default でその倍率で動きます。
 
 関連する設定：[グループ](./objects.md#token-group) · [グループ倍率](./objects.md#user_group-ratio)
+
+<a id="token-log_io"></a>
+
+### リクエストとレスポンスの本文を保存
+
+キー `token.log_io` · 型 bool · 既定値 the owner's default for new keys (off for organization keys)
+
+場所：API keys › access
+
+このキーのリクエストが、リクエストとレスポンスの本文全体を保存してログ詳細で読めるようにするかどうかです。新しい個人キーはユーザーの「新しいキーの既定」で始まります。この既定を変えても、ユーザーが既存のキーに適用しない限り既存のキーは変わりません。組織のキーは組織のポリシーでロックされることがあります。サイトが保存を許可しているときだけ表示されます。
+
+例：
+
+- `true` テスト中のアプリのキーは送受信内容を 30 日間保存し、ユーザーの他のキーは何も保存しません。
+
+関連する設定：[リクエスト本文の保存を許可](./privacy.md#LogIOEnabled) · [リクエストとレスポンスの保存](./objects.md#organization-log_io_policy)
 
 <a id="token-model_limits"></a>
 

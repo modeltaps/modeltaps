@@ -633,17 +633,28 @@ outline: deep
 
 相关设置：[组织预算](./objects.md#organization-budget) · [重置时区](./billing.md#QuotaResetTimezone) · [周起始日](./billing.md#QuotaResetWeekStart)
 
-<a id="organization-log_io_default"></a>
+<a id="organization-log_io_policy"></a>
 
-### 留存请求与响应正文
+### 请求与响应留存
 
-设置名 `organization.log_io_default` · 类型 bool · 默认值 off
+设置名 `organization.log_io_policy` · 类型 enum · 默认值 member
 
 位置：Organizations › general
 
-是否保存组织 API Key 的请求和响应正文，对所有 Key 一起生效：Key 和成员都不能改。保存的正文从不包含 API Key 或鉴权头，30 天后自动删除，只有所有者、管理员和平台管理员能查看。成员会被告知是谁、在什么时候打开的。只在站点允许留存时显示。
+组织的 API Key 是否留存请求和响应正文。留存的正文从不包含 API Key 或鉴权头，30 天后删除，只有所有者和平台管理员能读。成员会在自己的 Key 上看到是谁、什么时候开启的留存。只在站点允许留存时显示。
 
-相关设置：[允许留存请求正文](./privacy.md#LogIOEnabled)
+取值：
+
+- `member` 由每个 Key 决定：由 Key 自己的开关决定；成员设置自己创建的 Key，所有者和管理员可以设置任何 Key。
+- `on` 所有 Key 都留存：组织的所有 Key 都留存正文，Key 上的开关锁定。
+- `off` 所有 Key 都不留存：组织的 Key 都不留存正文，Key 上的开关锁定。
+
+示例：
+
+- `off` 整个组织零数据留存：成员不能给任何 Key 打开。
+- `member` 成员只给正在调试的应用的 Key 打开，其他 Key 都不留存。
+
+相关设置：[允许留存请求正文](./privacy.md#LogIOEnabled) · [留存请求与响应正文](./objects.md#token-log_io)
 
 ## API 密钥
 
@@ -678,6 +689,22 @@ Key 的分组没有渠道能承接请求时再试的第二个分组。在那里�
 - `default` 分组 vip、备用 default：该模型的 vip 渠道全部出错时，请求在 default 组里按它的倍率运行。
 
 相关设置：[分组](./objects.md#token-group) · [分组倍率](./objects.md#user_group-ratio)
+
+<a id="token-log_io"></a>
+
+### 留存请求与响应正文
+
+设置名 `token.log_io` · 类型 bool · 默认值 the owner's default for new keys (off for organization keys)
+
+位置：API keys › access
+
+这个 Key 的请求是否留存完整的请求和响应正文，可在日志明细里查看。新建的个人 Key 用用户的「新建 Key 默认」；改这个默认不影响已有的 Key，除非用户把它应用到已有 Key。组织 Key 可能被组织的策略锁定。只在站点允许留存时显示。
+
+示例：
+
+- `true` 正在测试的应用的 Key 留存 30 天的请求和回复，用户的其他 Key 都不留存。
+
+相关设置：[允许留存请求正文](./privacy.md#LogIOEnabled) · [请求与响应留存](./objects.md#organization-log_io_policy)
 
 <a id="token-model_limits"></a>
 

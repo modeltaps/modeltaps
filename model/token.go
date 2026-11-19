@@ -6,9 +6,9 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/database"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/redis"
-	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"os"
@@ -28,8 +28,8 @@ var (
 )
 
 type Token struct {
-	Id             int            `json:"id"`
-	UserId         int            `json:"user_id"`
+	Id     int `json:"id"`
+	UserId int `json:"user_id"`
 	// KeyHash identifies the key: common.HashUserTokenKey of its secret. The key itself is never
 	// stored (SEC-47); it is returned once, by the request that created or reset it.
 	KeyHash string `json:"-" gorm:"type:char(64);uniqueIndex"`
@@ -37,23 +37,23 @@ type Token struct {
 	KeyHint string `json:"key_hint" gorm:"type:varchar(32);default:''"`
 	// Key holds the plaintext key in memory only, right after it was generated (Insert, ResetKey),
 	// so the request that made it can return it once. It is never stored, cached or serialized.
-	Key            string         `json:"-" gorm:"-" msgpack:"-"`
-	Status         int            `json:"status" gorm:"default:1"`
-	Name           string         `json:"name" gorm:"index" `
-	CreatedTime    int64          `json:"created_time" gorm:"bigint"`
-	AccessedTime   int64          `json:"accessed_time" gorm:"bigint"`
-	ExpiredTime    int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
-	RemainQuota    int            `json:"remain_quota" gorm:"default:0"`
-	UnlimitedQuota bool           `json:"unlimited_quota" gorm:"default:false"`
-	UsedQuota      int            `json:"used_quota" gorm:"default:0"` // used quota
+	Key            string `json:"-" gorm:"-" msgpack:"-"`
+	Status         int    `json:"status" gorm:"default:1"`
+	Name           string `json:"name" gorm:"index" `
+	CreatedTime    int64  `json:"created_time" gorm:"bigint"`
+	AccessedTime   int64  `json:"accessed_time" gorm:"bigint"`
+	ExpiredTime    int64  `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
+	RemainQuota    int    `json:"remain_quota" gorm:"default:0"`
+	UnlimitedQuota bool   `json:"unlimited_quota" gorm:"default:false"`
+	UsedQuota      int    `json:"used_quota" gorm:"default:0"` // used quota
 	// 周期模式计数(SEC-5):从 setting JSON 移出为专用列,使 accrue 走单条原子自增,杜绝并发丢更新
-	PeriodUsed  int   `json:"period_used" gorm:"type:int;not null;default:0"`
-	PeriodStart int64 `json:"period_start" gorm:"bigint;not null;default:0"`
-	Group       string `json:"group" gorm:"default:''"`
-	BackupGroup    string         `json:"backup_group" gorm:"default:''"`
-	CreatedBy      int            `json:"created_by" gorm:"index;default:0"` // 实际创建者用户ID(组织令牌场景:user_id 为影子账户,created_by 为创建成员;0=历史数据,等同 user_id)
-	LogIO          *bool          `json:"log_io"`                            // 令牌级「完整请求/响应留存」三态:nil=继承上级 / true=强制开 / false=强制关(见 LogIO 分层继承)
-	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
+	PeriodUsed  int            `json:"period_used" gorm:"type:int;not null;default:0"`
+	PeriodStart int64          `json:"period_start" gorm:"bigint;not null;default:0"`
+	Group       string         `json:"group" gorm:"default:''"`
+	BackupGroup string         `json:"backup_group" gorm:"default:''"`
+	CreatedBy   int            `json:"created_by" gorm:"index;default:0"` // 实际创建者用户ID(组织令牌场景:user_id 为影子账户,created_by 为创建成员;0=历史数据,等同 user_id)
+	LogIO       *bool          `json:"log_io"`                            // 令牌上的「完整请求/响应留存」开关(ORG-10);迁移后恒为显式值,nil 按关处理
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 
 	Setting database.JSONType[TokenSetting] `json:"setting" form:"setting" gorm:"type:json"`
 
@@ -525,27 +525,26 @@ func (token *Token) UpdateByAdmin() error {
 	return err
 }
 
-// ResolveTokenLogIO 解析令牌的 LogIO 生效布尔值(站点开关 && 归属上的开关),供 middleware 注入。
-// 判定链(权威语义):
-//   - 站点总闸门 config.LogIOEnabled 关闭 → 恒 false,且不做任何上级查询(零开销)。
-//   - 归属上的开关:组织令牌取组织设置,个人令牌取用户设置;未设置时为关(ZDR)。
-//
-// 归属设置走缓存避免每请求打库。令牌级 log_io 与覆盖锁已废弃(两层简化),不再读取。
+// ResolveTokenLogIO is whether requests of the API key keep their request and response bodies
+// (ORG-10), injected by the middleware:
+//   - the site switch config.LogIOEnabled off → never, without any lookup;
+//   - a personal key → its own switch;
+//   - an organization key → the organization's policy: locked on or off, or the key's own switch
+//     while members choose. The policy is cached under the shadow account.
 func ResolveTokenLogIO(token *Token) bool {
 	if !config.LogIOEnabled || token == nil {
 		return false
 	}
-	owner, err := CacheGetOwnerLogIODefault(token.UserId)
-	if err != nil || owner == nil {
-		// 归属解析失败时不留存,保持 ZDR 安全语义
+	keyOn := token.LogIO != nil && *token.LogIO
+	if !tokenIsOrganizationToken(token) {
+		return keyOn
+	}
+	policy, err := CacheGetOrgLogIOPolicy(token.UserId)
+	if err != nil {
+		// Without the policy nothing is kept (zero data retention).
 		return false
 	}
-	return resolveOwnerDefault(owner)
-}
-
-// resolveOwnerDefault 返回归属主体上的开关:只有明确开启才留存,未设置与关闭都不留存。
-func resolveOwnerDefault(owner *ownerLogIODefault) bool {
-	return owner.State == logIODefaultStateOn
+	return ApplyOrgLogIOPolicy(policy, keyOn)
 }
 
 // LogIOWriteEnabled 报告是否应为该令牌写入完整请求/响应明细(T50e 写入闸门,供 T50d 调用)。

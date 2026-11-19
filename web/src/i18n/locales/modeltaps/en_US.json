@@ -4185,8 +4185,8 @@
           "hint": "The username cannot be changed"
         },
         "logIO": {
-          "description": "When on, log details show the full bodies",
-          "hint": "Only affects requests from now on"
+          "description": "Whether new API keys keep full bodies",
+          "hint": "Each key can be changed on its own"
         },
         "appearance": {
           "title": "Appearance",
@@ -4287,7 +4287,12 @@
       "title": "Request contents are stored",
       "body": "Requests and responses sent with this organization's API keys are kept for {{days}} days. The organization owner can read them.",
       "byMember": "Turned on by {{name}} on {{time}}.",
-      "byOrg": "Turned on in the organization settings."
+      "byOrg": "Turned on in the organization settings.",
+      "toggle": "Keep request and response bodies",
+      "toggleHint": "When on, the log details show this key's full requests and replies, deleted after 30 days",
+      "locked_on": "The organization keeps bodies for every key; it cannot be changed here",
+      "locked_off": "The organization keeps bodies for no key; it cannot be changed here",
+      "bodyKey": "Requests and responses sent with this key are kept for {{days}} days. The organization owner can read them."
     },
     "panel": {
       "tabs": "API key settings",
@@ -5002,6 +5007,15 @@
       "toolCodingAgent": "Other coding agent",
       "toolFilter": "Tool",
       "toolOther": "Other"
+    },
+    "settings": {
+      "logIOPolicy": "Request and response retention",
+      "logIOPolicy_member": "Each key decides",
+      "logIOPolicy_on": "Keep for every key",
+      "logIOPolicy_off": "Keep for no key",
+      "logIOPolicyHint_member": "Members switch it on the keys they create, owners and admins on any key; members see on a key who turned it on. Stored bodies never include API keys or auth headers, are cut at {{kb}} KB each, deleted after 30 days, and only owners and platform admins can read them.",
+      "logIOPolicyHint_on": "Every organization key keeps its request and response bodies and the keys' switches are locked; members see who turned it on. Bodies are cut at {{kb}} KB each, deleted after 30 days, and only owners and platform admins can read them.",
+      "logIOPolicyHint_off": "No organization key keeps its bodies, and members cannot turn it on for a key."
     }
   },
   "agentDevice": {
@@ -5213,5 +5227,14 @@
     "aboveTip": "{{pct}}% above our base price, still inside the margin of the default group",
     "belowTip": "{{pct}}% below our base price",
     "lossTip": "{{pct}}% above our base price: the cost is above what the price brings in, requests through it lose money"
+  },
+  "profilePage": {
+    "logIOToggle": "Keep request and response bodies on new API keys",
+    "logIOHint": "Each API key has its own retention switch, under the key's Advanced tab. This only sets what a new key starts with; changing it leaves existing keys alone. Stored bodies never include API keys or auth headers, are cut at {{kb}} KB each and deleted after 30 days; you and platform admins can read them in the log details.",
+    "logIOApply": "Apply to all my keys",
+    "logIOApplyHint": "Sets the saved default on all your existing personal keys",
+    "logIOApplyConfirmOn": "All your existing personal keys will start keeping request and response bodies. Continue?",
+    "logIOApplyConfirmOff": "All your existing personal keys will stop keeping request and response bodies. Continue?",
+    "logIOApplied": "{{count}} keys updated"
   }
 }

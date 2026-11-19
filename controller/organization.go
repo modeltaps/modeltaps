@@ -113,8 +113,9 @@ type UpdateOrganizationRequest struct {
 	AvatarUrl string `json:"avatar_url"`
 	// UsageVisibleToMembers 成员用量可见性开关(规格 a4);nil 表示不修改
 	UsageVisibleToMembers *bool `json:"usage_visible_to_members"`
-	// LogIODefault 组织令牌「完整请求/响应留存」继承默认;三态哨兵 "inherit"|"on"|"off",nil 表示不修改
-	LogIODefault *string `json:"log_io_default"`
+	// LogIOPolicy is the retention policy of the organization's API keys (ORG-10): "member" (each
+	// key decides), "on" or "off" (every key locked); nil leaves it unchanged.
+	LogIOPolicy *string `json:"log_io_policy"`
 	// Budget 团队级周期预算(T1);nil 表示不修改,limit<=0 表示清除限制
 	Budget *model.QuotaResetSetting `json:"budget"`
 }
@@ -143,22 +144,21 @@ func UpdateOrganization(c *gin.Context) {
 		}
 		model.RecordOrgAudit(org.Id, c.GetInt("id"), "org.update_setting", fmt.Sprintf("Updated member usage visibility: %t", *req.UsageVisibleToMembers))
 	}
-	if req.LogIODefault != nil {
-		v, ok := model.ParseLogIOTriState(*req.LogIODefault)
-		if !ok {
-			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid log_io_default value", nil)
+	if req.LogIOPolicy != nil && *req.LogIOPolicy != org.GetLogIOPolicy() {
+		if !model.ValidLogIOPolicy(*req.LogIOPolicy) {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "log_io_policy must be member, on or off", nil)
 			return
 		}
 		wasStored := orgLogIOActive(org)
 		setting := org.Setting.Data()
-		setting.LogIODefault = v
+		setting.LogIOPolicy = *req.LogIOPolicy
 		org.Setting.Set(setting)
 		if err := org.UpdateSetting(); err != nil {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 		// Members are told on their API keys page who turned retention on and when (SEC-51).
-		recordOrgLogIOUpdate(org, c.GetInt("id"), *req.LogIODefault, wasStored)
+		recordOrgLogIOUpdate(org, c.GetInt("id"), *req.LogIOPolicy, wasStored)
 	}
 	if req.Budget != nil {
 		budget := req.Budget

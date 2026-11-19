@@ -13,7 +13,8 @@ import (
 type UserSetting struct {
 	Theme    string `json:"theme,omitempty"`    // system / light / dark
 	Language string `json:"language,omitempty"` // zh_CN / zh_HK / en_US / ja_JP
-	// LogIODefault 个人令牌「完整请求/响应留存」开关;nil 表示未设置,按关闭处理
+	// LogIODefault is whether a new personal API key keeps request and response bodies (ORG-10);
+	// it only sets the key's switch when the key is created. nil means off.
 	LogIODefault *bool `json:"log_io_default,omitempty"`
 	// EmailCodeLogin 是否允许用邮箱验证码登录本账号；nil 表示未设置，按开启处理
 	EmailCodeLogin *bool `json:"email_code_login,omitempty"`
@@ -44,12 +45,14 @@ func (s *UserSetting) EffectiveQuotaRemindThreshold() int {
 }
 
 // UserSettingUpdate PUT /api/user/setting 的请求体;nil 字段表示不修改(部分更新)。
-// LogIODefault 用哨兵字符串 "inherit"|"on"|"off";"inherit" 清除设置(nil),与 "off" 同样不留存。
+// LogIODefault 用哨兵字符串 "inherit"|"on"|"off";"inherit" 清除设置(nil),与 "off" 相同。
+// LogIOApplyToKeys sets the switch of all the user's personal API keys to the new-key default.
 type UserSettingUpdate struct {
-	Theme          *string `json:"theme"`
-	Language       *string `json:"language"`
-	LogIODefault   *string `json:"log_io_default"`
-	EmailCodeLogin *bool   `json:"email_code_login"`
+	Theme            *string `json:"theme"`
+	Language         *string `json:"language"`
+	LogIODefault     *string `json:"log_io_default"`
+	LogIOApplyToKeys bool    `json:"log_io_apply_to_keys"`
+	EmailCodeLogin   *bool   `json:"email_code_login"`
 	// QuotaRemindEnabled turns the user's quota warning emails on or off.
 	QuotaRemindEnabled *bool `json:"quota_remind_enabled"`
 	// QuotaRemindThreshold sets the user's threshold; a negative value resets it to the site default.
@@ -110,8 +113,7 @@ var userSettingThemes = map[string]bool{
 	"dark":   true,
 }
 
-
-// ApplyUpdate 合并部分更新:仅覆盖非 nil 字段。LogIODefault 哨兵字符串 "inherit" 解码为 nil(重置回跟随站点)。
+// ApplyUpdate 合并部分更新:仅覆盖非 nil 字段。LogIODefault 哨兵字符串 "inherit" 解码为 nil(按关处理)。
 func (s *UserSetting) ApplyUpdate(update UserSettingUpdate) error {
 	if update.Theme != nil {
 		s.Theme = *update.Theme
@@ -179,10 +181,27 @@ func UpdateUserSettingById(id int, setting UserSetting) error {
 	}
 	var value database.JSONType[UserSetting]
 	value.Set(setting)
-	err := DB.Model(&User{}).Where("id = ?", id).Update("setting", value).Error
-	if err == nil {
-		// 个人默认变更后失效解析缓存,确保下一次令牌「继承」按新默认回退
-		InvalidateOwnerLogIODefaultCache(id)
+	return DB.Model(&User{}).Where("id = ?", id).Update("setting", value).Error
+}
+
+// NewKeyLogIO is the switch a new personal API key of this user starts with.
+func (s *UserSetting) NewKeyLogIO() bool {
+	return s.LogIODefault != nil && *s.LogIODefault
+}
+
+// SetPersonalTokensLogIO sets the request and response retention switch of all the user's
+// personal API keys and returns how many changed.
+func SetPersonalTokensLogIO(userId int, on bool) (int64, error) {
+	var hashes []string
+	query := DB.Model(&Token{}).Where("user_id = ? AND created_by = 0", userId)
+	if err := query.Pluck("key_hash", &hashes).Error; err != nil {
+		return 0, err
 	}
-	return err
+	result := DB.Model(&Token{}).Where("user_id = ? AND created_by = 0", userId).
+		Where("log_io IS NULL OR log_io <> ?", on).Update("log_io", on)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	invalidateTokenCaches(hashes)
+	return result.RowsAffected, nil
 }

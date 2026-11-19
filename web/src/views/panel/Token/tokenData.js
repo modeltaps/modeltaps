@@ -115,3 +115,10 @@ export const managementExpiryFromPreset = (preset, now = new Date()) =>
 
 // The i18n key of a management key's type tag ("legacy" is a migrated access token).
 export const managementKeyTypeLabel = (scope) => `apiKey.type.${scope === 'read' || scope === 'write' ? scope : 'legacy'}`;
+
+// Request and response retention of a key (ORG-10). `logIO` is the disclosure the organization key
+// endpoints return; its policy locks the keys' switches when it is "on" or "off".
+export const logIOLocked = (logIO) => logIO?.policy === 'on' || logIO?.policy === 'off';
+
+// The hint under a key's retention switch: why it is locked, or what turning it on does.
+export const logIOHint = (t, logIO) => (logIOLocked(logIO) ? t(`apiKey.logIO.locked_${logIO.policy}`) : t('apiKey.logIO.toggleHint'));

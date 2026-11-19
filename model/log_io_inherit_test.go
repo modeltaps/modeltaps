@@ -44,29 +44,29 @@ func seedLogIOUser(t *testing.T, typ int, def *bool) int {
 	return u.Id
 }
 
-// seedLogIOOrg 创建组织影子账户 + 组织(组织默认 def),返回影子账户 ID。
-func seedLogIOOrg(t *testing.T, def *bool) int {
+// seedLogIOOrg 创建组织影子账户 + 组织(留存策略 policy),返回影子账户 ID。
+func seedLogIOOrg(t *testing.T, policy string) int {
 	t.Helper()
 	shadowId := seedLogIOUser(t, config.UserTypeOrgShadow, nil)
 	slug := "org-" + utils.GetRandomString(8)
 	org := &Organization{Name: slug, Slug: slug, ShadowUserId: shadowId, CreatedBy: 1, Status: OrganizationStatusEnabled}
-	org.Setting.Set(OrganizationSetting{LogIODefault: def})
+	org.Setting.Set(OrganizationSetting{LogIOPolicy: policy})
 	if err := DB.Create(org).Error; err != nil {
 		t.Fatalf("创建组织失败: %v", err)
 	}
 	return shadowId
 }
 
-// TestResolveTokenLogIO 表驱动覆盖判定链:站点闸门、个人/组织上的开关(未设置为关)、令牌显式值被忽略。
+// TestResolveTokenLogIO 表驱动覆盖判定链(ORG-10):站点闸门、个人 key 自己的开关、组织策略锁定或交给 key。
 func TestResolveTokenLogIO(t *testing.T) {
 	setupLogIOInheritTestDB(t)
 
-	userNil := seedLogIOUser(t, config.UserTypeNormal, nil)
-	userOn := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
-	userOff := seedLogIOUser(t, config.UserTypeNormal, boolPtr(false))
-	orgNil := seedLogIOOrg(t, nil)
-	orgOn := seedLogIOOrg(t, boolPtr(true))
-	orgOff := seedLogIOOrg(t, boolPtr(false))
+	user := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true)) // 新建默认不影响已有 key
+	orgMember := seedLogIOOrg(t, LogIOPolicyMember)
+	orgUnset := seedLogIOOrg(t, "")
+	orgOn := seedLogIOOrg(t, LogIOPolicyOn)
+	orgOff := seedLogIOOrg(t, LogIOPolicyOff)
+	orgKey := func(shadow int, on *bool) *Token { return &Token{UserId: shadow, CreatedBy: 42, LogIO: on} }
 
 	cases := []struct {
 		name    string
@@ -74,15 +74,15 @@ func TestResolveTokenLogIO(t *testing.T) {
 		token   *Token
 		want    bool
 	}{
-		{"站点闸门关-恒不留存", false, &Token{UserId: userOn, LogIO: boolPtr(true)}, false},
-		{"令牌显式开被忽略-取用户关", true, &Token{UserId: userOff, LogIO: boolPtr(true)}, false},
-		{"令牌显式关被忽略-取用户开", true, &Token{UserId: userOn, LogIO: boolPtr(false)}, true},
-		{"个人-用户开", true, &Token{UserId: userOn}, true},
-		{"个人-用户关", true, &Token{UserId: userOff}, false},
-		{"个人-用户未设置-不留存", true, &Token{UserId: userNil}, false},
-		{"组织-组织开", true, &Token{UserId: orgOn}, true},
-		{"组织-组织关", true, &Token{UserId: orgOff}, false},
-		{"组织-组织未设置-不留存", true, &Token{UserId: orgNil}, false},
+		{"站点闸门关-恒不留存", false, &Token{UserId: user, LogIO: boolPtr(true)}, false},
+		{"个人-key 开", true, &Token{UserId: user, LogIO: boolPtr(true)}, true},
+		{"个人-key 关(用户新建默认开不影响)", true, &Token{UserId: user, LogIO: boolPtr(false)}, false},
+		{"个人-key 未设置按关", true, &Token{UserId: user}, false},
+		{"组织成员自选-key 开", true, orgKey(orgMember, boolPtr(true)), true},
+		{"组织成员自选-key 关", true, orgKey(orgMember, boolPtr(false)), false},
+		{"组织未设置策略=成员自选", true, orgKey(orgUnset, boolPtr(true)), true},
+		{"组织强制开-key 关也留存", true, orgKey(orgOn, boolPtr(false)), true},
+		{"组织强制关-key 开也不留存", true, orgKey(orgOff, boolPtr(true)), false},
 		{"nil 令牌恒不留存", true, nil, false},
 	}
 
@@ -98,43 +98,83 @@ func TestResolveTokenLogIO(t *testing.T) {
 	}
 }
 
-// TestTokenLogIOColumnPreservedButIgnored 验证两层简化后:存量 log_io 列仍保留(回读为 *bool),
-// 但解析恒忽略令牌显式值,只看归属用户上的开关。以原始 SQL 写入模拟既有布尔列数据。
-func TestTokenLogIOColumnPreservedButIgnored(t *testing.T) {
+// migrateLogIOToKeys gives every key the value that applied to it and turns the organization
+// switch into a policy (ORG-10).
+func TestMigrateLogIOToKeys(t *testing.T) {
 	setupLogIOInheritTestDB(t)
-	uidOff := seedLogIOUser(t, config.UserTypeNormal, nil)
-	uidOn := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
+	userOn := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
+	userOff := seedLogIOUser(t, config.UserTypeNormal, nil)
+	seedOrg := func(legacy *bool) (*Organization, int) {
+		shadow := seedLogIOOrg(t, "")
+		var org Organization
+		if err := DB.Where("shadow_user_id = ?", shadow).First(&org).Error; err != nil {
+			t.Fatal(err)
+		}
+		org.Setting.Set(OrganizationSetting{LegacyLogIODefault: legacy})
+		if err := DB.Model(&org).Update("setting", org.Setting).Error; err != nil {
+			t.Fatal(err)
+		}
+		return &org, shadow
+	}
+	orgOn, shadowOn := seedOrg(boolPtr(true))
+	orgOff, shadowOff := seedOrg(boolPtr(false))
+	orgNil, shadowNil := seedOrg(nil)
 
-	insert := func(uid int, name, value string) {
-		if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,"+value+")", uid, name, utils.GetRandomString(48)).Error; err != nil {
-			t.Fatalf("写入存量令牌 %s 失败: %v", name, err)
+	key := func(name string, userId, createdBy int, logIO string) {
+		if err := DB.Exec("INSERT INTO tokens (user_id, created_by, name, key_hash, log_io) VALUES (?,?,?,?,"+logIO+")",
+			userId, createdBy, name, utils.GetRandomString(48)).Error; err != nil {
+			t.Fatal(err)
 		}
 	}
-	insert(uidOff, "legacy-on", "1")
-	insert(uidOn, "legacy-off", "0")
-	insert(uidOff, "inherit", "NULL")
+	key("personal-on", userOn, 0, "NULL")
+	key("personal-legacy", userOff, 0, "1") // the column was ignored: overwritten with the user's value
+	key("org-on", shadowOn, userOn, "0")
+	key("org-off", shadowOff, userOn, "1")
+	key("org-nil", shadowNil, userOn, "1")
 
-	read := func(name string) *Token {
+	if err := migrateLogIOToKeys().Migrate(DB); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{"personal-on": true, "personal-legacy": false, "org-on": true, "org-off": false, "org-nil": false}
+	for name, w := range want {
 		var tk Token
 		if err := DB.Where("name = ?", name).First(&tk).Error; err != nil {
-			t.Fatalf("回读令牌 %s 失败: %v", name, err)
+			t.Fatal(err)
 		}
-		return &tk
+		if tk.LogIO == nil || *tk.LogIO != w {
+			t.Errorf("%s: log_io = %v, want %v", name, tk.LogIO, w)
+		}
 	}
-	on, off, inherit := read("legacy-on"), read("legacy-off"), read("inherit")
-	// 列保留:存量布尔仍如实回读,不被迁移抹除。
-	if on.LogIO == nil || !*on.LogIO || off.LogIO == nil || *off.LogIO || inherit.LogIO != nil {
-		t.Fatalf("存量列值未保留: on=%v off=%v inherit=%v", on.LogIO, off.LogIO, inherit.LogIO)
+	for org, policy := range map[*Organization]string{orgOn: LogIOPolicyOn, orgOff: LogIOPolicyOff, orgNil: LogIOPolicyMember} {
+		var got Organization
+		if err := DB.First(&got, org.Id).Error; err != nil {
+			t.Fatal(err)
+		}
+		if got.GetLogIOPolicy() != policy || got.Setting.Data().LogIOPolicy != policy || got.Setting.Data().LegacyLogIODefault != nil {
+			t.Errorf("organization %d: setting %+v, want policy %s and the old switch cleared", org.Id, got.Setting.Data(), policy)
+		}
 	}
+}
 
-	oldEnabled := config.LogIOEnabled
-	t.Cleanup(func() { config.LogIOEnabled = oldEnabled })
-	config.LogIOEnabled = true
-	if ResolveTokenLogIO(on) || ResolveTokenLogIO(inherit) {
-		t.Fatalf("用户未设置时不留存(令牌显式开被忽略)")
+// SetPersonalTokensLogIO switches the user's personal keys only.
+func TestSetPersonalTokensLogIO(t *testing.T) {
+	setupLogIOInheritTestDB(t)
+	user := seedLogIOUser(t, config.UserTypeNormal, nil)
+	shadow := seedLogIOOrg(t, LogIOPolicyMember)
+	for i, tk := range []*Token{{UserId: user}, {UserId: user, LogIO: boolPtr(true)}, {UserId: shadow, CreatedBy: user}} {
+		tk.Name, tk.KeyHash = utils.GetRandomString(6), utils.GetRandomString(48)
+		if err := DB.Create(tk).Error; err != nil {
+			t.Fatal(i, err)
+		}
 	}
-	if !ResolveTokenLogIO(off) {
-		t.Fatalf("用户开启时留存(令牌显式关被忽略)")
+	changed, err := SetPersonalTokensLogIO(user, true)
+	if err != nil || changed != 1 {
+		t.Fatalf("changed %d, err %v; want 1", changed, err)
+	}
+	var orgKey Token
+	DB.Where("user_id = ?", shadow).First(&orgKey)
+	if orgKey.LogIO != nil && *orgKey.LogIO {
+		t.Fatal("an organization key was switched")
 	}
 }
 
@@ -146,7 +186,7 @@ func TestFoldLogIOSiteDefaults(t *testing.T) {
 	}
 	userNil := seedLogIOUser(t, config.UserTypeNormal, nil)
 	userOff := seedLogIOUser(t, config.UserTypeNormal, boolPtr(false))
-	orgNil := seedLogIOOrg(t, nil)
+	orgNil := seedLogIOOrg(t, "")
 	DB.Create(&Option{Key: "LogIODefaultUser", Value: "true"})
 	DB.Create(&Option{Key: "OrganizationLogIODefault", Value: "false"})
 
@@ -173,8 +213,8 @@ func TestFoldLogIOSiteDefaults(t *testing.T) {
 	if err := DB.Where("shadow_user_id = ?", orgNil).First(&org).Error; err != nil {
 		t.Fatal(err)
 	}
-	if org.Setting.Data().LogIODefault != nil {
-		t.Fatalf("organization = %v, want untouched (its site default was off)", org.Setting.Data().LogIODefault)
+	if org.Setting.Data().LegacyLogIODefault != nil {
+		t.Fatalf("organization = %v, want untouched (its site default was off)", org.Setting.Data().LegacyLogIODefault)
 	}
 	var left int64
 	DB.Model(&Option{}).Where("key IN ?", []string{"LogIODefaultUser", "OrganizationLogIODefault"}).Count(&left)
