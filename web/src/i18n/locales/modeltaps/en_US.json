@@ -5267,5 +5267,21 @@
     "aboveTip": "{{pct}}% above our base price, still inside the margin of the default group",
     "belowTip": "{{pct}}% below our base price",
     "lossTip": "{{pct}}% above our base price: the cost is above what the price brings in, requests through it lose money"
+  },
+  "settingsAssistant": {
+    "title": "Ask AI",
+    "description": "Ask where a setting is or how to configure it; the AI looks up the settings catalog and docs to answer.",
+    "placeholder": "e.g. The upstream keeps returning 429. How do requests move to another channel?",
+    "model": "Model that answers",
+    "ask": "Ask",
+    "noModels": "No chat model that calls tools is available; publish one in the model catalog first.",
+    "thinking": "Looking up the settings…",
+    "failed": "Could not answer: {{message}}",
+    "noAnswer": "No answer came back; try other words or another model.",
+    "footer": "Read-only: the AI changes no setting. Each question is billed to your account at the chosen model's price, like the playground.",
+    "group": "AI assistant",
+    "entry": "Ask AI: {{question}}",
+    "steps_one": "Looked up the settings and docs once",
+    "steps_other": "Looked up the settings and docs {{count}} times"
   }
 }

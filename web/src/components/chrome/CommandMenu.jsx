@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Command, defaultFilter } from 'cmdk';
-import { FileText, ListChecks } from 'lucide-react';
+import { FileText, ListChecks, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +9,7 @@ import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import { normalizeSynonyms, packTiers, scoreTiers, unpackTiers } from './commandScore';
 import { loadCollectionItems } from './collectionIndex';
+import SettingsAssistantDialog from './SettingsAssistantDialog';
 import { cardTitleKey, groupLabelKey } from 'views/panel/Setting/registry';
 import { commandSections, navLabel } from './nav-config';
 import { orgSlugOf } from 'routes/paths';
@@ -28,6 +29,13 @@ const PAGE_ENTRY = 'page-card:';
 // Values of the items of collection cards (a payment gateway, an OIDC provider…): their keywords are
 // the item's name, then the card and what else describes the item, in the scoring tiers.
 const COLLECTION_ENTRY = 'collection-item:';
+
+// The "Ask AI" entry (root only): its value only carries the prefix, and it matches any query,
+// at the top when the query reads like a question, else below everything that matched.
+const ASK_ENTRY = 'ask-ai:';
+const QUESTION =
+  /[?？]|怎么|怎样|如何|为什么|哪里|在哪|什么|能否|能不能|可以|是否|吗|嗎|麼|ですか|どこ|どう|なぜ|\b(how|why|where|what|which|can|should|does|do|is)\b/i;
+export const looksLikeQuestion = (text) => QUESTION.test(text) || String(text).trim().split(/\s+/).length >= 4;
 
 // Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
 // words in tiers in the keywords.
@@ -79,6 +87,7 @@ export function makeCommandFilter(synonyms = {}) {
     }
     // The @ filters only apply to settings.
     if (filters.any) return 0;
+    if (value.startsWith(ASK_ENTRY)) return search.trim().length < 2 ? 0 : looksLikeQuestion(search) ? 1 : 0.01;
     if (value.startsWith(PAGE_ENTRY) || value.startsWith(COLLECTION_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
     const score = scoreTiers(search, { primary: [value], secondary: keywords || [] }, synonyms);
     if (score > 0 || !LATIN.test(search)) return score;
@@ -98,6 +107,8 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const isRoot = useIsRoot();
   const { currentOrg, orgRole, routingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
+  // The question an "Ask AI" entry opened the assistant with.
+  const [askQuestion, setAskQuestion] = useState(null);
   // The synonyms of the current language plus the English ones: people type terms of other
   // gateways in either.
   const filter = useMemo(() => {
@@ -231,7 +242,29 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
     : [];
   const platformGroup = sectionGroups.find((group) => group.id === 'platform_settings');
   if (platformGroup) platformGroup.entries.push(...collectionEntries);
-  const groups = [pageGroup, ...sectionGroups].filter(Boolean);
+  const askGroup = typing &&
+    isRoot && {
+      id: 'ask',
+      heading: t('settingsAssistant.group'),
+      entries: [
+        {
+          key: 'ask-ai',
+          value: ASK_ENTRY,
+          keywords: undefined,
+          onSelect: () => {
+            setOpen(false);
+            setAskQuestion(search.trim());
+          },
+          content: (
+            <>
+              <Sparkles className="size-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">{t('settingsAssistant.entry', { question: search.trim() })}</span>
+            </>
+          )
+        }
+      ]
+    };
+  const groups = [pageGroup, ...sectionGroups, askGroup].filter(Boolean);
   if (typing) {
     // Entries and groups by score, best first (ties keep the menu order). cmdk would also move the
     // entries in the DOM; doing it in React keeps the two orders the same.
@@ -253,42 +286,45 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   };
 
   return (
-    <Command.Dialog
-      open={open}
-      onOpenChange={setOpen}
-      label={t('command.search', { defaultValue: 'Search' })}
-      overlayClassName="fixed inset-0 z-[1300] bg-black/40 backdrop-blur-sm"
-      contentClassName="fixed left-1/2 top-[20%] z-[1301] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-    >
-      <Command className="flex flex-col" filter={filter}>
-        <div className="border-b border-border px-3">
-          <Command.Input
-            value={search}
-            onValueChange={setSearch}
-            placeholder={t('command.placeholder')}
-            className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-        <Command.List className="max-h-80 overflow-y-auto p-2">
-          <Command.Empty className="py-6 text-center text-sm text-muted-foreground">{t('command.empty')}</Command.Empty>
-          {groups.map((group) => (
-            <Command.Group key={group.id} heading={group.heading} className={GROUP_CLASS}>
-              {group.entries.map((entry) => (
-                <Command.Item
-                  key={entry.key}
-                  value={entry.value}
-                  keywords={entry.keywords}
-                  onSelect={() => go(entry.href)}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
-                >
-                  {entry.content}
-                </Command.Item>
-              ))}
-            </Command.Group>
-          ))}
-        </Command.List>
-      </Command>
-    </Command.Dialog>
+    <>
+      <Command.Dialog
+        open={open}
+        onOpenChange={setOpen}
+        label={t('command.search', { defaultValue: 'Search' })}
+        overlayClassName="fixed inset-0 z-[1300] bg-black/40 backdrop-blur-sm"
+        contentClassName="fixed left-1/2 top-[20%] z-[1301] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+      >
+        <Command className="flex flex-col" filter={filter}>
+          <div className="border-b border-border px-3">
+            <Command.Input
+              value={search}
+              onValueChange={setSearch}
+              placeholder={t('command.placeholder')}
+              className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <Command.List className="max-h-80 overflow-y-auto p-2">
+            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">{t('command.empty')}</Command.Empty>
+            {groups.map((group) => (
+              <Command.Group key={group.id} heading={group.heading} className={GROUP_CLASS}>
+                {group.entries.map((entry) => (
+                  <Command.Item
+                    key={entry.key}
+                    value={entry.value}
+                    keywords={entry.keywords}
+                    onSelect={entry.onSelect || (() => go(entry.href))}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
+                  >
+                    {entry.content}
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            ))}
+          </Command.List>
+        </Command>
+      </Command.Dialog>
+      {askQuestion !== null && <SettingsAssistantDialog question={askQuestion} onClose={() => setAskQuestion(null)} />}
+    </>
   );
 }
 

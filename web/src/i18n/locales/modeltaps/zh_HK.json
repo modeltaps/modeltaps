@@ -5157,5 +5157,20 @@
     "aboveTip": "比本站基礎售價高 {{pct}}%，仍在預設分組的利潤空間內",
     "belowTip": "比本站基礎售價低 {{pct}}%",
     "lossTip": "比本站基礎售價高 {{pct}}%：成本已超過售價的實際收入，走這裡的請求會虧"
+  },
+  "settingsAssistant": {
+    "title": "問 AI",
+    "description": "問設定在哪、怎麼配，AI 查過設定目錄和文件後回答。",
+    "placeholder": "例如：上游一直 429，怎樣讓請求自動換渠道？",
+    "model": "回答用的模型",
+    "ask": "提問",
+    "noModels": "沒有能調用工具的對話模型，先在模型目錄裏發佈一個。",
+    "thinking": "正在查設定…",
+    "failed": "未能回答：{{message}}",
+    "noAnswer": "沒有得到回答，換個問法或換個模型再試。",
+    "footer": "唯讀：AI 不會修改任何設定。每次提問按所選模型計費到你的帳戶，和演練場一樣。",
+    "group": "AI 助手",
+    "entry": "問 AI：{{question}}",
+    "steps_other": "查了 {{count}} 次設定目錄和文件"
   }
 }

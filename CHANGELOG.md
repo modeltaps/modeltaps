@@ -95,6 +95,13 @@ Read these before upgrading; everything else needs no action.
   settings lists by name (payment gateways, OIDC providers, mail services, notification channels,
   Telegram commands), which open the card that holds them.
 
+- "Ask AI" in the command palette, for the root user: a question about the platform settings
+  (where a setting is, what to set, how settings work together) is answered by a chat model that
+  looks the settings catalog and the operator docs up with the read-only tools of the admin MCP
+  endpoint, and links each setting it names to its field in the console. The model is picked in
+  the answer dialog among the chat models that call tools, and each question is billed to the
+  asking admin through the playground key, like the playground. It never changes a setting.
+
 ### Changed
 
 - Request and response retention is an account and organization decision, never a key creator's.

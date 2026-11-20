@@ -66,14 +66,16 @@ type searchParams struct {
 }
 
 type searchHit struct {
-	Key      string  `json:"key"`
-	Label    string  `json:"label"`
-	Scope    string  `json:"scope"`
-	Where    string  `json:"where"`
-	Summary  string  `json:"summary"`
-	Value    *string `json:"value,omitempty"`
-	Modified bool    `json:"modified,omitempty"`
-	Advanced bool    `json:"advanced,omitempty"`
+	Key     string `json:"key"`
+	Label   string `json:"label"`
+	Scope   string `json:"scope"`
+	Where   string `json:"where"`
+	Summary string `json:"summary"`
+	// ConsoleURL opens the setting in the console.
+	ConsoleURL string  `json:"console_url"`
+	Value      *string `json:"value,omitempty"`
+	Modified   bool    `json:"modified,omitempty"`
+	Advanced   bool    `json:"advanced,omitempty"`
 }
 
 type searchTool struct{}
@@ -83,8 +85,8 @@ func (searchTool) GetTool() *protocol.Tool {
 		"Find Modeltaps settings: platform settings (the options of the admin settings page) and the fields set on "+
 			"channels, models, supplies, the allocation policy, user groups, routing policies, organizations and API keys. "+
 			"Returns each match's key, name, where it is set, a one-line summary and, for platform settings, the current "+
-			"value (secrets only say set or unset) and whether it differs from the default. Use settings_describe for the "+
-			"full explanation, examples and console link.",
+			"value (secrets only say set or unset), whether it differs from the default, and the console URL that opens "+
+			"it. Use settings_describe for the full explanation and examples.",
 		searchParams{})
 	return t
 }
@@ -112,7 +114,7 @@ func (searchTool) HandleRequest(_ context.Context, req *protocol.CallToolRequest
 		}
 		hits = append(hits, searchHit{
 			Key: s.Key, Label: s.Label, Scope: string(s.Scope), Where: settings.Location(s),
-			Summary: firstSentence(s.Description), Value: value, Modified: modified, Advanced: s.Advanced,
+			Summary: firstSentence(s.Description), ConsoleURL: consoleURL(s), Value: value, Modified: modified, Advanced: s.Advanced,
 		})
 	}
 	return jsonResult(map[string]any{"total": total, "results": hits})

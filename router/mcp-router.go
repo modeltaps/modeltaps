@@ -66,6 +66,9 @@ func SetAdminMcpRouter(router *gin.Engine) {
 		adminRouter.POST("", adminServer.HandleStreamable)
 		adminRouter.GET("/sse", adminServer.HandleSSE)
 		adminRouter.POST("/message", adminServer.HandleMessage)
+		// The console's settings assistant: the same tools as plain JSON (see mcp.HandleAdminToolCall).
+		adminRouter.GET("/tools", mcp.HandleAdminToolList)
+		adminRouter.POST("/call", mcp.HandleAdminToolCall)
 	}
 	go func() {
 		if err := adminServer.SSEServer.Run(); err != nil {

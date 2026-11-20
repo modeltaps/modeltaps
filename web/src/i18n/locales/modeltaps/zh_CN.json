@@ -5158,5 +5158,20 @@
     "aboveTip": "比本站基础售价高 {{pct}}%，仍在默认分组的利润空间内",
     "belowTip": "比本站基础售价低 {{pct}}%",
     "lossTip": "比本站基础售价高 {{pct}}%：成本已超过售价的实际收入，走这里的请求会亏"
+  },
+  "settingsAssistant": {
+    "title": "问 AI",
+    "description": "问设置在哪、怎么配，AI 查过设置目录和文档后回答。",
+    "placeholder": "例如：上游一直 429，怎么让请求自动换渠道？",
+    "model": "回答用的模型",
+    "ask": "提问",
+    "noModels": "没有能调用工具的对话模型，先在模型目录里发布一个。",
+    "thinking": "正在查设置…",
+    "failed": "没能回答：{{message}}",
+    "noAnswer": "没有得到回答，换个问法或换个模型再试。",
+    "footer": "只读：AI 不会修改任何设置。每次提问按所选模型计费到你的账户，和演练场一样。",
+    "group": "AI 助手",
+    "entry": "问 AI：{{question}}",
+    "steps_other": "查了 {{count}} 次设置目录和文档"
   }
 }
