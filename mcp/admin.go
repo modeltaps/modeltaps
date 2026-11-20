@@ -128,3 +128,17 @@ func HandleAdminToolCall(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"text": text.String()}})
 }
+
+// HandleAdminPlan checks the setting changes the assistant proposes ({ changes: [...] }) and
+// returns them with labels, current values and whether each may be applied. It writes nothing:
+// the admin applies the checked changes through the settings page's save.
+func HandleAdminPlan(c *gin.Context) {
+	var req struct {
+		Changes []admintools.ProposedChange `json:"changes"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": admintools.PlanChanges(req.Changes)})
+}

@@ -12,6 +12,8 @@ function fakeFetch(replies) {
     calls.push({ url, body: init.body ? JSON.parse(init.body) : null, headers: init.headers });
     if (url === '/mcp/admin/tools') return json({ success: true, data: [{ type: 'function', function: { name: 'settings_search' } }] });
     if (url === '/mcp/admin/call') return json({ success: true, data: { text: '{"results":[{"key":"RetryTimes","label":"Retries"}]}' } });
+    if (url === '/mcp/admin/plan')
+      return json({ success: true, data: [{ key: 'RetryTimes', value: '3', current: '2', allowed: true, label: 'Retries' }] });
     if (url === '/v1/chat/completions') return json({ choices: [{ message: replies.shift() }] });
     return json({}, false, 404);
   });
@@ -41,7 +43,8 @@ describe('askSettingsAssistant', () => {
     const chats = calls.filter((c) => c.url === '/v1/chat/completions');
     expect(chats).toHaveLength(2);
     expect(chats[0].headers.Authorization).toBe('Bearer sk-play');
-    expect(chats[0].body).toMatchObject({ model: 'gpt-x', tool_choice: 'auto', tools: [{ function: { name: 'settings_search' } }] });
+    expect(chats[0].body).toMatchObject({ model: 'gpt-x', tool_choice: 'auto' });
+    expect(chats[0].body.tools.map((x) => x.function.name)).toEqual(['settings_search', 'propose_setting_changes']);
     expect(chats[0].body.messages[0].content).toContain('Simplified Chinese');
     // The tool result goes back with the console's names of the setting.
     const tool = chats[1].body.messages.find((m) => m.role === 'tool');
@@ -72,6 +75,46 @@ describe('askSettingsAssistant', () => {
   });
 });
 
+describe('askSettingsAssistant conversations and proposals', () => {
+  it('carries the conversation into the next question', async () => {
+    const { fetchImpl, calls } = fakeFetch([{ content: 'first answer' }, { content: 'second answer' }]);
+    const first = await askSettingsAssistant({ question: 'q1', model: 'm', language: 'en_US', getKey: async () => 'k', fetchImpl });
+    const second = await askSettingsAssistant({ question: 'q2', history: first.history, model: 'm', getKey: async () => 'k', fetchImpl });
+    expect(second.answer).toBe('second answer');
+    const sent = calls.filter((c) => c.url === '/v1/chat/completions')[1].body.messages;
+    expect(sent.map((m) => `${m.role}:${m.role === 'system' ? '' : m.content}`)).toEqual([
+      'system:',
+      'user:q1',
+      'assistant:first answer',
+      'user:q2'
+    ]);
+  });
+
+  it('checks a proposal with the plan route and returns it, never applying it', async () => {
+    const { fetchImpl, calls } = fakeFetch([
+      {
+        content: '',
+        tool_calls: [
+          { id: 'p1', function: { name: 'propose_setting_changes', arguments: '{"changes":[{"key":"RetryTimes","value":"3"}]}' } }
+        ]
+      },
+      { content: 'Review the change below.' }
+    ]);
+    const { proposal, answer } = await askSettingsAssistant({
+      question: 'set retries to 3',
+      model: 'm',
+      getKey: async () => 'k',
+      fetchImpl
+    });
+    expect(answer).toBe('Review the change below.');
+    expect(proposal).toEqual([{ key: 'RetryTimes', value: '3', current: '2', allowed: true, label: 'Retries' }]);
+    expect(calls.find((c) => c.url === '/mcp/admin/plan').body).toEqual({ changes: [{ key: 'RetryTimes', value: '3' }] });
+    expect(calls.some((c) => c.url === '/mcp/admin/call' || c.url.startsWith('/api/option'))).toBe(false);
+    const toolList = calls.find((c) => c.url === '/v1/chat/completions').body.tools.map((x) => x.function.name);
+    expect(toolList).toContain('propose_setting_changes');
+  });
+});
+
 describe('settings assistant helpers', () => {
   it('adds the console matches to a search that found nothing', () => {
     const match = vi.fn(() => [{ key: 'QuotaForNewUser', console_url: '/panel/admin/settings/billing?highlight=QuotaForNewUser' }]);
@@ -91,7 +134,8 @@ describe('settings assistant helpers', () => {
     const prompt = systemPrompt('ja_JP');
     expect(prompt).toContain('Japanese');
     expect(prompt).toContain('English words');
-    expect(prompt).toContain('cannot change settings');
+    expect(prompt).toContain('propose_setting_changes');
+    expect(prompt).toContain('Never say a change is done');
   });
 
   it('puts "Ask AI" first for a question and last otherwise', () => {

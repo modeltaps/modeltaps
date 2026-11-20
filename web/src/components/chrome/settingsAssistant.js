@@ -32,7 +32,9 @@ export function systemPrompt(language) {
     'When settings_search finds nothing, its result may list console_matches: settings the console matched by the',
     "admin's own words; describe them with settings_describe.",
     `Reply in ${reply}, short: what to set, where, the value to use and why, with an example when it helps.`,
-    'You can only read: you cannot change settings. When asked to change one, say where to change it.',
+    'You cannot change settings yourself. When a change is wanted, propose it with propose_setting_changes: the',
+    'admin reviews and applies it. Never say a change is done. Sign-in, payment and secret settings are changed by',
+    'hand: say where.',
     'If no setting does what the admin wants, say so and name the closest ones.'
   ].join(' ');
 }
@@ -71,10 +73,52 @@ async function readJSON(res) {
 
 export class AssistantError extends Error {}
 
-// Asks the model and runs its tool calls until it answers. onStep({ name, args }) is told each
-// tool call (to show progress). Returns { answer, steps }.
+// The one tool the browser answers itself: the model proposes setting changes; the admin reviews
+// them in the conversation and applies the ticked ones through the settings page's own save. The
+// proposal is checked by /mcp/admin/plan, which writes nothing.
+export const PROPOSE_TOOL = 'propose_setting_changes';
+
+export const proposeTool = {
+  type: 'function',
+  function: {
+    name: PROPOSE_TOOL,
+    description:
+      'Propose changes of platform settings for the admin to review. You never apply them: the admin sees each with its ' +
+      'current and new value, ticks the ones to apply and applies them. Use it when the admin wants a setting changed or ' +
+      'when the answer is a change. Only platform settings (scope site) found with the other tools; write each value as ' +
+      'the setting takes it (true or false, a number, one of its enum values, JSON). The result says which changes can be ' +
+      'applied and why the others cannot; sign-in, payment and secret settings are never changed this way.',
+    parameters: {
+      type: 'object',
+      properties: {
+        changes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              key: { type: 'string', description: 'The setting key, e.g. RetryTimes.' },
+              value: { type: 'string', description: 'The new value.' },
+              reason: { type: 'string', description: 'Why, in one short sentence in the reply language.' }
+            },
+            required: ['key', 'value']
+          }
+        }
+      },
+      required: ['changes']
+    }
+  }
+};
+
+// Starts a conversation: the system prompt only. Each turn appends to it.
+export const newConversation = (language) => [{ role: 'system', content: systemPrompt(language) }];
+
+// One turn: the question is added to `history` (the conversation so far, with the model's tool
+// calls), the model is asked and its tool calls run until it answers. onStep({ name, args }) is
+// told each tool call. Returns { history, answer, steps, proposal } where proposal is the checked
+// plan of the last propose_setting_changes call of the turn, or null.
 export async function askSettingsAssistant({
   question,
+  history,
   model,
   language,
   getKey,
@@ -88,13 +132,45 @@ export async function askSettingsAssistant({
   const toolsRes = await fetchImpl('/mcp/admin/tools', { credentials: 'same-origin', signal });
   const toolsBody = await readJSON(toolsRes);
   if (!toolsRes.ok || !toolsBody?.success) throw new AssistantError(toolsBody?.message || `tools: HTTP ${toolsRes.status}`);
-  const tools = toolsBody.data;
+  const tools = [...toolsBody.data, proposeTool];
 
-  const messages = [
-    { role: 'system', content: systemPrompt(language) },
-    { role: 'user', content: question }
-  ];
+  const messages = [...(history?.length ? history : newConversation(language)), { role: 'user', content: question }];
   const steps = [];
+  let proposal = null;
+
+  const runTool = async (name, args) => {
+    if (name === PROPOSE_TOOL) {
+      let changes;
+      try {
+        changes = JSON.parse(args || '{}').changes || [];
+      } catch {
+        return 'error: the arguments are not valid JSON';
+      }
+      const res = await fetchImpl('/mcp/admin/plan', {
+        method: 'POST',
+        signal,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ changes })
+      });
+      const body = await readJSON(res);
+      if (!body?.success) return `error: ${body?.message || `HTTP ${res.status}`}`;
+      proposal = body.data;
+      return JSON.stringify({
+        proposal: body.data,
+        note: 'Shown to the admin below your answer to review and apply. Tell the admin to review it; do not say it is applied.'
+      });
+    }
+    const res = await fetchImpl('/mcp/admin/call', {
+      method: 'POST',
+      signal,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, arguments: args })
+    });
+    const body = await readJSON(res);
+    return body?.success ? body.data?.text || '' : `error: ${body?.message || `HTTP ${res.status}`}`;
+  };
 
   for (let round = 0; round <= maxRounds; round += 1) {
     const last = round === maxRounds;
@@ -110,7 +186,11 @@ export async function askSettingsAssistant({
     const message = body?.choices?.[0]?.message;
     if (!message) throw new AssistantError('empty reply');
     const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
-    if (calls.length === 0 || last) return { answer: message.content || '', steps };
+    if (calls.length === 0 || last) {
+      const answer = message.content || '';
+      messages.push({ role: 'assistant', content: answer });
+      return { history: messages, answer, steps, proposal };
+    }
 
     messages.push({ role: 'assistant', content: message.content || '', tool_calls: calls });
     for (const call of calls) {
@@ -118,20 +198,12 @@ export async function askSettingsAssistant({
       const args = call.function?.arguments || '{}';
       steps.push({ name, args });
       onStep?.({ name, args });
-      const toolRes = await fetchImpl('/mcp/admin/call', {
-        method: 'POST',
-        signal,
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, arguments: args })
-      });
-      const toolBody = await readJSON(toolRes);
-      const text = toolBody?.success ? toolBody.data?.text || '' : `error: ${toolBody?.message || `HTTP ${toolRes.status}`}`;
+      const text = await runTool(name, args);
       const content = localizeToolText(augment(name, args, text), describe);
       messages.push({ role: 'tool', tool_call_id: call.id, content: content.slice(0, MAX_TOOL_TEXT) });
     }
   }
-  return { answer: '', steps };
+  return { history: messages, answer: '', steps, proposal };
 }
 
 // For a settings_search that found nothing: the settings the console's own search finds for the

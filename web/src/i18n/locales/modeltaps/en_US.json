@@ -5270,7 +5270,7 @@
   },
   "settingsAssistant": {
     "title": "Ask AI",
-    "description": "Ask where a setting is or how to configure it; the AI looks up the settings catalog and docs to answer.",
+    "description": "Ask where a setting is or how to configure it; when a change is needed it proposes one, applied only once you confirm.",
     "placeholder": "e.g. The upstream keeps returning 429. How do requests move to another channel?",
     "model": "Model that answers",
     "ask": "Ask",
@@ -5278,10 +5278,23 @@
     "thinking": "Looking up the settings…",
     "failed": "Could not answer: {{message}}",
     "noAnswer": "No answer came back; try other words or another model.",
-    "footer": "Read-only: the AI changes no setting. Each question is billed to your account at the chosen model's price, like the playground.",
+    "footer": "The AI only proposes changes; it never changes a setting itself. Each question is billed to your account at the chosen model's price, like the playground.",
     "group": "AI assistant",
     "entry": "Ask AI: {{question}}",
     "steps_one": "Looked up the settings and docs once",
-    "steps_other": "Looked up the settings and docs {{count}} times"
+    "steps_other": "Looked up the settings and docs {{count}} times",
+    "empty": "Ask about the platform settings: where a setting is, or what to set it to.",
+    "followUp": "Ask more, or ask it to change a setting…",
+    "stop": "Stop",
+    "stopped": "Stopped.",
+    "proposal": "Proposed changes",
+    "blocked": "Not changed here: {{reason}}",
+    "unchanged": "Already set to this value",
+    "applied": "Applied",
+    "applyNote": "Tick the changes to apply; they are saved like on the settings page and written to the admin log.",
+    "appliedNote": "Applied and written to the admin log. Reload the settings page to see them.",
+    "apply_one": "Apply {{count}} change",
+    "apply_other": "Apply {{count}} changes",
+    "applyFailed": "Could not apply"
   }
 }

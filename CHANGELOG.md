@@ -95,12 +95,15 @@ Read these before upgrading; everything else needs no action.
   settings lists by name (payment gateways, OIDC providers, mail services, notification channels,
   Telegram commands), which open the card that holds them.
 
-- "Ask AI" in the command palette, for the root user: a question about the platform settings
-  (where a setting is, what to set, how settings work together) is answered by a chat model that
-  looks the settings catalog and the operator docs up with the read-only tools of the admin MCP
-  endpoint, and links each setting it names to its field in the console. The model is picked in
-  the answer dialog among the chat models that call tools, and each question is billed to the
-  asking admin through the playground key, like the playground. It never changes a setting.
+- "Ask AI" in the command palette, for the root user: a conversation with a chat model about the
+  platform settings (where a setting is, what to set, how settings work together). It looks the
+  settings catalog and the operator docs up with the read-only tools of the admin MCP endpoint,
+  links each setting it names to its field, and can propose changes: a list with each setting's
+  current and new value, of which the admin ticks and applies the ones they want. Applied changes
+  go through the settings page's own save and are written to the admin log; sign-in, payment,
+  secret and object settings are never proposed for applying. The model is picked next to the
+  message box among the chat models that call tools, and each question is billed to the asking
+  admin through the playground key, like the playground.
 
 ### Changed
 

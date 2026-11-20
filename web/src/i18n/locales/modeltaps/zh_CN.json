@@ -5161,7 +5161,7 @@
   },
   "settingsAssistant": {
     "title": "问 AI",
-    "description": "问设置在哪、怎么配，AI 查过设置目录和文档后回答。",
+    "description": "问设置在哪、怎么配；需要改时它给出变更方案，你确认后才应用。",
     "placeholder": "例如：上游一直 429，怎么让请求自动换渠道？",
     "model": "回答用的模型",
     "ask": "提问",
@@ -5169,9 +5169,21 @@
     "thinking": "正在查设置…",
     "failed": "没能回答：{{message}}",
     "noAnswer": "没有得到回答，换个问法或换个模型再试。",
-    "footer": "只读：AI 不会修改任何设置。每次提问按所选模型计费到你的账户，和演练场一样。",
+    "footer": "AI 只会提出方案，不会自己改设置。每次提问按所选模型计费到你的账户，和演练场一样。",
     "group": "AI 助手",
     "entry": "问 AI：{{question}}",
-    "steps_other": "查了 {{count}} 次设置目录和文档"
+    "steps_other": "查了 {{count}} 次设置目录和文档",
+    "empty": "问一个关于平台设置的问题，比如某个设置在哪、该设成多少。",
+    "followUp": "接着问，或者让它帮你改设置…",
+    "stop": "停止",
+    "stopped": "已停止。",
+    "proposal": "变更方案",
+    "blocked": "不能在这里改：{{reason}}",
+    "unchanged": "当前已经是这个值",
+    "applied": "已应用",
+    "applyNote": "勾选要应用的变更，走设置页同样的保存，并记到管理日志。",
+    "appliedNote": "已应用，并记到管理日志。设置页刷新后可见。",
+    "apply_other": "应用选中的 {{count}} 项",
+    "applyFailed": "应用失败"
   }
 }

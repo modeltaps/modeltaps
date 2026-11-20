@@ -19,6 +19,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SettingsAssistantHeader marks a PUT /api/option/ the admin applied from a settings assistant
+// plan (the console's "Ask AI"), so the change is written to the admin log.
+const SettingsAssistantHeader = "X-Settings-Assistant"
+
 func GetOptions(c *gin.Context) {
 	var options []*model.Option
 	for k, v := range config.GlobalOption.GetAllNonSecret() {
@@ -235,10 +239,17 @@ func UpdateOption(c *gin.Context) {
 			}
 		}
 	}
+	previous := model.SiteSettingValue(option.Key)
 	err = model.UpdateOption(option.Key, option.Value)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
+	}
+	// A change applied from a settings assistant plan is written to the admin log, with the value it
+	// replaced (secrets are never proposed).
+	if c.GetHeader(SettingsAssistantHeader) != "" {
+		model.RecordLog(c.GetInt("id"), model.LogTypeManage,
+			fmt.Sprintf("Settings assistant: changed %s from %q to %q", option.Key, previous, model.SiteSettingValue(option.Key)))
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

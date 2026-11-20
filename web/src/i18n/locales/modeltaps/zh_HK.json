@@ -5160,7 +5160,7 @@
   },
   "settingsAssistant": {
     "title": "問 AI",
-    "description": "問設定在哪、怎麼配，AI 查過設定目錄和文件後回答。",
+    "description": "問設定在哪、怎麼配；需要改時它給出變更方案，你確認後才套用。",
     "placeholder": "例如：上游一直 429，怎樣讓請求自動換渠道？",
     "model": "回答用的模型",
     "ask": "提問",
@@ -5168,9 +5168,21 @@
     "thinking": "正在查設定…",
     "failed": "未能回答：{{message}}",
     "noAnswer": "沒有得到回答，換個問法或換個模型再試。",
-    "footer": "唯讀：AI 不會修改任何設定。每次提問按所選模型計費到你的帳戶，和演練場一樣。",
+    "footer": "AI 只會提出方案，不會自己改設定。每次提問按所選模型計費到你的帳戶，和演練場一樣。",
     "group": "AI 助手",
     "entry": "問 AI：{{question}}",
-    "steps_other": "查了 {{count}} 次設定目錄和文件"
+    "steps_other": "查了 {{count}} 次設定目錄和文件",
+    "empty": "問一個關於平台設定的問題，比如某個設定在哪、該設成多少。",
+    "followUp": "繼續問，或者讓它幫你改設定…",
+    "stop": "停止",
+    "stopped": "已停止。",
+    "proposal": "變更方案",
+    "blocked": "不能在這裏改：{{reason}}",
+    "unchanged": "目前已經是這個值",
+    "applied": "已套用",
+    "applyNote": "勾選要套用的變更，走設定頁同樣的儲存，並記到管理日誌。",
+    "appliedNote": "已套用，並記到管理日誌。設定頁重新整理後可見。",
+    "apply_other": "套用選中的 {{count}} 項",
+    "applyFailed": "套用失敗"
   }
 }
