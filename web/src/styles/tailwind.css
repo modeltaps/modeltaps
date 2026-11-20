@@ -247,6 +247,22 @@
   animation: highlight-target-fade 3s ease-out forwards;
 }
 
+/* A row of a list (a table row cannot draw the ring, and the list clips it): its background
+   flashes instead. */
+@keyframes highlight-row-fade {
+  0%,
+  60% {
+    background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-row-active {
+  animation: highlight-row-fade 3s ease-out forwards;
+}
+
 .brand-wordmark {
   font-family: 'Modeltaps Wordmark', ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;

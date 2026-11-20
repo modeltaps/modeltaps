@@ -27,7 +27,7 @@ describe('loadCollectionItems', () => {
     const items = await loadCollectionItems({ isRoot: true });
     expect(items.map((x) => x.id)).toEqual(['oidc-providers:1', 'payment-gateways:7', 'notify-channels:3', 'telegram:4']);
     const stripe = items.find((x) => x.card === 'payment-gateways');
-    expect(stripe.href).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
+    expect(stripe.href).toBe('/panel/admin/settings/payment?highlight=payment-gateways%3A7');
     expect(stripe.collection.name(stripe.item)).toBe('Stripe main');
   });
 

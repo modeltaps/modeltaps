@@ -71,7 +71,7 @@ export async function loadCollectionItems({ isRoot = false } = {}) {
             id: `${collection.card}:${item.id}`,
             group: collection.group,
             card: collection.card,
-            href: `${settingsGroupUrl(collection.group)}?highlight=${collection.card}`,
+            href: `${settingsGroupUrl(collection.group)}?highlight=${encodeURIComponent(`${collection.card}:${item.id}`)}`,
             item,
             collection
           }));

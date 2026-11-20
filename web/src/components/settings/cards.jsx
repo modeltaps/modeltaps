@@ -314,6 +314,10 @@ function RowMenu({ items }) {
 
 RowMenu.propTypes = { items: PropTypes.array.isRequired };
 
+// The anchor of one row of a collection card: `?highlight=<card>:<row key>` scrolls to the row and
+// flashes it (useHighlightTarget), and falls back to the card when the row is not there.
+export const rowAnchor = (cardAnchor, key) => (cardAnchor ? `${cardAnchor}:${key}` : undefined);
+
 export function CollectionCard({
   title,
   description,
@@ -367,6 +371,8 @@ export function CollectionCard({
                 return (
                   <li
                     key={rowKey(row)}
+                    data-highlight={rowAnchor(highlight, rowKey(row))}
+                    data-highlight-row={highlight ? '' : undefined}
                     className={cn('flex h-14 items-center gap-3 px-3', onRowClick && ROW_OPENS)}
                     {...(onRowClick ? rowOpenProps(() => onRowClick(row)) : {})}
                   >
@@ -410,6 +416,8 @@ export function CollectionCard({
                   return (
                     <TableRow
                       key={rowKey(row)}
+                      data-highlight={rowAnchor(highlight, rowKey(row))}
+                      data-highlight-row={highlight ? '' : undefined}
                       className={cn(onRowClick && 'cursor-pointer')}
                       onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >

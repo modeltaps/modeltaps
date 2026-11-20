@@ -125,4 +125,8 @@ describe('activeTabOf', () => {
     expect(activeTabOf(group, { tab: 'nope' })).toBe('a');
     expect(activeTabOf({ cards: [] }, { tab: 'a' })).toBeNull();
   });
+
+  it('reads the card of a row anchor', () => {
+    expect(activeTabOf(group, { tab: 'a', highlight: 'y:12' })).toBe('b');
+  });
 });
