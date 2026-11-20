@@ -1093,7 +1093,8 @@
       "paypal": "支付網關",
       "creem": "支付網關"
     },
-    "advanced": "進階"
+    "advanced": "進階",
+    "placeholderAsk": "搜尋，或問設定助手"
   },
   "common": {
     "error": "出錯了",
@@ -5179,7 +5180,6 @@
     "failed": "未能回答：{{message}}",
     "noAnswer": "沒有得到回答，換個問法或換個模型再試。",
     "footer": "只提方案，不會自己改設定 · 按所選模型計費到你的帳戶",
-    "group": "設定助手",
     "entry": "問設定助手：{{question}}",
     "steps_other": "查了 {{count}} 次設定目錄和文件",
     "empty": "可以問設定在哪、該設成多少，也可以直接讓它幫你改",
@@ -5199,6 +5199,6 @@
     "allModels": "全部模型",
     "searchModels": "搜尋模型",
     "noMatch": "沒有符合的模型",
-    "open": "打開設定助手"
+    "entryHint": "問設定在哪、怎麼配"
   }
 }

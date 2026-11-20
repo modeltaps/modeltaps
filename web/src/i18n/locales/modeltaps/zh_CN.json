@@ -1094,7 +1094,8 @@
       "paypal": "支付网关",
       "creem": "支付网关"
     },
-    "advanced": "高级"
+    "advanced": "高级",
+    "placeholderAsk": "搜索，或问设置助手"
   },
   "common": {
     "error": "出错了",
@@ -5180,7 +5181,6 @@
     "failed": "没能回答：{{message}}",
     "noAnswer": "没有得到回答，换个问法或换个模型再试。",
     "footer": "只提方案，不会自己改设置 · 按所选模型计费到你的账户",
-    "group": "设置助手",
     "entry": "问设置助手：{{question}}",
     "steps_other": "查了 {{count}} 次设置目录和文档",
     "empty": "可以问设置在哪、该设成多少，也可以直接让它帮你改",
@@ -5200,6 +5200,6 @@
     "allModels": "全部模型",
     "searchModels": "搜索模型",
     "noMatch": "没有匹配的模型",
-    "open": "打开设置助手"
+    "entryHint": "问设置在哪、怎么配"
   }
 }

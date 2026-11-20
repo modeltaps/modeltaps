@@ -1076,7 +1076,8 @@
       "paypal": "payment gateways",
       "creem": "payment gateways"
     },
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "placeholderAsk": "Search, or ask the settings assistant"
   },
   "common": {
     "error": "Something went wrong",
@@ -5287,7 +5288,6 @@
     "failed": "Could not answer: {{message}}",
     "noAnswer": "No answer came back; try other words or another model.",
     "footer": "Only proposes changes, never applies them itself · billed to your account at the chosen model's price",
-    "group": "Settings assistant",
     "entry": "Ask the settings assistant: {{question}}",
     "steps_one": "Looked up the settings and docs once",
     "steps_other": "Looked up the settings and docs {{count}} times",
@@ -5313,6 +5313,6 @@
     "allModels": "All models",
     "searchModels": "Search models",
     "noMatch": "No matching model",
-    "open": "Open the settings assistant"
+    "entryHint": "Where a setting is, how to set it"
   }
 }

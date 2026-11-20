@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { askSettingsAssistant, localizeToolText, systemPrompt, withConsoleMatches } from './settingsAssistant';
-import { commandFilter, looksLikeQuestion } from './CommandMenu';
+import { commandFilter } from './CommandMenu';
 
 const json = (body, ok = true, status = 200) => Promise.resolve({ ok, status, json: () => Promise.resolve(body) });
 
@@ -138,13 +138,8 @@ describe('settings assistant helpers', () => {
     expect(prompt).toContain('Never say a change is done');
   });
 
-  it('puts the settings assistant first for a question and last otherwise', () => {
-    expect(looksLikeQuestion('怎么让请求自动换渠道')).toBe(true);
-    expect(looksLikeQuestion('how do I add a channel')).toBe(true);
-    expect(looksLikeQuestion('重试')).toBe(false);
+  it('matches the settings assistant entry on any query', () => {
     expect(commandFilter('ask-ai:', '怎么设置重试？')).toBe(1);
-    expect(commandFilter('ask-ai:', '重试')).toBeGreaterThan(0);
-    expect(commandFilter('ask-ai:', '重试')).toBeLessThan(0.1);
-    expect(commandFilter('ask-ai:', '重')).toBe(0);
+    expect(commandFilter('ask-ai:', '重')).toBe(1);
   });
 });

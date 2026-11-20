@@ -30,12 +30,9 @@ const PAGE_ENTRY = 'page-card:';
 // the item's name, then the card and what else describes the item, in the scoring tiers.
 const COLLECTION_ENTRY = 'collection-item:';
 
-// The settings assistant entry (root only): its value only carries the prefix, and it matches any query,
-// at the top when the query reads like a question, else below everything that matched.
+// The settings assistant entry (root only): always the first entry of the palette. Without a query it
+// opens the assistant; with one it asks the assistant that query. Its value only carries the prefix.
 const ASK_ENTRY = 'ask-ai:';
-const QUESTION =
-  /[?？]|怎么|怎样|如何|为什么|哪里|在哪|什么|能否|能不能|可以|是否|吗|嗎|麼|ですか|どこ|どう|なぜ|\b(how|why|where|what|which|can|should|does|do|is)\b/i;
-export const looksLikeQuestion = (text) => QUESTION.test(text) || String(text).trim().split(/\s+/).length >= 4;
 
 // Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
 // words in tiers in the keywords.
@@ -87,7 +84,7 @@ export function makeCommandFilter(synonyms = {}) {
     }
     // The @ filters only apply to settings.
     if (filters.any) return 0;
-    if (value.startsWith(ASK_ENTRY)) return search.trim().length < 2 ? 0 : looksLikeQuestion(search) ? 1 : 0.01;
+    if (value.startsWith(ASK_ENTRY)) return 1;
     if (value.startsWith(PAGE_ENTRY) || value.startsWith(COLLECTION_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
     const score = scoreTiers(search, { primary: [value], secondary: keywords || [] }, synonyms);
     if (score > 0 || !LATIN.test(search)) return score;
@@ -242,10 +239,9 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
     : [];
   const platformGroup = sectionGroups.find((group) => group.id === 'platform_settings');
   if (platformGroup) platformGroup.entries.push(...collectionEntries);
-  // Listed without a query too, to open an empty conversation with example questions.
+  // First, with or without a query; it names itself and says what it does, so it needs no heading.
   const askGroup = isRoot && {
     id: 'ask',
-    heading: t('settingsAssistant.group'),
     entries: [
       {
         key: 'ask-ai',
@@ -259,14 +255,17 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
           <>
             <MessageCircleQuestion className="size-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate">
-              {typing ? t('settingsAssistant.entry', { question: search.trim() }) : t('settingsAssistant.open')}
+              {typing ? t('settingsAssistant.entry', { question: search.trim() }) : t('settingsAssistant.title')}
             </span>
+            <span className="shrink-0 text-xs text-muted-foreground">{t('settingsAssistant.entryHint')}</span>
           </>
         )
       }
     ]
   };
-  const groups = [pageGroup, ...sectionGroups, askGroup].filter(Boolean);
+  // A group with nothing to show (the platform settings, whose entries only show while typing) is
+  // left out, heading and all.
+  const groups = [pageGroup, ...sectionGroups].filter((group) => group && group.entries.length > 0);
   if (typing) {
     // Entries and groups by score, best first (ties keep the menu order). cmdk would also move the
     // entries in the DOM; doing it in React keeps the two orders the same.
@@ -279,8 +278,9 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
       groups.map((group) => ({ ...group, entries: byScore(group.entries, (entry) => filter(entry.value, search, entry.keywords)) })),
       (group) => group.entries[0]?.score || 0
     );
-    groups.splice(0, groups.length, ...sorted);
+    groups.splice(0, groups.length, ...sorted.filter((group) => group.entries[0]?.score > 0));
   }
+  if (askGroup) groups.unshift(askGroup);
 
   const go = (url) => {
     setOpen(false);
@@ -301,7 +301,7 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
             <Command.Input
               value={search}
               onValueChange={setSearch}
-              placeholder={t('command.placeholder')}
+              placeholder={t(isRoot ? 'command.placeholderAsk' : 'command.placeholder')}
               className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
