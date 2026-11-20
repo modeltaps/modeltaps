@@ -138,7 +138,7 @@ describe('settings assistant helpers', () => {
     expect(prompt).toContain('Never say a change is done');
   });
 
-  it('puts "Ask AI" first for a question and last otherwise', () => {
+  it('puts the settings assistant first for a question and last otherwise', () => {
     expect(looksLikeQuestion('怎么让请求自动换渠道')).toBe(true);
     expect(looksLikeQuestion('how do I add a channel')).toBe(true);
     expect(looksLikeQuestion('重试')).toBe(false);

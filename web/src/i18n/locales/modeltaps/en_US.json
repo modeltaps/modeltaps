@@ -5277,21 +5277,21 @@
     "lossTip": "{{pct}}% above our base price: the cost is above what the price brings in, requests through it lose money"
   },
   "settingsAssistant": {
-    "title": "Ask AI",
-    "description": "Ask where a setting is or how to configure it; when a change is needed it proposes one, applied only once you confirm.",
-    "placeholder": "e.g. The upstream keeps returning 429. How do requests move to another channel?",
+    "title": "Settings assistant",
+    "description": "Ask where a setting is or how to configure it; changes are proposed and applied only once you confirm",
+    "placeholder": "Ask about a setting",
     "model": "Model that answers",
     "ask": "Ask",
     "noModels": "No chat model that calls tools is available; publish one in the model catalog first.",
     "thinking": "Looking up the settings…",
     "failed": "Could not answer: {{message}}",
     "noAnswer": "No answer came back; try other words or another model.",
-    "footer": "The AI only proposes changes; it never changes a setting itself. Each question is billed to your account at the chosen model's price, like the playground.",
-    "group": "AI assistant",
-    "entry": "Ask AI: {{question}}",
+    "footer": "Only proposes changes, never applies them itself · billed to your account at the chosen model's price",
+    "group": "Settings assistant",
+    "entry": "Ask the settings assistant: {{question}}",
     "steps_one": "Looked up the settings and docs once",
     "steps_other": "Looked up the settings and docs {{count}} times",
-    "empty": "Ask about the platform settings: where a setting is, or what to set it to.",
+    "empty": "Ask where a setting is or what to set it to, or ask it to change one",
     "followUp": "Ask more, or ask it to change a setting…",
     "stop": "Stop",
     "stopped": "Stopped.",
@@ -5303,6 +5303,16 @@
     "appliedNote": "Applied and written to the admin log. Reload the settings page to see them.",
     "apply_one": "Apply {{count}} change",
     "apply_other": "Apply {{count}} changes",
-    "applyFailed": "Could not apply"
+    "applyFailed": "Could not apply",
+    "examples": [
+      "The upstream keeps returning 429. How do requests move to another channel",
+      "Where do I change the credit new users get",
+      "Which settings differ from their defaults"
+    ],
+    "recommended": "Recommended",
+    "allModels": "All models",
+    "searchModels": "Search models",
+    "noMatch": "No matching model",
+    "open": "Open the settings assistant"
   }
 }

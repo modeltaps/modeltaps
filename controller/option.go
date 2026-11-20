@@ -20,7 +20,7 @@ import (
 )
 
 // SettingsAssistantHeader marks a PUT /api/option/ the admin applied from a settings assistant
-// plan (the console's "Ask AI"), so the change is written to the admin log.
+// plan (the console's settings assistant), so the change is written to the admin log.
 const SettingsAssistantHeader = "X-Settings-Assistant"
 
 func GetOptions(c *gin.Context) {

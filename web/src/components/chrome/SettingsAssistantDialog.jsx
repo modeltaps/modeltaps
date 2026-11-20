@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { PANEL } from 'routes/paths';
 import { marked } from 'marked';
-import { ArrowUp, Sparkles, Square } from 'lucide-react';
+import { ArrowUp, Square } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ModelCombobox } from '@/components/ui/model-combobox';
+import { Combobox } from '@/components/ui/combobox';
 import { catalogEntries, catalogEntry, settingLabel, settingSearchTiers } from '@/components/settings/catalog';
 import { settingHref } from '@/components/settings/SettingHelp';
 import { modelTraits } from '@/components/model/traits';
@@ -22,13 +22,19 @@ import AssistantProposal from './AssistantProposal';
 import { normalizeSynonyms, scoreTiers } from './commandScore';
 
 // ==============================|| CHROME — SETTINGS ASSISTANT DIALOG ||============================== //
-// "Ask AI" from the command palette as a conversation (see settingsAssistant.js): the questions and
+// The settings assistant from the command palette, as a conversation (see settingsAssistant.js): the questions and
 // answers above, the composer at the bottom with the model on the left (chat models that call
 // tools; the last pick is remembered) and send on the right. Each answer says what the assistant
 // looked up, links to the settings, and may carry a change plan the admin reviews and applies
 // (AssistantProposal). Each question is billed to the admin like a playground request.
 
 const MODEL_STORAGE_KEY = 'settingsAssistant.model';
+
+// The model picker in the message box: just the model name, a rounded surface on hover or while
+// the list is open, no field border.
+const MODEL_TRIGGER =
+  'h-8 w-auto max-w-64 cursor-pointer gap-1.5 rounded-full border-transparent bg-transparent px-2.5 text-[13px] text-muted-foreground transition-colors ' +
+  'hover:bg-muted hover:text-foreground focus-visible:border-transparent focus-visible:bg-muted aria-expanded:border-transparent aria-expanded:bg-muted aria-expanded:text-foreground';
 
 const ANSWER_CLASS =
   'text-sm leading-6 [&_a]:text-info [&_a]:underline [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:font-mono [&_code]:text-[12px] ' +
@@ -38,6 +44,19 @@ const ANSWER_CLASS =
 const BATCH = /(^|[-_.])batch($|[-_.])/i;
 // The first default: a fast, cheap model that calls tools well, when the site has one.
 const PREFERRED = [/claude.*haiku/i, /gpt-5.*mini/i, /gemini.*flash(?!-lite)/i, /claude.*sonnet/i, /deepseek-chat/i];
+
+// The models offered first in the picker: the last one used, then the preferred ones on this site.
+export function recommendedModels(names, last) {
+  const picks = [];
+  if (last && names.includes(last)) picks.push(last);
+  // One model per family: a family the last model already belongs to adds no second one.
+  for (const pattern of PREFERRED) {
+    if (picks.some((name) => pattern.test(name))) continue;
+    const hit = names.find((name) => pattern.test(name));
+    if (hit) picks.push(hit);
+  }
+  return picks.slice(0, 5);
+}
 
 export function defaultAssistantModel(names) {
   for (const pattern of PREFERRED) {
@@ -195,20 +214,44 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
   }, [navigate, onClose]);
 
   const noModels = !modelsLoading && names.length === 0;
+  const exampleList = t('settingsAssistant.examples', { returnObjects: true });
+  const examples = Array.isArray(exampleList) ? exampleList : [];
+  const modelGroups = useMemo(() => {
+    const recommended = recommendedModels(names, localStorage.getItem(MODEL_STORAGE_KEY));
+    const option = (id) => ({ value: id, label: id });
+    return [
+      { key: 'recommended', heading: t('settingsAssistant.recommended'), options: recommended.map(option) },
+      { key: 'all', heading: t('settingsAssistant.allModels'), options: names.filter((n) => !recommended.includes(n)).map(option) }
+    ].filter((g) => g.options.length > 0);
+  }, [names, t]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex h-[80vh] max-w-2xl flex-col gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4">
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-4" />
-            {t('settingsAssistant.title')}
-          </DialogTitle>
+          <DialogTitle>{t('settingsAssistant.title')}</DialogTitle>
           <DialogDescription>{t('settingsAssistant.description')}</DialogDescription>
         </DialogHeader>
 
         <div ref={listRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4" data-testid="assistant-conversation">
-          {turns.length === 0 && <p className="pt-8 text-center text-sm text-muted-foreground">{t('settingsAssistant.empty')}</p>}
+          {turns.length === 0 && (
+            <div className="space-y-3 pt-6">
+              <p className="text-sm text-muted-foreground">{t('settingsAssistant.empty')}</p>
+              <div className="flex flex-wrap gap-2">
+                {examples.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    disabled={!model}
+                    onClick={() => send(example)}
+                    className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {turns.map((turn, i) =>
             turn.role === 'user' ? (
               <div key={i} className="flex justify-end">
@@ -243,17 +286,18 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
               className="min-h-0 resize-none border-0 bg-transparent p-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
             />
             <div className="mt-1 flex items-center justify-between gap-2">
-              <div className="w-56">
-                <ModelCombobox
+              <div className="-ml-2.5 min-w-0">
+                <Combobox
                   id="settings-assistant-model"
                   value={model}
-                  onChange={setModel}
-                  onSelect={setModel}
-                  options={names}
-                  allowCreate={false}
+                  onValueChange={setModel}
+                  groups={modelGroups}
                   placeholder={t('settingsAssistant.model')}
+                  searchPlaceholder={t('settingsAssistant.searchModels')}
+                  emptyText={t('settingsAssistant.noMatch')}
                   disabled={running || noModels}
-                  inputClassName="h-8 text-xs"
+                  className={MODEL_TRIGGER}
+                  contentClassName="w-72"
                 />
               </div>
               {running ? (

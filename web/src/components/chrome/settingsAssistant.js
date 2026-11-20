@@ -1,5 +1,5 @@
 // ==============================|| CHROME — SETTINGS ASSISTANT ||============================== //
-// "Ask AI" in the command palette (root only): a model answers a question about the platform
+// The settings assistant in the command palette (root only): a model answers a question about the platform
 // settings (where a setting is, what to set, how settings combine) with the read-only tools of the
 // admin MCP endpoint. The loop runs here: the model is called through the relay with the admin's
 // playground key, so the question is billed to the admin and shows in the logs like any request;

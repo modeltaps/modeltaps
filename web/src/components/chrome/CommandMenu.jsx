@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Command, defaultFilter } from 'cmdk';
-import { FileText, ListChecks, Sparkles } from 'lucide-react';
+import { FileText, ListChecks, MessageCircleQuestion } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -30,7 +30,7 @@ const PAGE_ENTRY = 'page-card:';
 // the item's name, then the card and what else describes the item, in the scoring tiers.
 const COLLECTION_ENTRY = 'collection-item:';
 
-// The "Ask AI" entry (root only): its value only carries the prefix, and it matches any query,
+// The settings assistant entry (root only): its value only carries the prefix, and it matches any query,
 // at the top when the query reads like a question, else below everything that matched.
 const ASK_ENTRY = 'ask-ai:';
 const QUESTION =
@@ -107,7 +107,7 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const isRoot = useIsRoot();
   const { currentOrg, orgRole, routingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
-  // The question an "Ask AI" entry opened the assistant with.
+  // The question the settings assistant entry opened the assistant with.
   const [askQuestion, setAskQuestion] = useState(null);
   // The synonyms of the current language plus the English ones: people type terms of other
   // gateways in either.
@@ -242,28 +242,30 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
     : [];
   const platformGroup = sectionGroups.find((group) => group.id === 'platform_settings');
   if (platformGroup) platformGroup.entries.push(...collectionEntries);
-  const askGroup = typing &&
-    isRoot && {
-      id: 'ask',
-      heading: t('settingsAssistant.group'),
-      entries: [
-        {
-          key: 'ask-ai',
-          value: ASK_ENTRY,
-          keywords: undefined,
-          onSelect: () => {
-            setOpen(false);
-            setAskQuestion(search.trim());
-          },
-          content: (
-            <>
-              <Sparkles className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate">{t('settingsAssistant.entry', { question: search.trim() })}</span>
-            </>
-          )
-        }
-      ]
-    };
+  // Listed without a query too, to open an empty conversation with example questions.
+  const askGroup = isRoot && {
+    id: 'ask',
+    heading: t('settingsAssistant.group'),
+    entries: [
+      {
+        key: 'ask-ai',
+        value: ASK_ENTRY,
+        keywords: undefined,
+        onSelect: () => {
+          setOpen(false);
+          setAskQuestion(search.trim());
+        },
+        content: (
+          <>
+            <MessageCircleQuestion className="size-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate">
+              {typing ? t('settingsAssistant.entry', { question: search.trim() }) : t('settingsAssistant.open')}
+            </span>
+          </>
+        )
+      }
+    ]
+  };
   const groups = [pageGroup, ...sectionGroups, askGroup].filter(Boolean);
   if (typing) {
     // Entries and groups by score, best first (ties keep the menu order). cmdk would also move the
