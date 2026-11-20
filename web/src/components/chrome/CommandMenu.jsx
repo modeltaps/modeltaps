@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Command, defaultFilter } from 'cmdk';
-import { FileText } from 'lucide-react';
+import { FileText, ListChecks } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import { normalizeSynonyms, packTiers, scoreTiers, unpackTiers } from './commandScore';
+import { loadCollectionItems } from './collectionIndex';
+import { cardTitleKey, groupLabelKey } from 'views/panel/Setting/registry';
 import { commandSections, navLabel } from './nav-config';
 import { orgSlugOf } from 'routes/paths';
 
@@ -22,6 +24,10 @@ import { orgSlugOf } from 'routes/paths';
 // Values of "On this page" entries start with this; their keywords are the card's title, group and
 // text in the scoring tiers (commandScore.js).
 const PAGE_ENTRY = 'page-card:';
+
+// Values of the items of collection cards (a payment gateway, an OIDC provider…): their keywords are
+// the item's name, then the card and what else describes the item, in the scoring tiers.
+const COLLECTION_ENTRY = 'collection-item:';
 
 // Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
 // words in tiers in the keywords.
@@ -73,7 +79,7 @@ export function makeCommandFilter(synonyms = {}) {
     }
     // The @ filters only apply to settings.
     if (filters.any) return 0;
-    if (value.startsWith(PAGE_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
+    if (value.startsWith(PAGE_ENTRY) || value.startsWith(COLLECTION_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
     const score = scoreTiers(search, { primary: [value], secondary: keywords || [] }, synonyms);
     if (score > 0 || !LATIN.test(search)) return score;
     return defaultFilter(value, search, keywords) * FUZZY_WEIGHT;
@@ -102,6 +108,17 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   useEffect(() => {
     if (!open) setSearch('');
   }, [open]);
+
+  // The items of the collection cards, read each time the palette opens (platform admins only).
+  const [collectionItems, setCollectionItems] = useState([]);
+  useEffect(() => {
+    if (!open || !isAdmin) return undefined;
+    let alive = true;
+    loadCollectionItems({ isRoot }).then((items) => alive && setCollectionItems(items));
+    return () => {
+      alive = false;
+    };
+  }, [open, isAdmin, isRoot]);
 
   // The current page's cards, read each time the palette opens (they reflect what is rendered).
   const pageEntries = useMemo(() => (open && getPageEntries ? getPageEntries() : []), [open, getPageEntries]);
@@ -191,6 +208,29 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
         };
       })
   }));
+  const collectionEntries = typing
+    ? collectionItems.map(({ id, group, card, href, item, collection }) => {
+        const name = collection.name(item, t) || `#${item.id}`;
+        const where = `${t(groupLabelKey(group))} › ${t(cardTitleKey(card))}`;
+        return {
+          key: `collection-${id}`,
+          value: `${COLLECTION_ENTRY}${id}`,
+          keywords: packTiers({ primary: [name], secondary: [t(cardTitleKey(card)), ...collection.words(item, t).filter(Boolean)] }),
+          href,
+          content: (
+            <>
+              <ListChecks className="size-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">
+                {name}
+                <span className="ml-2 text-xs text-muted-foreground">{where}</span>
+              </span>
+            </>
+          )
+        };
+      })
+    : [];
+  const platformGroup = sectionGroups.find((group) => group.id === 'platform_settings');
+  if (platformGroup) platformGroup.entries.push(...collectionEntries);
   const groups = [pageGroup, ...sectionGroups].filter(Boolean);
   if (typing) {
     // Entries and groups by score, best first (ties keep the menu order). cmdk would also move the
