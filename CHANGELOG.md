@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-20
+
+### Upgrading from 0.5.0
+
+Read these before upgrading; everything else needs no action.
+
+- **Supply routing** stays as it was on installations that already have users. To order, share
+  and pause channels by supplies (dragging and priorities on the providers page), turn on
+  **Route by supplies** in **Platform settings › Gateway › Supply mode and cost** after
+  upgrading; saving it migrates the channels to supplies first.
+- **Prompt cache:** installations that never saved the site-wide prompt cache switch turn it on.
+  Set keys used for one-off prompts to Off if a cache write's extra 25% matters.
+- **Supply pause rules:** an installation that had the switch off moves to the pause rules.
+  Channels are no longer disabled on live requests, only by channel tests.
+- **Request body retention** moves to accounts and organizations; what was kept stays kept (see
+  Changed and Removed).
+
 ### Added
 
 - Venice channels. Venice serves an OpenAI compatible API; Claude format requests go through the
@@ -26,70 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an admin removed stay out, and models the upstream dropped are still only marked. "Sync
   prices" stays a separate button.
 
-### Changed
-
-- Request and response retention is an account and organization decision, never a key creator's.
-  A personal account has one switch in its personal settings. An organization's owners and admins
-  choose in the organization settings: keep for no key (the default), for every key, or for the
-  keys they tick in a list. Keys have no switch of their own; a member's key page says when its
-  bodies are kept and who turned that on, and every change is in the audit log.
-  Upgrade note: what was kept stays kept. A personal account keeps its switch; an organization
-  that kept bodies keeps them for every key, one that turned it off keeps them for none.
-- Cost no longer splits a priority. With **Cost and priority** at `priority` (the default),
-  supplies of one priority share requests by the supply mode and weights whatever they cost, so
-  the shares an allocation policy sets hold; before, the cheapest supply of a priority took every
-  request. With `cost`, two guards keep a cheap but unreliable supply from taking a model's
-  traffic on price alone: a supply must be cheaper by **Minimum saving**
-  (`SupplyCostMinSavingPercent`, default 5%) to go ahead, closer costs sharing by priority and
-  weight, and one whose success rate over the current and the previous hour is below **Minimum
-  success rate** (`SupplyCostMinSuccessPercent`, default 95%, at least 20 attempts) is ordered as
-  if its cost were unknown until it recovers. The Supplies tab marks such a supply **Low success
-  rate**.
-- Vercel AI Gateway requests for models hosted by several providers now carry an order of hosts
-  (`providerOptions.gateway.order`), worked out at price sync: the vendor's own hosting first, then
-  hosts that are serving, up at least the minimum success rate over the last day, full precision,
-  long enough, caching when the vendor caches and priced no lower than 30% of the vendor, cheapest
-  first; with cost first, hosts cheaper than the vendor by the minimum saving go ahead of it.
-  Vercel still fails over past the order. The channel price is the first host's, and the price
-  details show the order. Models whose vendor Vercel does not list keep Vercel's own routing.
-- The cost and margin figures of a request use what the upstream reports it charged (with the
-  channel's fee) for OpenRouter, Cheaper Inference and Vercel AI Gateway channels, instead of the
-  price list estimate, so they follow a gateway's fallback host, cache hits and long-context
-  tiers. Vercel AI Gateway's charge is now recorded as the upstream cost, including messages and
-  responses requests, which report it only in `provider_metadata`, and the host that served each
-  request is kept in the log details (site admins only).
-
-### Removed
-
-- The "Supply pause rules" switch. Every failed request goes through the pause rules, which pause
-  a channel or one of its models and bring it back after a test; the older handling it switched
-  back to (disabling channels on live requests, the cooldown fallback and the separate
-  model-not-found quarantine) is gone. Automatic disabling now only applies to channel tests. An
-  installation that had the switch off moves to the pause rules on upgrade.
-- The site defaults for keeping request and response bodies of personal and organization API
-  keys. Retention is a plain switch on the user or the organization, off until they turn it on.
-  Upgrade note: where a site default was on, the users or organizations that had not chosen get
-  it turned on, so their keys keep storing bodies.
-
-### Fixed
-
-- The model catalog of an organization workbench (models, playground, API keys) now lists the
-  models of the organization's group narrowed like its keys: by the member's model access and the
-  approved models the site admin set. It used to list the personal catalog, with models the
-  organization's keys cannot call. Model pickers of organization admins offer the approved models.
-- Vercel AI Gateway models hosted by several providers were priced at the one provider price the
-  gateway lists, sometimes a small host far below the vendor's (Qwen3.8 27B at $0.06 input, where
-  Alibaba charges $0.50); the gateway routes such models to a provider of its choosing and bills
-  that provider's price. Price syncs and the channel price list now use the vendor's own hosting's
-  price when the gateway lists it, and keep the listed price otherwise.
-- A low-priority price list that uses bare model ids (Cheaper Inference listing `qwen3.8-27b`) no
-  longer sets a public model's price ahead of a higher-priority list that prices the same model
-  under a platform spelling.
-- A public model created for an upstream name the catalog does not know (say an uncensored
-  variant one platform lists) now follows that platform's price: price syncs copy the price of
-  the upstream name its supply sends to the public model. Before, its price was set once by hand
-  and never updated. A public model priced by another list, the official table or an admin keeps
-  its price.
 - Cheaper Inference channels. Chat completions, responses and embeddings use its OpenAI
   compatible API; Claude format requests go to its Messages endpoint as they are, keeping the
   client's cache breakpoints. OpenAI format requests ask it to add cache breakpoints
@@ -116,6 +69,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one served (no model routing, experiment or canary swaps it), and `x-ci-techniques: off`, so
   the account's optional techniques do not rewrite prompts. The channel's custom headers can
   override both.
+- Prompt cache modes on API keys: **Auto** (the default; the channel and site-wide switches
+  decide), **On** (Claude requests without breakpoints get them whatever the channel says) or
+  **Off** (every `cache_control` marker is removed, the client's own included, and none is
+  added). Pick it when creating a key or on the key's Advanced tab; the `X-Modeltaps-Prompt-Cache`
+  header overrides it per request. Requesty's `auto_cache` and Cheaper Inference's
+  `x-ci-prompt-cache` follow the mode, and the log details record the mode and where it came
+  from. Headers starting with `x-modeltaps-` are never forwarded upstream.
+- Prompt cache breakpoints on Claude channels of Vertex AI and Bedrock. Native Messages requests
+  and chat completions converted to Claude get the same breakpoints as on Anthropic channels, so a
+  key, channel or site-wide switch set to on now caches there too.
+- Channel prices against the base price. The Supplies tab shows the model's base price and a
+  column with each supply's cost against it; a channel's models tab gets the same column,
+  sortable, with filters for models above or below the base price; the model catalog adds a
+  column comparing the cheapest supply with the base price.
+- A **Route by supplies** switch in **Platform settings › Gateway › Supply mode and cost**.
+  Saving it on first migrates the channels to supplies (only what is still missing), so no
+  channel model stops being served; before saving, the card shows how many supplies will be
+  created and how many models would have no usable supply. New installations route by supplies
+  from the start.
+- Better command palette search. Results are ranked by where the query is found (the name, then
+  keywords and the key, then the description), terms from other gateways find their settings
+  through a synonym table per language (failover, model ratio, epay, 2FA, concurrency, Stripe),
+  advanced settings are found and marked as such, and a platform admin finds the items of the
+  settings lists by name (payment gateways, OIDC providers, mail services, notification channels,
+  Telegram commands), which open the card that holds them.
+
+### Changed
+
+- Request and response retention is an account and organization decision, never a key creator's.
+  A personal account has one switch in its personal settings. An organization's owners and admins
+  choose in the organization settings: keep for no key (the default), for every key, or for the
+  keys they tick in a list. Keys have no switch of their own; a member's key page says when its
+  bodies are kept and who turned that on, and every change is in the audit log.
+  Upgrade note: what was kept stays kept. A personal account keeps its switch; an organization
+  that kept bodies keeps them for every key, one that turned it off keeps them for none.
+- Cost no longer splits a priority. With **Cost and priority** at `priority` (the default),
+  supplies of one priority share requests by the supply mode and weights whatever they cost, so
+  the shares an allocation policy sets hold; before, the cheapest supply of a priority took every
+  request. With `cost`, two guards keep a cheap but unreliable supply from taking a model's
+  traffic on price alone: a supply must be cheaper by **Minimum saving**
+  (`SupplyCostMinSavingPercent`, default 5%) to go ahead, closer costs sharing by priority and
+  weight, and one whose success rate over the current and the previous hour is below **Minimum
+  success rate** (`SupplyCostMinSuccessPercent`, default 95%, at least 20 attempts) is ordered as
+  if its cost were unknown until it recovers. The Supplies tab marks such a supply **Low success
+  rate**.
+- Vercel AI Gateway requests for models hosted by several providers now carry an order of hosts
+  (`providerOptions.gateway.order`), worked out at price sync: the vendor's own hosting first, then
+  hosts that are serving, up at least the minimum success rate over the last day, full precision,
+  long enough, caching when the vendor caches and priced no lower than 30% of the vendor on both
+  input and output, cheapest first, at most six; with cost first, hosts cheaper than the vendor by
+  the minimum saving go ahead of it.
+  Vercel still fails over past the order. The channel price is the first host's, and the price
+  details show the order. Models whose vendor Vercel does not list keep Vercel's own routing.
+- The cost and margin figures of a request use what the upstream reports it charged (with the
+  channel's fee) for OpenRouter, Cheaper Inference and Vercel AI Gateway channels, instead of the
+  price list estimate, so they follow a gateway's fallback host, cache hits and long-context
+  tiers. Vercel AI Gateway's charge is now recorded as the upstream cost, including messages and
+  responses requests, which report it only in `provider_metadata`, and the host that served each
+  request is kept in the log details (site admins only).
+
+- Prompt cache breakpoints are added by default: the site-wide switch for channels set to
+  inherit is now on. Agents and multi-turn chats resend the same long prefix, and a cache read
+  costs a tenth of input; set keys used for one-off prompts, where a cache write costs 25% more,
+  to Off. Installations that saved the switch keep their value.
+
+### Removed
+
+- The "Supply pause rules" switch. Every failed request goes through the pause rules, which pause
+  a channel or one of its models and bring it back after a test; the older handling it switched
+  back to (disabling channels on live requests, the cooldown fallback and the separate
+  model-not-found quarantine) is gone. Automatic disabling now only applies to channel tests. An
+  installation that had the switch off moves to the pause rules on upgrade.
+- The site defaults for keeping request and response bodies of personal and organization API
+  keys. Retention is a plain switch on the user or the organization, off until they turn it on.
+  Upgrade note: where a site default was on, the users or organizations that had not chosen get
+  it turned on, so their keys keep storing bodies.
+
+### Fixed
+
+- Testing a channel from its row menu failed with a 404 in 0.5.0: the menu sent GET to a route
+  that accepts only POST.
+- The model catalog of an organization workbench (models, playground, API keys) now lists the
+  models of the organization's group narrowed like its keys: by the member's model access and the
+  approved models the site admin set. It used to list the personal catalog, with models the
+  organization's keys cannot call. Model pickers of organization admins offer the approved models.
+- Vercel AI Gateway models hosted by several providers were priced at the one provider price the
+  gateway lists, sometimes a small host far below the vendor's (Qwen3.8 27B at $0.06 input, where
+  Alibaba charges $0.50); the gateway routes such models to a provider of its choosing and bills
+  that provider's price. Price syncs and the channel price list now use the vendor's own hosting's
+  price when the gateway lists it, and keep the listed price otherwise.
+- A low-priority price list that uses bare model ids (Cheaper Inference listing `qwen3.8-27b`) no
+  longer sets a public model's price ahead of a higher-priority list that prices the same model
+  under a platform spelling.
+- A public model created for an upstream name the catalog does not know (say an uncensored
+  variant one platform lists) now follows that platform's price: price syncs copy the price of
+  the upstream name its supply sends to the public model. Before, its price was set once by hand
+  and never updated. A public model priced by another list, the official table or an admin keeps
+  its price.
 
 ## [0.5.0] - 2026-11-19
 
