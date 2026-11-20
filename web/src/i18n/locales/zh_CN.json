@@ -2951,7 +2951,7 @@
         "supply_failover": "请求切换到备用渠道",
         "model_library": "收录规则添加、下架或将要改动模型",
         "supply_above_quote": "线路新出现高于报价",
-        "price_source": "价格来源停止更新"
+        "price_source": "价格来源异常"
       },
       "limit": {
         "label": "每类每小时最多条数",

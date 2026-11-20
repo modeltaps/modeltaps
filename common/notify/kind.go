@@ -32,7 +32,8 @@ const (
 	// KindSupplyAboveQuote reports supplies that take traffic and newly cost more than the quote.
 	KindSupplyAboveQuote = "supply_above_quote"
 	// KindPriceSource reports price sources (a channel's upstream price list, models.dev) that
-	// could not be read, or gave a list that looked broken, for about a day.
+	// could not be read, or gave a list that looked broken, for about a day, and built-in official
+	// prices that differ from the vendor's models.dev entry.
 	KindPriceSource = "price_source"
 )
 

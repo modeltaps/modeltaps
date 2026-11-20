@@ -175,7 +175,8 @@ func ReviewPriceSources(watched func(subject string) bool) ([]FailingPriceSource
 			fresh = append(fresh, FailingPriceSource{PriceSourceState: s, Item: item})
 		}
 	}
-	if err := ResolveAlertsExcept(PriceSourceAlertKind, failing); err != nil {
+	// The official prices' alert is the same kind but kept by CheckOfficialPrices.
+	if err := ResolveAlertsExcept(PriceSourceAlertKind, append(failing, OfficialPriceSource)); err != nil {
 		return nil, err
 	}
 	return fresh, nil

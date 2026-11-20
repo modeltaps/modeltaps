@@ -5208,7 +5208,7 @@
       "credential": "Credential refresh failed",
       "model_consistency": "Model details missing",
       "cost_mismatch": "Upstream charges",
-      "price_source": "Price source stopped updating"
+      "price_source": "Price source issue"
     },
     "subject": {
       "source": "Source: {{source}}",
@@ -5220,6 +5220,7 @@
         "read": "Price list could not be read since {{since}}.",
         "shrank": "Price list lost most of its models since {{since}}; not used.",
         "zeroed": "Price list lost most of its prices since {{since}}; not used.",
+        "official": "{{model}}: built in ${{ourIn}} / ${{ourOut}}, models.dev ${{devIn}} / ${{devOut}} per 1M input / output tokens. Check the vendor's page",
         "kept": "Prices kept from {{time}}."
       },
       "drift": {
@@ -5257,7 +5258,8 @@
     "sources": {
       "channel_price_lists": "Channel price lists",
       "models_dev": "Public model catalog",
-      "official_schedule": "Official price dates"
+      "official_schedule": "Official price dates",
+      "official_prices": "Built-in official prices"
     }
   },
   "sellDelta": {

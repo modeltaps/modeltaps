@@ -5081,7 +5081,7 @@
       "credential": "認証情報の更新失敗",
       "model_consistency": "モデル情報の不足",
       "cost_mismatch": "上流の請求額チェック",
-      "price_source": "価格ソースの更新停止"
+      "price_source": "価格ソースの異常"
     },
     "subject": {
       "source": "ソース: {{source}}",
@@ -5093,6 +5093,7 @@
         "read": "{{since}} から価格表を読み込めていません。",
         "shrank": "{{since}} から価格表の大半のモデルが消えています。使っていません。",
         "zeroed": "{{since}} から価格表の大半の価格が 0 になっています。使っていません。",
+        "official": "{{model}}：組み込み ${{ourIn}} / ${{ourOut}}、models.dev ${{devIn}} / ${{devOut}}（100 万入力 / 出力トークンあたり）。ベンダーのページで確認してください",
         "kept": "価格は {{time}} のままです。"
       },
       "drift": {
@@ -5129,7 +5130,8 @@
     "sources": {
       "channel_price_lists": "チャネルの価格表",
       "models_dev": "公開モデルカタログ",
-      "official_schedule": "公式価格の改定日程"
+      "official_schedule": "公式価格の改定日程",
+      "official_prices": "組み込みの公式価格"
     }
   },
   "sellDelta": {

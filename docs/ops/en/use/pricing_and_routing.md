@@ -118,6 +118,14 @@ Some vendors announce a price that starts on a date, or an introductory price th
 
 When an introductory price ends and the vendor has not published the next one, the alert asks you to check the vendor's pricing page, which it links. Set the new price by hand if it changed; the alert stays open until a release carries the new price.
 
+## When a price source has problems
+
+When a channel's price list or models.dev cannot be read, Modeltaps keeps the prices it read last and shows when the reads started failing, and why, on the channel's **Models** tab. After two failed reads over at least 20 hours, a **Price source issue** alert opens and one notice is sent; the next good read closes it. Only sources an automatic sync reads are watched.
+
+A new list that lost more than half of its models, or where the share of models without a price grew by 20 points, usually means the platform changed its format. It is not stored, and the stored prices stay in use. If the platform really dropped that many models, click **Use the new list** on the channel's **Models** tab.
+
+After each daily models.dev sync, the built-in official prices are compared with the vendor's own entry there. Models whose input or output price differs by 10% or more are listed in a **Built-in official prices** alert. It changes nothing: models.dev can lag or be wrong too, so check the vendor's pricing page. DeepSeek's models.dev entries show the off-peak price (half the list price); that counts as a match.
+
 ## Examples
 
 ### 1. Sell at 12% over the official price

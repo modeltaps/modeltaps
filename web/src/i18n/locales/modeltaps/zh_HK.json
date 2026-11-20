@@ -5099,7 +5099,7 @@
       "credential": "憑證刷新失敗",
       "model_consistency": "模型資料缺失",
       "cost_mismatch": "上游扣費核對",
-      "price_source": "價格來源停止更新"
+      "price_source": "價格來源異常"
     },
     "subject": {
       "source": "來源：{{source}}",
@@ -5111,6 +5111,7 @@
         "read": "自 {{since}} 起讀不到價格表。",
         "shrank": "自 {{since}} 起價格表少了大部分模型，未採用。",
         "zeroed": "自 {{since}} 起價格表大部分價格變成了 0，未採用。",
+        "official": "{{model}}：內置價 ${{ourIn}} / ${{ourOut}}，models.dev 為 ${{devIn}} / ${{devOut}}（每百萬輸入 / 輸出 token）。請到廠商官網核對",
         "kept": "價格停在 {{time}}。"
       },
       "drift": {
@@ -5147,7 +5148,8 @@
     "sources": {
       "channel_price_lists": "通道價格表",
       "models_dev": "公共模型目錄",
-      "official_schedule": "官方調價日程"
+      "official_schedule": "官方調價日程",
+      "official_prices": "內置官方價"
     }
   },
   "sellDelta": {

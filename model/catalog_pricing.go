@@ -693,6 +693,7 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	CheckOfficialPrices(data, time.Now())
 	prices := WithOfficialPrices(BuildCatalogPrices(data))
 	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err

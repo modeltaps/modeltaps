@@ -5100,7 +5100,7 @@
       "credential": "凭据刷新失败",
       "model_consistency": "模型资料缺失",
       "cost_mismatch": "上游扣费核对",
-      "price_source": "价格来源停止更新"
+      "price_source": "价格来源异常"
     },
     "subject": {
       "source": "来源：{{source}}",
@@ -5112,6 +5112,7 @@
         "read": "自 {{since}} 起读不到价格表。",
         "shrank": "自 {{since}} 起价格表少了大部分模型，未采用。",
         "zeroed": "自 {{since}} 起价格表大部分价格变成了 0，未采用。",
+        "official": "{{model}}：内置价 ${{ourIn}} / ${{ourOut}}，models.dev 为 ${{devIn}} / ${{devOut}}（每百万输入 / 输出 token）。请到厂商官网核对",
         "kept": "价格停在 {{time}}。"
       },
       "drift": {
@@ -5148,7 +5149,8 @@
     "sources": {
       "channel_price_lists": "渠道价格表",
       "models_dev": "公共模型目录",
-      "official_schedule": "官方调价日程"
+      "official_schedule": "官方调价日程",
+      "official_prices": "内置官方价"
     }
   },
   "sellDelta": {

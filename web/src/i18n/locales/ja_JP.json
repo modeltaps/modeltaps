@@ -3031,7 +3031,7 @@
         "supply_failover": "リクエストのバックアップチャネルへの切り替え",
         "model_library": "取り込みルールによるモデルの追加・廃止（予定を含む）",
         "supply_above_quote": "提示価格を上回るルートの発生",
-        "price_source": "価格ソースの更新停止"
+        "price_source": "価格ソースの異常"
       },
       "limit": {
         "label": "種類ごとの 1 時間あたり上限",

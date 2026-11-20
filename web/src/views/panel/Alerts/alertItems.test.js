@@ -52,3 +52,15 @@ describe('price sources', () => {
     expect(alertSubject(t, { subject: 'source:models.dev' })).toContain('alerts.sources.models_dev');
   });
 });
+
+describe('built-in official prices', () => {
+  it('shows both prices and links the model catalog', async () => {
+    const { alertTarget } = await import('./alertItems');
+    const x = describeAlertItem(t, 'price_source', 'official|gpt-5.5|5|30|6|30');
+    expect(x.tone).toBe('info');
+    expect(x.text).toContain('alerts.item.priceSource.official');
+    expect(x.text).toContain('"devIn":"6"');
+    expect(alertSubject(t, { subject: 'source:official' })).toContain('alerts.sources.official_prices');
+    expect(alertTarget({ kind: 'price_source', subject: 'source:official' })).toBeTruthy();
+  });
+});

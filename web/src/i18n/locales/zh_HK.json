@@ -3031,7 +3031,7 @@
         "supply_failover": "請求切換到備用渠道",
         "model_library": "收錄規則添加、下架或將要改動模型",
         "supply_above_quote": "線路新出現高於報價",
-        "price_source": "價格來源停止更新"
+        "price_source": "價格來源異常"
       },
       "limit": {
         "label": "每類每小時最多條數",

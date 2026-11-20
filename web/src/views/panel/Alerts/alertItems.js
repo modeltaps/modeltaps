@@ -8,7 +8,8 @@ import { timestamp2string } from 'utils/common';
 // price changes; "cost|m|higher|lower" and "daily|higher|lower" for upstream charges that differ
 // from the price list; "refresh failed" for
 // credentials; a model name for model consistency; "reason|failing since|last success" for a
-// price source that stopped updating (reason read, shrank or zeroed).
+// price source that stopped updating (reason read, shrank or zeroed);
+// "official|m|in|out|models.dev in|models.dev out" for a built-in official price models.dev differs from.
 export function describeAlertItem(t, kind, item) {
   if (kind === 'model_drift') {
     if (item === 'held') return { tone: 'warn', text: t('alerts.item.drift.held') };
@@ -43,7 +44,12 @@ export function describeAlertItem(t, kind, item) {
     }
   }
   if (kind === 'price_source') {
-    const [reason, since, last] = item.split('|');
+    const parts = item.split('|');
+    if (parts[0] === 'official' && parts.length === 6) {
+      const [, model, ourIn, ourOut, devIn, devOut] = parts;
+      return { tone: 'info', text: t('alerts.item.priceSource.official', { model, ourIn, ourOut, devIn, devOut }) };
+    }
+    const [reason, since, last] = parts;
     if (['read', 'shrank', 'zeroed'].includes(reason)) {
       const kept = Number(last) > 0 ? t('alerts.item.priceSource.kept', { time: timestamp2string(Number(last)) }) : '';
       return {
@@ -65,6 +71,7 @@ export function alertTarget(alert) {
     return `${admin.providers(alert.channel_id)}?tab=${tab}`;
   }
   if (alert.kind === 'price_change' || alert.kind === 'model_consistency') return admin.models();
+  if (alert.kind === 'price_source' && alert.subject === 'source:official') return admin.models();
   return null;
 }
 
@@ -72,7 +79,8 @@ export function alertTarget(alert) {
 const SOURCES = {
   'channel price lists': 'channel_price_lists',
   'models.dev': 'models_dev',
-  'official schedule': 'official_schedule'
+  'official schedule': 'official_schedule',
+  official: 'official_prices'
 };
 
 // What the alert is about: the channel's name, the price source, or the catalog.
