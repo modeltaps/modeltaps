@@ -2,7 +2,7 @@
   "settingsCatalog": {
     "NotifyDisabledKinds": {
       "label": "關閉的通知類型",
-      "description": "不發往任何通知渠道的管理員通知類型；由卡片上的開關寫入。用逗號分隔；留空表示所有類型都發。類型有 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可以只接收部分類型。",
+      "description": "不發往任何通知渠道的管理員通知類型；由卡片上的開關寫入。用逗號分隔；留空表示所有類型都發。類型有 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可以只接收部分類型。",
       "examples": ["上游價格變動和模型列表變化不發，其他類型照發。"],
       "keywords": ["靜音", "屏蔽", "告警", "通知類型", "提醒"]
     },

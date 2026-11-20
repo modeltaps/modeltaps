@@ -541,15 +541,23 @@ export async function fetchChannelPrices(id) {
   return channelPricesData(res.data);
 }
 
-// Reads the channel's upstream price list now (POST /api/channel/:id/prices/refresh).
-export async function refreshChannelPrices(id) {
-  const res = await API.post(`/api/channel/${id}/prices/refresh`);
+// Reads the channel's upstream price list now (POST /api/channel/:id/prices/refresh). A list
+// that looks broken against the stored one is refused (error code channel_prices_suspicious);
+// `force` stores it anyway.
+export async function refreshChannelPrices(id, { force = false } = {}) {
+  const res = await API.post(`/api/channel/${id}/prices/refresh`, null, { params: force ? { force: 1 } : undefined });
   return channelPricesData(res.data);
 }
 
-function channelPricesData({ success, message, data }) {
-  if (!success) throw new Error(message);
-  return { supported: Boolean(data?.supported), synced_at: data?.synced_at || 0, prices: data?.prices || [] };
+// `state` is how the last reads of the list went (model.PriceSourceState), null if never read.
+function channelPricesData({ success, message, code, data }) {
+  if (!success) throw Object.assign(new Error(message), { code });
+  return {
+    supported: Boolean(data?.supported),
+    synced_at: data?.synced_at || 0,
+    prices: data?.prices || [],
+    state: data?.state || null
+  };
 }
 
 // Details of a channel's model list, saved or being edited (POST /api/channel/:id/model_details):

@@ -23,6 +23,7 @@ var alertListKinds = map[string]bool{
 	"credential":        true,
 	"model_consistency": true,
 	"cost_mismatch":     true,
+	"price_source":      true,
 }
 
 // alertClosedDays is how far back the list of closed alerts goes.

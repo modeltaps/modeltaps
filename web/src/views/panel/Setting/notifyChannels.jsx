@@ -55,6 +55,7 @@ export const NOTIFY_KINDS = [
   'low_balance',
   'subscription_usage',
   'price_change',
+  'price_source',
   'model_drift',
   'model_consistency',
   'credential',

@@ -1577,6 +1577,7 @@
     "invalid_channel_id": "渠道 ID 無效",
     "channel_not_found": "渠道不存在",
     "channel_prices_unsupported": "這個供應商不提供價格表",
+    "channel_prices_suspicious": "新讀到的上游價格表看起來不對（{{before}} → {{after}}），已保留原來的價格。如果變化屬實，請到渠道的模型頁籤使用新列表。",
     "channel_key_required": "請先填寫密鑰",
     "channel_provider_not_found": "不支援此渠道類型",
     "channel_model_list_unsupported": "此渠道類型不支援取得模型列表",
@@ -2390,6 +2391,13 @@
       "pruned_other": "移除了 {{count}} 個上游已不存在的模型，儲存後生效",
       "remove": "移除 {{model}}",
       "pricesRefreshed": "已更新上游價格",
+      "priceSource": {
+        "failed": "自 {{since}} 起讀取上游價格表一直失敗（共 {{count}} 次）。",
+        "held": "自 {{since}} 起讀到的上游價格表看起來不對（大部分模型或價格不見了），沒有採用。",
+        "kept": "目前顯示的是 {{time}} 讀到的價格。",
+        "none": "還沒有讀到過價格。",
+        "useNew": "使用新列表"
+      },
       "syncPrices": "同步價格",
       "ttft": "首字",
       "supplyNote": "儲存後，模型列表的改動會同步到由這個渠道產生的線路：新加的模型自動接入對應的公開模型，移除的模型會撤下線路。手動新增或在模型頁改過上游名的線路保持不變。",
@@ -5090,7 +5098,8 @@
       "price_change": "價格變動",
       "credential": "憑證刷新失敗",
       "model_consistency": "模型資料缺失",
-      "cost_mismatch": "上游扣費核對"
+      "cost_mismatch": "上游扣費核對",
+      "price_source": "價格來源停止更新"
     },
     "subject": {
       "source": "來源：{{source}}",
@@ -5098,6 +5107,12 @@
       "goneChannel": "通道 #{{id}}（已刪除）"
     },
     "item": {
+      "priceSource": {
+        "read": "自 {{since}} 起讀不到價格表。",
+        "shrank": "自 {{since}} 起價格表少了大部分模型，未採用。",
+        "zeroed": "自 {{since}} 起價格表大部分價格變成了 0，未採用。",
+        "kept": "價格停在 {{time}}。"
+      },
       "drift": {
         "renamed": "上游改名：{{model}}",
         "gone": "上游已下架：{{model}}",

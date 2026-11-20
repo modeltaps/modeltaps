@@ -48,6 +48,7 @@ import { amount, priceIndex, priceKindOf, priceSummary, sortByTokenPrice, upstre
 import { lossOf, orderByRank, rowSellCmp, sellSideOf, sortByName, sortBySellDelta } from './channelModelDetails';
 import SellDelta from './SellDelta';
 import UpstreamPriceDetails from './UpstreamPriceDetails';
+import PriceSourceNotice from './PriceSourceNotice';
 import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
 import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
@@ -727,23 +728,41 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     models: models.join(','),
     group: channel.group
   });
+  // A failed read keeps the stored list; read it again for the state the notice shows.
+  const reloadPrices = () =>
+    fetchChannelPrices(channel.id)
+      .then(setUpstreamPrices)
+      .catch(() => {});
   const syncPrices = () =>
     run('price', async () => {
       // The button reads the upstream price list, so the channel's own copy is refreshed too.
       if (!CATALOG_PRICED_TYPES.has(channel.type)) {
         // Preset platforms only keep the channel's price list; they do not price the catalog.
-        setUpstreamPrices(await refreshChannelPrices(channel.id));
+        try {
+          setUpstreamPrices(await refreshChannelPrices(channel.id));
+        } catch (e) {
+          reloadPrices();
+          throw e;
+        }
         toast.success(t('channels.models.pricesRefreshed'));
         return;
       }
       refreshChannelPrices(channel.id)
         .then(setUpstreamPrices)
-        .catch(() => {});
+        .catch((e) => {
+          reloadPrices();
+          if (e.code === 'channel_prices_suspicious') toast.warning(e.message);
+        });
       const preview = await previewChannelPricing(priceChannel());
       setPricePreview(preview);
       if (preview.unmatched.length) {
         toast.warning(t('channel_edit.syncPricingUnmatched', { count: preview.unmatched.length, models: preview.unmatched.join(', ') }));
       }
+    });
+  const forcePrices = () =>
+    run('price', async () => {
+      setUpstreamPrices(await refreshChannelPrices(channel.id, { force: true }));
+      toast.success(t('channels.models.pricesRefreshed'));
     });
   const applyPrices = async (list) => {
     setApplying(true);
@@ -930,6 +949,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           </ToolButton>
         </div>
       </div>
+
+      {showPrices && <PriceSourceNotice state={upstreamPrices.state} busy={busy === 'price'} onForce={forcePrices} />}
 
       {adding && (
         <div className="pb-3">

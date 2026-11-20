@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -17,21 +18,42 @@ import (
 type channelPricesResponse struct {
 	Supported bool `json:"supported"`
 	*model.ChannelPriceList
+	// State is how the last reads of the list went; nil when it was never read.
+	State *model.PriceSourceState `json:"state,omitempty"`
 }
 
 // refreshChannelPrices reads the channel's upstream price list and stores it as the channel's
 // own. It returns how many models were stored; 0 with no error when the upstream lists none.
-func refreshChannelPrices(ch *model.Channel, provider providersBase.ProviderInterface) (int, error) {
+// A list that looks broken against the stored one (model.CheckChannelPriceList) is not stored
+// unless force is set; it returns a *model.SuspiciousPriceListError. Every read is recorded as
+// the channel's price source state, which ReviewPriceSources turns into alerts.
+func refreshChannelPrices(ch *model.Channel, provider providersBase.ProviderInterface, force bool) (int, error) {
 	lister, ok := provider.(providersBase.ChannelPriceListInterface)
 	if !ok {
 		return 0, nil
 	}
+	subject := model.ChannelPriceSubject(ch.Id)
 	prices, err := lister.GetChannelPrices()
 	if err != nil {
+		model.RecordPriceSourceFailure(subject, model.PriceSourceReasonRead, err)
 		return 0, err
+	}
+	if !force {
+		if stored, err := model.GetChannelPrices(ch.Id); err == nil {
+			if err := model.CheckChannelPriceList(stored.Prices, prices); err != nil {
+				var suspicious *model.SuspiciousPriceListError
+				if errors.As(err, &suspicious) {
+					model.RecordPriceSourceFailure(subject, suspicious.Reason, err)
+				}
+				return 0, err
+			}
+		}
 	}
 	if err := model.ReplaceChannelPrices(ch.Id, prices); err != nil {
 		return 0, err
+	}
+	if len(prices) > 0 {
+		model.RecordPriceSourceSuccess(subject, len(prices))
 	}
 	return len(prices), nil
 }
@@ -71,6 +93,7 @@ func respondChannelPrices(c *gin.Context, channel *model.Channel) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channelPricesResponse{
 		Supported:        channelKeepsPriceList(channel),
 		ChannelPriceList: list,
+		State:            model.GetPriceSourceState(model.ChannelPriceSubject(channel.Id)),
 	}})
 }
 
@@ -82,7 +105,8 @@ func GetChannelPrices(c *gin.Context) {
 	}
 }
 
-// RefreshChannelPrices reads the channel's upstream price list now and returns it.
+// RefreshChannelPrices reads the channel's upstream price list now and returns it. A list that
+// looks broken is refused with channel_prices_suspicious; ?force=1 stores it anyway.
 func RefreshChannelPrices(c *gin.Context) {
 	channel, ok := channelForPrices(c)
 	if !ok {
@@ -97,7 +121,13 @@ func RefreshChannelPrices(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeChannelNotFound, "channel provider not found", nil))
 		return
 	}
-	if _, err := refreshChannelPrices(channel, provider); err != nil {
+	if _, err := refreshChannelPrices(channel, provider, c.Query("force") == "1"); err != nil {
+		var suspicious *model.SuspiciousPriceListError
+		if errors.As(err, &suspicious) {
+			err = common.NewAPIError(common.APICodeChannelPricesSuspicious, err.Error(), map[string]any{
+				"reason": suspicious.Reason, "before": suspicious.Before, "after": suspicious.After,
+			})
+		}
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}

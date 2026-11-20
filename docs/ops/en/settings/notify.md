@@ -18,7 +18,7 @@ Key `NotifyDisabledKinds` · Type list · Default `empty`
 
 Where: Platform settings › Notifications › Notice kinds
 
-The kinds of admin notices that are not sent to any notice channel; the card's switches write it. Comma separated; empty sends every kind. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.
+The kinds of admin notices that are not sent to any notice channel; the card's switches write it. Comma separated; empty sends every kind. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, price_source, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.
 
 Examples:
 

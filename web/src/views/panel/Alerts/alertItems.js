@@ -1,4 +1,5 @@
 import { admin } from 'routes/paths';
+import { timestamp2string } from 'utils/common';
 
 // One fact of an alert, as the page shows it: `tone` warn for what breaks requests or loses
 // money, info for the rest. Items are written by the server (model/alert.go and its callers):
@@ -6,7 +7,8 @@ import { admin } from 'routes/paths';
 // "raised|m|in|out|in|out", "held|…", "locked|…", "scheduled|…" and "review|m|day|source" for
 // price changes; "cost|m|higher|lower" and "daily|higher|lower" for upstream charges that differ
 // from the price list; "refresh failed" for
-// credentials; a model name for model consistency.
+// credentials; a model name for model consistency; "reason|failing since|last success" for a
+// price source that stopped updating (reason read, shrank or zeroed).
 export function describeAlertItem(t, kind, item) {
   if (kind === 'model_drift') {
     if (item === 'held') return { tone: 'warn', text: t('alerts.item.drift.held') };
@@ -38,6 +40,16 @@ export function describeAlertItem(t, kind, item) {
     }
     if (parts[0] === 'daily' && parts.length === 2) {
       return { tone: parts[1] === 'higher' ? 'warn' : 'info', text: t(`alerts.item.cost.daily_${parts[1]}`) };
+    }
+  }
+  if (kind === 'price_source') {
+    const [reason, since, last] = item.split('|');
+    if (['read', 'shrank', 'zeroed'].includes(reason)) {
+      const kept = Number(last) > 0 ? t('alerts.item.priceSource.kept', { time: timestamp2string(Number(last)) }) : '';
+      return {
+        tone: 'warn',
+        text: `${t(`alerts.item.priceSource.${reason}`, { since: timestamp2string(Number(since)) })}${kept ? ` ${kept}` : ''}`
+      };
     }
   }
   if (kind === 'credential') return { tone: 'warn', text: t('alerts.item.credential') };

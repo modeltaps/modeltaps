@@ -484,6 +484,7 @@ func cleanUpDeletedChannels(ids []int) {
 	}
 	deleteChannelAliases(ids)
 	deleteChannelPrices(ids)
+	deletePriceSourceStates(ids)
 	if err := DB.Where("channel_id IN ?", ids).Delete(&ModelSupply{}).Error; err != nil {
 		logger.SysError("failed to delete supplies of deleted channels: " + err.Error())
 	}

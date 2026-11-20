@@ -624,6 +624,16 @@ const defaultCatalogURL = "https://models.dev/api.json"
 
 // fetchCatalogData 拉取并解析 models.dev 目录（一次取回，供价格 + 元信息共用）。
 func fetchCatalogData(url string) (map[string]catalogProvider, error) {
+	data, err := readCatalogData(url)
+	if err != nil {
+		RecordPriceSourceFailure(ModelsDevPriceSource, PriceSourceReasonRead, err)
+		return nil, err
+	}
+	RecordPriceSourceSuccess(ModelsDevPriceSource, len(data))
+	return data, nil
+}
+
+func readCatalogData(url string) (map[string]catalogProvider, error) {
 	if url == "" {
 		url = defaultCatalogURL
 	}
@@ -633,6 +643,9 @@ func fetchCatalogData(url string) (map[string]catalogProvider, error) {
 		return nil, fmt.Errorf("fetch catalog: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetch catalog: status %d", resp.StatusCode)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -642,6 +655,9 @@ func fetchCatalogData(url string) (map[string]catalogProvider, error) {
 	data := map[string]catalogProvider{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, fmt.Errorf("parse catalog: %w", err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("parse catalog: no providers listed")
 	}
 	return data, nil
 }

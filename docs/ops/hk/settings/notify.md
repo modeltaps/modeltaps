@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-不發往任何通知渠道的管理員通知類型；由卡片上的開關寫入。用逗號分隔；留空表示所有類型都發。類型有 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可以只接收部分類型。
+不發往任何通知渠道的管理員通知類型；由卡片上的開關寫入。用逗號分隔；留空表示所有類型都發。類型有 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可以只接收部分類型。
 
 示例：
 

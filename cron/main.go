@@ -73,6 +73,17 @@ func InitCron() {
 		return
 	}
 
+	// Tell about price sources that stopped updating (failed reads recorded by the syncs).
+	err = scheduler.Manager.AddJob(
+		"review_price_sources",
+		gocron.CronJob("47 * * * *", false),
+		gocron.NewTask(controller.ReviewPriceSources),
+	)
+	if err != nil {
+		logger.SysError("Cron job error: " + err.Error())
+		return
+	}
+
 	// Compare what upstreams billed with the expected cost of the price list, every hour.
 	err = scheduler.Manager.AddJob(
 		"check_upstream_costs",

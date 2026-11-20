@@ -33,3 +33,22 @@ describe('upstream charges', () => {
     expect(alertTarget({ kind: 'cost_mismatch', channel_id: 3 })).toContain('tab=performance');
   });
 });
+
+describe('price sources', () => {
+  it('warns about a source that stopped updating and says which prices are kept', () => {
+    const x = describeAlertItem(t, 'price_source', 'shrank|1763600000|1763500000');
+    expect(x.tone).toBe('warn');
+    expect(x.text).toContain('alerts.item.priceSource.shrank');
+    expect(x.text).toContain('alerts.item.priceSource.kept');
+  });
+
+  it('leaves out the kept prices when the source was never read', () => {
+    const x = describeAlertItem(t, 'price_source', 'read|1763600000|0');
+    expect(x.text).toContain('alerts.item.priceSource.read');
+    expect(x.text).not.toContain('kept');
+  });
+
+  it('names models.dev', () => {
+    expect(alertSubject(t, { subject: 'source:models.dev' })).toContain('alerts.sources.models_dev');
+  });
+});

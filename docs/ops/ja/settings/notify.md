@@ -18,7 +18,7 @@ outline: deep
 
 場所：プラットフォーム設定 › 通知 › 通知の種類
 
-どの通知チャネルにも送らない管理者通知の種類で、カードのスイッチが書き込みます。カンマ区切りで、空欄ならすべての種類を送ります。種類は channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote、model_library です。通知チャネルごとに受け取る種類を絞ることもできます。
+どの通知チャネルにも送らない管理者通知の種類で、カードのスイッチが書き込みます。カンマ区切りで、空欄ならすべての種類を送ります。種類は channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote、model_library です。通知チャネルごとに受け取る種類を絞ることもできます。
 
 例：
 

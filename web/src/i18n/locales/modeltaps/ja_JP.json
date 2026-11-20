@@ -1558,6 +1558,7 @@
     "invalid_channel_id": "チャネル ID が無効です",
     "channel_not_found": "チャネルが見つかりません",
     "channel_prices_unsupported": "このプロバイダーは価格表を公開していません",
+    "channel_prices_suspicious": "新しく読み込んだ上流の価格表が正しくないようです（{{before}} → {{after}}）。保存済みの価格をそのまま使います。変更が正しい場合は、チャネルのモデルタブで新しい一覧を使ってください。",
     "channel_key_required": "先にキーを入力してください",
     "channel_provider_not_found": "このチャネルタイプはサポートされていません",
     "channel_model_list_unsupported": "このチャネルタイプはモデル一覧を取得できません",
@@ -2373,6 +2374,13 @@
       "pruned_other": "上流にない {{count}} モデルを削除しました。保存すると反映されます",
       "remove": "{{model}} を削除",
       "pricesRefreshed": "上流価格を更新しました",
+      "priceSource": {
+        "failed": "{{since}} から上流の価格表を読み込めていません（{{count}} 回）。",
+        "held": "{{since}} から読み込んだ上流の価格表が正しくないようです（大半のモデルか価格が消えています）。使っていません。",
+        "kept": "表示中の価格は {{time}} のものです。",
+        "none": "まだ価格を読み込んでいません。",
+        "useNew": "新しい一覧を使う"
+      },
       "syncPrices": "価格を同期",
       "ttft": "最初のトークン",
       "supplyNote": "保存すると、モデル一覧の変更はこのチャネルから作られた供給に反映されます。追加したモデルは対応する公開モデルに自動で接続され、削除したモデルの供給は取り下げられます。手動で追加した供給や、モデルページで上流名を変更した供給はそのままです。",
@@ -5072,7 +5080,8 @@
       "price_change": "価格の変更",
       "credential": "認証情報の更新失敗",
       "model_consistency": "モデル情報の不足",
-      "cost_mismatch": "上流の請求額チェック"
+      "cost_mismatch": "上流の請求額チェック",
+      "price_source": "価格ソースの更新停止"
     },
     "subject": {
       "source": "ソース: {{source}}",
@@ -5080,6 +5089,12 @@
       "goneChannel": "チャネル #{{id}}（削除済み）"
     },
     "item": {
+      "priceSource": {
+        "read": "{{since}} から価格表を読み込めていません。",
+        "shrank": "{{since}} から価格表の大半のモデルが消えています。使っていません。",
+        "zeroed": "{{since}} から価格表の大半の価格が 0 になっています。使っていません。",
+        "kept": "価格は {{time}} のままです。"
+      },
       "drift": {
         "renamed": "改名: {{model}}",
         "gone": "アップストリームから削除: {{model}}",

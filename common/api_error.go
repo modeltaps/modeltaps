@@ -33,6 +33,10 @@ const (
 	APICodeChannelTagTypeMismatch        = "channel_tag_type_mismatch"
 	APICodeChannelTagInvalidSettingType  = "channel_tag_invalid_setting_type"
 	APICodeChannelTagInvalidStatus       = "channel_tag_invalid_status"
+
+	// A refreshed upstream price list lost most of its models or prices; params reason, before,
+	// after. The stored list is kept; refreshing with force=1 takes the new one.
+	APICodeChannelPricesSuspicious = "channel_prices_suspicious"
 	// A non-root admin moved a channel's key to another address without entering the key again.
 	APICodeChannelBaseURLNeedsKey = "channel_base_url_needs_key"
 	// A non-root admin copied a channel's key to a channel with another type or address.
