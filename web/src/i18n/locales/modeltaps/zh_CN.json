@@ -1588,6 +1588,8 @@
     "channel_not_found": "渠道不存在",
     "channel_prices_unsupported": "这个供应商不提供价格表",
     "channel_prices_suspicious": "新读到的上游价格表看起来不对（{{before}} → {{after}}），已保留原来的价格。如果变化属实，请到渠道的模型页签使用新列表。",
+    "user_group_in_use": "这个分组还在使用：{{users}} 个账号、{{shadow_accounts}} 个组织、{{tokens}} 个 API Key（另有 {{backup_tokens}} 个设为备用分组）、{{channels}} 个渠道。请选一个分组接替。",
+    "user_group_successor_invalid": "请选另一个已有的分组来接替。",
     "channel_key_required": "请先填写密钥",
     "channel_provider_not_found": "不支持该渠道类型",
     "channel_model_list_unsupported": "该渠道类型不支持获取模型列表",
@@ -3130,6 +3132,20 @@
     }
   },
   "userGroup": {
+    "delete": {
+      "title": "删除分组 {{name}}",
+      "inUse": "这个分组还在使用：",
+      "successor": "改用分组",
+      "successorHint": "账号和 API Key 改用这个分组；渠道里去掉被删的分组，去掉后没有分组的渠道改用这个分组。",
+      "moveAndDelete": "迁移并删除",
+      "refs": {
+        "users_other": "{{count}} 个账号",
+        "shadow_accounts_other": "{{count}} 个组织",
+        "tokens_other": "{{count}} 个 API Key",
+        "backup_tokens_other": "{{count}} 个 API Key 把它设为备用分组",
+        "channels_other": "{{count}} 个渠道列着它"
+      }
+    },
     "panel": {
       "settings": "设置",
       "symbolFixed": "标识创建后不能修改。",

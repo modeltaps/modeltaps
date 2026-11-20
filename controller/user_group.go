@@ -97,7 +97,24 @@ func DeleteUserGroup(c *gin.Context) {
 		return
 	}
 
-	if err := userGroup.Delete(); err != nil {
+	// What still names the group moves to the successor (?successor=), which is required then.
+	successor := c.Query("successor")
+	if successor == "" {
+		refs, err := model.CountUserGroupReferences(userGroup.Symbol)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		if refs.Any() {
+			common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeUserGroupInUse,
+				"the group is still in use: choose a successor group for its accounts, API keys and channels", userGroupReferenceParams(refs)))
+			return
+		}
+	}
+	if err := model.DeleteUserGroupMoving(userGroup, successor); err != nil {
+		if errors.Is(err, model.ErrUserGroupSuccessor) {
+			err = common.NewAPIError(common.APICodeUserGroupSuccessorInvalid, err.Error(), nil)
+		}
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
@@ -107,6 +124,30 @@ func DeleteUserGroup(c *gin.Context) {
 		"message": "",
 	})
 
+}
+
+func userGroupReferenceParams(r model.UserGroupReferences) map[string]any {
+	return map[string]any{
+		"users": r.Users, "shadow_accounts": r.ShadowAccounts, "tokens": r.Tokens,
+		"backup_tokens": r.BackupTokens, "channels": r.Channels,
+	}
+}
+
+// GetUserGroupReferences counts what names the group: the delete dialog lists it and asks for a
+// successor when there is any.
+func GetUserGroupReferences(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	userGroup, err := model.GetUserGroupsById(id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	refs, err := model.CountUserGroupReferences(userGroup.Symbol)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": refs})
 }
 
 func ChangeUserGroupEnable(c *gin.Context) {

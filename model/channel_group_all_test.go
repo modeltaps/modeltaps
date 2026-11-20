@@ -12,7 +12,7 @@ import (
 func useAllGroupsTestDB(t *testing.T, symbols ...string) {
 	t.Helper()
 	useSupplyTestDB(t)
-	if err := DB.AutoMigrate(&UserGroup{}); err != nil {
+	if err := DB.AutoMigrate(&UserGroup{}, &User{}, &Token{}); err != nil {
 		t.Fatal(err)
 	}
 	oldEnabled := config.ModelSupplyEnabled
@@ -123,7 +123,7 @@ func TestAllGroupsChannelFollowsUserGroups(t *testing.T) {
 		t.Fatalf("re-enabled group routes %v", got)
 	}
 
-	if err := team.Delete(); err != nil {
+	if err := DeleteUserGroupMoving(team, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got := routedChannels("team", "m"); len(got) != 0 {

@@ -1568,6 +1568,8 @@
     "channel_not_found": "チャネルが見つかりません",
     "channel_prices_unsupported": "このプロバイダーは価格表を公開していません",
     "channel_prices_suspicious": "新しく読み込んだ上流の価格表が正しくないようです（{{before}} → {{after}}）。保存済みの価格をそのまま使います。変更が正しい場合は、チャネルのモデルタブで新しい一覧を使ってください。",
+    "user_group_in_use": "このグループはまだ使われています：アカウント {{users}} 件、組織 {{shadow_accounts}} 件、API キー {{tokens}} 件（予備グループとして {{backup_tokens}} 件）、チャネル {{channels}} 件。移行先のグループを選んでください。",
+    "user_group_successor_invalid": "移行先には別の既存グループを選んでください。",
     "channel_key_required": "先にキーを入力してください",
     "channel_provider_not_found": "このチャネルタイプはサポートされていません",
     "channel_model_list_unsupported": "このチャネルタイプはモデル一覧を取得できません",
@@ -3112,6 +3114,20 @@
     }
   },
   "userGroup": {
+    "delete": {
+      "title": "グループ {{name}} を削除",
+      "inUse": "このグループはまだ使われています：",
+      "successor": "移行先のグループ",
+      "successorHint": "アカウントと API キーはこのグループに移ります。チャネルからは削除するグループを外し、グループがなくなったチャネルはこのグループになります。",
+      "moveAndDelete": "移行して削除",
+      "refs": {
+        "users_other": "{{count}} 件のアカウント",
+        "shadow_accounts_other": "{{count}} 件の組織",
+        "tokens_other": "{{count}} 件の API キー",
+        "backup_tokens_other": "{{count}} 件の API キーが予備グループに設定",
+        "channels_other": "{{count}} 件のチャネルが指定"
+      }
+    },
     "panel": {
       "settings": "設定",
       "symbolFixed": "識別子は作成後に変更できません。",

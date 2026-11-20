@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
 import { ColumnPicker, ListFooter, ListSkeleton, PageEmptyState, useColumnVisibility, useListLayout } from '@/components/list-page';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
@@ -20,6 +19,7 @@ import { showError, showSuccess } from 'utils/common';
 import usePaginatedList from 'hooks/usePaginatedList';
 import UserGroupPanel from './UserGroupPanel';
 import NewUserGroupSheet from './NewUserGroupSheet';
+import DeleteUserGroupDialog from './DeleteUserGroupDialog';
 import { StatusCell, ActionsCell } from './UserGroupRowCells';
 
 // Columns: name (with the symbol) and the row menu are fixed; the id is one click away.
@@ -91,14 +91,11 @@ export default function UserGroup() {
   const manageUserGroup = async (id, action) => {
     const url = '/api/user_group/';
     try {
-      let res;
-      if (action === 'delete') res = await API.delete(url + id);
-      else if (action === 'status') res = await API.put(`${url}enable/${id}`);
-      else return false;
+      if (action !== 'status') return false;
+      const res = await API.put(`${url}enable/${id}`);
       if (res.data.success) {
         showSuccess(t('userPage.operationSuccess'));
-        if (action === 'delete' && id === route.openId) route.close();
-        else setReloadKey((k) => k + 1);
+        setReloadKey((k) => k + 1);
         refresh();
       } else {
         showError(res.data.message);
@@ -110,10 +107,12 @@ export default function UserGroup() {
   };
 
   const toggle = (item) => manageUserGroup(item.id, 'status');
-  const confirmDelete = () => {
-    const item = pendingDelete;
+  // The delete dialog lists what names the group and moves it to a successor group.
+  const onDeleted = (item) => {
     setPendingDelete(null);
-    if (item) manageUserGroup(item.id, 'delete');
+    showSuccess(t('userPage.operationSuccess'));
+    if (item.id === route.openId) route.close();
+    refresh();
   };
 
   const columnState = useColumnVisibility({ storageKey: 'user-group-column-visibility-v1', columns: GROUP_COLUMNS });
@@ -318,24 +317,7 @@ export default function UserGroup() {
         />
       )}
 
-      <Dialog open={Boolean(pendingDelete)} onOpenChange={(o) => !o && setPendingDelete(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('common.delete')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <p className="text-sm text-muted-foreground">{t('common.deleteConfirm', { title: pendingDelete?.name })}</p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingDelete(null)}>
-              {t('userPage.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {pendingDelete && <DeleteUserGroupDialog group={pendingDelete} onClose={() => setPendingDelete(null)} onDeleted={onDeleted} />}
     </div>
   );
 }

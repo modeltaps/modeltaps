@@ -34,6 +34,11 @@ const (
 	APICodeChannelTagInvalidSettingType  = "channel_tag_invalid_setting_type"
 	APICodeChannelTagInvalidStatus       = "channel_tag_invalid_status"
 
+	// A user group that accounts, API keys or channels still name is deleted without a successor
+	// group (params: the counts of model.UserGroupReferences), or with one that cannot take them.
+	APICodeUserGroupInUse            = "user_group_in_use"
+	APICodeUserGroupSuccessorInvalid = "user_group_successor_invalid"
+
 	// A refreshed upstream price list lost most of its models or prices; params reason, before,
 	// after. The stored list is kept; refreshing with force=1 takes the new one.
 	APICodeChannelPricesSuspicious = "channel_prices_suspicious"

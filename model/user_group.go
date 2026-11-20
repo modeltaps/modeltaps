@@ -88,16 +88,7 @@ func (c *UserGroup) Update() error {
 	return err
 }
 
-func (c *UserGroup) Delete() error {
-	err := DB.Delete(c).Error
-
-	if err == nil {
-		GlobalUserGroupRatio.Load()
-		// Channels whose group is ChannelGroupAll cover the new set of groups.
-		ChannelGroup.Load()
-	}
-	return err
-}
+// Deleting a group moves what names it to a successor group: DeleteUserGroupMoving.
 
 func ChangeUserGroupEnable(id int, enable bool) error {
 	err := DB.Model(&UserGroup{}).Where("id = ?", id).Update("enable", enable).Error

@@ -404,6 +404,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			userGroup.GET("/", controller.GetUserGroups)
 			userGroup.GET("/:id", controller.GetUserGroupById)
+			userGroup.GET("/:id/references", controller.GetUserGroupReferences)
 			userGroup.POST("/", controller.AddUserGroup)
 			userGroup.PUT("/enable/:id", controller.ChangeUserGroupEnable)
 			userGroup.PUT("/", controller.UpdateUserGroup)

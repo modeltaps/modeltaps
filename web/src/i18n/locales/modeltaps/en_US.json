@@ -1489,6 +1489,25 @@
     "timeConsuming": "Duration"
   },
   "userGroup": {
+    "delete": {
+      "title": "Delete group {{name}}",
+      "inUse": "This group is still in use:",
+      "successor": "Move them to",
+      "successorHint": "Accounts and API keys take this group; channels drop the deleted group, and a channel left with no group takes this one.",
+      "moveAndDelete": "Move and delete",
+      "refs": {
+        "users_one": "{{count}} account",
+        "users_other": "{{count}} accounts",
+        "shadow_accounts_one": "{{count}} organization",
+        "shadow_accounts_other": "{{count}} organizations",
+        "tokens_one": "{{count}} API key",
+        "tokens_other": "{{count}} API keys",
+        "backup_tokens_one": "{{count}} API key uses it as the backup group",
+        "backup_tokens_other": "{{count}} API keys use it as the backup group",
+        "channels_one": "{{count}} channel lists it",
+        "channels_other": "{{count}} channels list it"
+      }
+    },
     "ratio": "Ratio",
     "panel": {
       "settings": "Settings",
@@ -1659,6 +1678,8 @@
     "channel_not_found": "Channel not found",
     "channel_prices_unsupported": "This provider does not publish its prices",
     "channel_prices_suspicious": "The new upstream price list looks broken ({{before}} → {{after}}), so the stored prices were kept. If the change is real, use the new list from the channel's models tab.",
+    "user_group_in_use": "The group is still used by {{users}} accounts, {{shadow_accounts}} organizations, {{tokens}} API keys ({{backup_tokens}} as the backup group) and {{channels}} channels. Choose a group to move them to.",
+    "user_group_successor_invalid": "Choose another existing group to move them to.",
     "channel_key_required": "Enter a key first",
     "channel_provider_not_found": "This channel type is not supported",
     "channel_model_list_unsupported": "This channel type cannot fetch a model list",
