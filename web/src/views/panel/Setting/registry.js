@@ -1,6 +1,6 @@
 import { admin } from 'routes/paths';
 // ==============================|| PLATFORM SETTINGS — GROUP AND CARD REGISTRY ||============================== //
-// The eight platform settings groups and their cards, as plain data: the page (index.jsx) attaches
+// The platform settings groups and their cards, as plain data: the page (index.jsx) attaches
 // a component to every card id, the command palette lists the groups and cards, and the tests
 // check that every option key still has a card. A card id doubles as its `?highlight=` anchor.
 //
@@ -118,10 +118,31 @@ export const PLATFORM_GROUPS = [
     ]
   },
   {
+    id: 'supply',
+    // Which supply serves a request: the supply mode and cost order, intake rules, session
+    // affinity and automatic routing.
+    cards: [
+      card('supply-mode', 'form', [
+        'ModelSupplyEnabled',
+        'SupplyModeDefault',
+        'SupplyCostOrder',
+        'SupplyCostMinSavingPercent',
+        'SupplyCostMinSuccessPercent'
+      ]),
+      card('supply-intake-rules', 'form', ['SupplyIntakeRules']),
+      card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
+      card('auto-routing', 'form', [
+        'RoutingDecisionBillingEnabled',
+        'UserRoutingPolicyEnabled',
+        'OrganizationRoutingPolicyMaxCount',
+        'PersonalRoutingPolicyMaxCount'
+      ])
+    ]
+  },
+  {
     id: 'gateway',
-    // 容错: what happens when an upstream fails; 分配: which supply serves a request;
-    // 请求与协议: how a request is forwarded.
-    tabs: ['resilience', 'allocation', 'request'],
+    // 容错: what happens when an upstream fails; 请求与协议: how a request is forwarded.
+    tabs: ['resilience', 'request'],
     cards: [
       card('retry', 'form', ['RetryTimes', 'RetryCooldownSeconds', 'RetryTimeOut', 'RetryCooldownPerStatus'], 'resilience'),
       card('supply-pause-rules', 'form', ['PauseRules'], 'resilience'),
@@ -140,20 +161,6 @@ export const PLATFORM_GROUPS = [
         'resilience'
       ),
       card('error-handling', 'form', ['ChannelFailErrorWrapEnabled', 'ChannelFailErrorMessage'], 'resilience'),
-      card(
-        'supply-mode',
-        'form',
-        ['ModelSupplyEnabled', 'SupplyModeDefault', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent'],
-        'allocation'
-      ),
-      card('supply-intake-rules', 'form', ['SupplyIntakeRules'], 'allocation'),
-      card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds'], 'allocation'),
-      card(
-        'auto-routing',
-        'form',
-        ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount', 'PersonalRoutingPolicyMaxCount'],
-        'allocation'
-      ),
       card('model-name-match', 'form', ['ModelNameCaseInsensitiveEnabled', 'UnifiedRequestResponseModelEnabled'], 'request'),
       card(
         'native-protocol',
@@ -169,11 +176,7 @@ export const PLATFORM_GROUPS = [
         ],
         'request'
       ),
-      card('prompt-limits', 'form', ['MaxPromptTokens'], 'request'),
-      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'], 'request'),
-      // Where generated images are uploaded so a request asking for a URL gets one.
-      card('image-storage', 'form', IMAGE_STORAGE_KEYS, 'request'),
-      card('mj-notify', 'form', ['MjNotifyEnabled'], 'request')
+      card('prompt-limits', 'form', ['MaxPromptTokens'], 'request')
     ]
   },
   {
@@ -189,6 +192,16 @@ export const PLATFORM_GROUPS = [
       ]),
       card('log-io', 'form', ['LogIOEnabled']),
       card('safety', 'form', ['EnableSafe', 'SafeToolName', 'SafeKeyWords'])
+    ]
+  },
+  {
+    id: 'media',
+    // Images and media the gateway stores or fetches: where generated images are uploaded so a
+    // request asking for a URL gets one, the image fetch proxy and Midjourney callbacks.
+    cards: [
+      card('image-storage', 'form', IMAGE_STORAGE_KEYS),
+      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey']),
+      card('mj-notify', 'form', ['MjNotifyEnabled'])
     ]
   },
   {
@@ -279,12 +292,15 @@ const LEGACY_SECTIONS = {
   payment: { group: 'payment', highlight: 'payment' },
   gateways: { group: 'payment', highlight: 'payment-gateways' },
   model: { group: 'gateway', highlight: 'native-protocol' },
-  image: { group: 'gateway', highlight: 'image-proxy' },
+  image: { group: 'media', highlight: 'image-proxy' },
   ops: { group: 'gateway', highlight: 'channel-auto' },
   safety: { group: 'privacy', highlight: 'safety' },
   chat: { group: 'entries', highlight: 'builtin-chat' },
   org: { group: 'orgpolicy', highlight: 'org-policy' }
 };
+
+// Tabs that left their group for a group of their own: `<group>:<tab>` → the new group.
+const MOVED_TABS = { 'gateway:allocation': 'supply' };
 
 // Older `?tab=` values fold into a legacy section first.
 const LEGACY_TABS = { other: 'branding' };
@@ -306,7 +322,7 @@ const withHighlight = (groupId, highlight) =>
 export function resolveSettingsTarget({ section, tab, highlight, isRoot = false }) {
   const groups = visibleGroups(isRoot).map((group) => group.id);
   const legacyTab = !section && tab ? LEGACY_TABS[tab] || tab : null;
-  const requested = section || legacyTab;
+  const requested = (section && tab && MOVED_TABS[`${section}:${tab}`]) || section || legacyTab;
   if (INVITE_SECTIONS.has(requested) || INVITE_HIGHLIGHTS.has(highlight)) return INVITE_CODE_URL;
 
   const anchor = HIGHLIGHT_ALIASES[highlight] || highlight || null;

@@ -3043,8 +3043,10 @@
       "settingAuth": "登录与注册",
       "settingBilling": "计费设置",
       "settingPayment": "支付设置",
+      "settingSupply": "线路分配",
       "settingGateway": "网关设置",
       "settingPrivacy": "日志与隐私",
+      "settingMedia": "媒体与存储",
       "settingNotify": "通知",
       "settingOrgPolicy": "组织策略",
       "settingEntries": "用户入口",
@@ -3466,13 +3468,21 @@
           "label": "支付",
           "description": "收款方式、充值与发票"
         },
+        "supply": {
+          "label": "线路分配",
+          "description": "请求走哪条线路：分流方式、入库、会话亲和与自动路由"
+        },
         "gateway": {
           "label": "网关",
-          "description": "转发、重试和渠道健康"
+          "description": "重试、渠道健康和请求转发"
         },
         "privacy": {
           "label": "日志与隐私",
           "description": "记录什么、保存多久、谁能看"
+        },
+        "media": {
+          "label": "媒体与存储",
+          "description": "生成图片存到哪、图片代理和 Midjourney 回调"
         },
         "notify": {
           "label": "通知",
@@ -3778,7 +3788,6 @@
       },
       "tabs": {
         "resilience": "容错",
-        "allocation": "分配",
         "request": "请求与协议",
         "notices": "通知",
         "integrations": "集成"

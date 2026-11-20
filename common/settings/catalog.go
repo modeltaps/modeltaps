@@ -131,7 +131,7 @@ func Get(key string) (Setting, bool) {
 }
 
 // groupOrder is the order of the settings page groups, then the object pages.
-var groupOrder = []string{"site", "auth", "billing", "payment", "gateway", "privacy", "entries", "mail", "notify", "orgpolicy",
+var groupOrder = []string{"site", "auth", "billing", "payment", "supply", "gateway", "privacy", "media", "entries", "mail", "notify", "orgpolicy",
 	"channels", "models", "allocation", "user-groups", "routing-policies", "organizations", "tokens"}
 
 func groupRank(s Setting) int {

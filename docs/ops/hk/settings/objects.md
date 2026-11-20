@@ -27,7 +27,7 @@ outline: deep
 - `10` 在同一分組裏服務同一模型、優先級為 0 的渠道之前先試。
 - `0` 預設值。優先級 -1 的後備渠道只在所有 0 級渠道都出錯時才會用到。
 
-相關設定：[權重](./objects.md#channel-weight) · [優先級](./objects.md#supply-priority) · [成本與優先級](./gateway.md#SupplyCostOrder)
+相關設定：[權重](./objects.md#channel-weight) · [優先級](./objects.md#supply-priority) · [成本與優先級](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ outline: deep
 - `3` 和同優先級、權重 1 的渠道一起時，承接約 3 ÷ (3 + 1) = 75% 的請求。
 - `1` 預設值：同一優先級的渠道平分請求。
 
-相關設定：[優先級](./objects.md#channel-priority) · [權重](./objects.md#supply-weight) · [預設分流方式](./gateway.md#SupplyModeDefault)
+相關設定：[優先級](./objects.md#channel-priority) · [權重](./objects.md#supply-weight) · [預設分流方式](./supply.md#SupplyModeDefault)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ outline: deep
 - `3` Vercel AI Gateway 刷卡：$100 額度收 $3.00 手續費。
 - `0` 按標價結算的官方廠商 API。
 
-相關設定：[收款成本率](./billing.md#PaymentCostPercent) · [成本與優先級](./gateway.md#SupplyCostOrder) · [分組倍率](./objects.md#user_group-ratio)
+相關設定：[收款成本率](./billing.md#PaymentCostPercent) · [成本與優先級](./supply.md#SupplyCostOrder) · [分組倍率](./objects.md#user_group-ratio)
 
 指南：[use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -252,7 +252,7 @@ outline: deep
 - `failover` 同一檔裏權重 3 和 1 的兩條線路：只要權重 3 的線路正常，它就承接全部請求。
 - `balance` 同樣兩條線路分別承接約 75% 和 25% 的請求。
 
-相關設定：[預設分流方式](./gateway.md#SupplyModeDefault) · [線路次序](./objects.md#model-allocation) · [權重](./objects.md#supply-weight)
+相關設定：[預設分流方式](./supply.md#SupplyModeDefault) · [線路次序](./objects.md#model-allocation) · [權重](./objects.md#supply-weight)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -295,7 +295,7 @@ outline: deep
 - `2` 排在兩條優先級 1 的線路上面：只有這條線路出錯時才用到它們。
 - `1` 和另一條優先級 1 的線路組成一檔，分擔這一檔的請求。
 
-相關設定：[權重](./objects.md#supply-weight) · [線路次序](./objects.md#model-allocation) · [成本與優先級](./gateway.md#SupplyCostOrder)
+相關設定：[權重](./objects.md#supply-weight) · [線路次序](./objects.md#model-allocation) · [成本與優先級](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -314,7 +314,7 @@ outline: deep
 - `3` 本檔另有一條權重 1 的線路：負載均衡時約承接 75% 的請求，主備時承接全部。
 - `1` 兩條權重 1 的線路在負載均衡下各承接一半。
 
-相關設定：[優先級](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode) · [預設分流方式](./gateway.md#SupplyModeDefault)
+相關設定：[優先級](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode) · [預設分流方式](./supply.md#SupplyModeDefault)
 
 <a id="supply-enabled"></a>
 
@@ -326,7 +326,7 @@ outline: deep
 
 這條線路是否承接模型的請求。關閉後設定都保留，只是被跳過。收錄規則加進來的線路先保持關閉，等你打開；打開線路的同時也認可了它的成本，價格閘不再動它。
 
-相關設定：[上游新模型接入規則](./gateway.md#SupplyIntakeRules)
+相關設定：[上游新模型接入規則](./supply.md#SupplyIntakeRules)
 
 <a id="supply-upstream_model"></a>
 
@@ -362,7 +362,7 @@ outline: deep
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` 官方 Anthropic API 在前；渠道 7 只在它出錯時才用。
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` 渠道 3 和 5 共用第一個位置：分別承接約 75% 和 25% 的請求。
 
-相關設定：[線路次序](./objects.md#model-allocation) · [優先級](./objects.md#supply-priority) · [成本與優先級](./gateway.md#SupplyCostOrder)
+相關設定：[線路次序](./objects.md#model-allocation) · [優先級](./objects.md#supply-priority) · [成本與優先級](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

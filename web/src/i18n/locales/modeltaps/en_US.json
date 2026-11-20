@@ -3150,8 +3150,10 @@
       "settingAuth": "Sign-in & sign-up",
       "settingBilling": "Billing settings",
       "settingPayment": "Payment settings",
+      "settingSupply": "Supply allocation",
       "settingGateway": "Gateway settings",
       "settingPrivacy": "Logs & privacy",
+      "settingMedia": "Media & storage",
       "settingNotify": "Notifications",
       "settingOrgPolicy": "Organization policy",
       "settingEntries": "User entries",
@@ -3564,13 +3566,21 @@
           "label": "Payments",
           "description": "How you get paid, top-ups and invoices"
         },
+        "supply": {
+          "label": "Supply allocation",
+          "description": "Which supply serves a request: supply mode, intake, affinity and routing"
+        },
         "gateway": {
           "label": "Gateway",
-          "description": "Forwarding, retries and channel health"
+          "description": "Retries, channel health and request forwarding"
         },
         "privacy": {
           "label": "Logs & privacy",
           "description": "What is recorded, for how long, and who can see it"
+        },
+        "media": {
+          "label": "Media & storage",
+          "description": "Where generated images are stored, the image proxy and Midjourney callbacks"
         },
         "notify": {
           "label": "Notifications",
@@ -3878,7 +3888,6 @@
       },
       "tabs": {
         "resilience": "Resilience",
-        "allocation": "Allocation",
         "request": "Requests & protocols",
         "notices": "Notifications",
         "integrations": "Integrations"

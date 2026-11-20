@@ -116,10 +116,13 @@ describe('navSectionsFor (platform admin)', () => {
   it('root sees every group', () => {
     expect(idsOf(navSectionsFor({ context: 'admin', isRoot: true }))).toEqual([
       { id: 'admin_main', items: ['analytics', 'alerts', 'systemInfo'] },
-      { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_gateway'] },
+      { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_supply', 'setting_gateway'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin', 'setting_auth', 'setting_orgpolicy'] },
       { id: 'finance', items: ['payment', 'redemption', 'invite_code', 'setting_billing', 'setting_payment'] },
-      { id: 'system', items: ['setting_site', 'setting_entries', 'setting_privacy', 'setting_mail', 'setting_notify', 'setting_modified'] }
+      {
+        id: 'system',
+        items: ['setting_site', 'setting_entries', 'setting_privacy', 'setting_media', 'setting_mail', 'setting_notify', 'setting_modified']
+      }
     ]);
   });
 
@@ -309,6 +312,7 @@ describe('commandSections', () => {
       'channel',
       'pricing',
       'routing_policy',
+      'setting_supply',
       'setting_gateway',
       'user',
       'user_group',
@@ -321,6 +325,7 @@ describe('commandSections', () => {
       'setting_site',
       'setting_entries',
       'setting_privacy',
+      'setting_media',
       'setting_mail',
       'setting_notify',
       'setting_modified'

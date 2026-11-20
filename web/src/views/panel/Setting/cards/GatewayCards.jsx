@@ -25,7 +25,7 @@ import { fetchIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
 // native protocols, prompt limits, image proxy and the auto routing options. Field labels, hints
-// and help come from the settings catalog (common/settings/gateway*.go).
+// and help come from the settings catalog (common/settings/gateway*.go, supply.go and media.go).
 
 const gsKey = (k) => `setting_index.operationSettings.generalSettings.${k}`;
 

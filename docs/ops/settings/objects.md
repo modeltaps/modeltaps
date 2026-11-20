@@ -27,7 +27,7 @@ outline: deep
 - `10` 在同一分组里服务同一模型、优先级为 0 的渠道之前先试。
 - `0` 默认值。优先级 -1 的备用渠道只在所有 0 级渠道都出错时才会用到。
 
-相关设置：[权重](./objects.md#channel-weight) · [优先级](./objects.md#supply-priority) · [成本与优先级](./gateway.md#SupplyCostOrder)
+相关设置：[权重](./objects.md#channel-weight) · [优先级](./objects.md#supply-priority) · [成本与优先级](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ outline: deep
 - `3` 和同优先级、权重 1 的渠道一起时，承接约 3 ÷ (3 + 1) = 75% 的请求。
 - `1` 默认值：同一优先级的渠道平分请求。
 
-相关设置：[优先级](./objects.md#channel-priority) · [权重](./objects.md#supply-weight) · [默认分流方式](./gateway.md#SupplyModeDefault)
+相关设置：[优先级](./objects.md#channel-priority) · [权重](./objects.md#supply-weight) · [默认分流方式](./supply.md#SupplyModeDefault)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ outline: deep
 - `3` Vercel AI Gateway 刷卡：$100 额度收 $3.00 手续费。
 - `0` 按标价结算的官方厂商 API。
 
-相关设置：[收款成本率](./billing.md#PaymentCostPercent) · [成本与优先级](./gateway.md#SupplyCostOrder) · [分组倍率](./objects.md#user_group-ratio)
+相关设置：[收款成本率](./billing.md#PaymentCostPercent) · [成本与优先级](./supply.md#SupplyCostOrder) · [分组倍率](./objects.md#user_group-ratio)
 
 指南：[use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -252,7 +252,7 @@ outline: deep
 - `failover` 同一档里权重 3 和 1 的两条线路：只要权重 3 的线路正常，它就承接全部请求。
 - `balance` 同样两条线路分别承接约 75% 和 25% 的请求。
 
-相关设置：[默认分流方式](./gateway.md#SupplyModeDefault) · [线路顺序](./objects.md#model-allocation) · [权重](./objects.md#supply-weight)
+相关设置：[默认分流方式](./supply.md#SupplyModeDefault) · [线路顺序](./objects.md#model-allocation) · [权重](./objects.md#supply-weight)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -295,7 +295,7 @@ outline: deep
 - `2` 排在两条优先级 1 的线路上面：只有这条线路出错时才用到它们。
 - `1` 和另一条优先级 1 的线路组成一档，分担这一档的请求。
 
-相关设置：[权重](./objects.md#supply-weight) · [线路顺序](./objects.md#model-allocation) · [成本与优先级](./gateway.md#SupplyCostOrder)
+相关设置：[权重](./objects.md#supply-weight) · [线路顺序](./objects.md#model-allocation) · [成本与优先级](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -314,7 +314,7 @@ outline: deep
 - `3` 本档另有一条权重 1 的线路：负载均衡时约承接 75% 的请求，主备时承接全部。
 - `1` 两条权重 1 的线路在负载均衡下各承接一半。
 
-相关设置：[优先级](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode) · [默认分流方式](./gateway.md#SupplyModeDefault)
+相关设置：[优先级](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode) · [默认分流方式](./supply.md#SupplyModeDefault)
 
 <a id="supply-enabled"></a>
 
@@ -326,7 +326,7 @@ outline: deep
 
 这条线路是否承接模型的请求。关闭后设置都保留，只是被跳过。收录规则加进来的线路先保持关闭，等你打开；打开线路的同时也认可了它的成本，价格闸不再动它。
 
-相关设置：[上游新模型接入规则](./gateway.md#SupplyIntakeRules)
+相关设置：[上游新模型接入规则](./supply.md#SupplyIntakeRules)
 
 <a id="supply-upstream_model"></a>
 
@@ -362,7 +362,7 @@ outline: deep
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` 官方 Anthropic API 在前；渠道 7 只在它出错时才用。
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` 渠道 3 和 5 共用第一个位置：分别承接约 75% 和 25% 的请求。
 
-相关设置：[线路顺序](./objects.md#model-allocation) · [优先级](./objects.md#supply-priority) · [成本与优先级](./gateway.md#SupplyCostOrder)
+相关设置：[线路顺序](./objects.md#model-allocation) · [优先级](./objects.md#supply-priority) · [成本与优先级](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

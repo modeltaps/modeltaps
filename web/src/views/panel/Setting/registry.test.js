@@ -141,8 +141,10 @@ describe('platform settings registry', () => {
       'auth',
       'billing',
       'payment',
+      'supply',
       'gateway',
       'privacy',
+      'media',
       'entries',
       'mail',
       'notify',
@@ -189,9 +191,9 @@ describe('platform settings registry', () => {
 });
 
 describe('auto routing options', () => {
-  it('the gateway auto routing card saves the organization policy switch and cap', () => {
+  it('the supply allocation auto routing card saves the organization policy switch and cap', () => {
     expect(cardById('auto-routing')).toMatchObject({
-      groupId: 'gateway',
+      groupId: 'supply',
       kind: 'form',
       keys: [
         'RoutingDecisionBillingEnabled',
@@ -208,9 +210,9 @@ describe('model supply options', () => {
     expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRules'] });
   });
 
-  it('the routing switch and the default supply mode are a gateway form card', () => {
+  it('the routing switch and the default supply mode are a supply allocation form card', () => {
     expect(cardById('supply-mode')).toMatchObject({
-      groupId: 'gateway',
+      groupId: 'supply',
       kind: 'form',
       keys: ['ModelSupplyEnabled', 'SupplyModeDefault', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent']
     });
@@ -320,7 +322,7 @@ describe('tabbed groups', () => {
     for (const group of PLATFORM_GROUPS.filter((g) => g.tabs)) {
       for (const card of group.cards) expect(group.tabs).toContain(card.tab);
     }
-    expect(PLATFORM_GROUPS.find((g) => g.id === 'gateway').tabs).toEqual(['resilience', 'allocation', 'request']);
+    expect(PLATFORM_GROUPS.find((g) => g.id === 'gateway').tabs).toEqual(['resilience', 'request']);
     expect(PLATFORM_GROUPS.find((g) => g.id === 'notify').tabs).toBeUndefined();
   });
 
@@ -334,8 +336,24 @@ describe('tabbed groups', () => {
     );
   });
 
-  it('the Midjourney callback is a gateway request setting, old links follow it', () => {
-    expect(cardById('mj-notify')).toMatchObject({ groupId: 'gateway', tab: 'request' });
-    expect(resolveSettingsTarget({ section: 'notify', highlight: 'mj-notify' })).toBe('/panel/admin/settings/gateway?highlight=mj-notify');
+  it('the Midjourney callback is a media setting, old links follow it', () => {
+    expect(cardById('mj-notify')).toMatchObject({ groupId: 'media' });
+    expect(resolveSettingsTarget({ section: 'notify', highlight: 'mj-notify' })).toBe('/panel/admin/settings/media?highlight=mj-notify');
+    expect(resolveSettingsTarget({ section: 'gateway', highlight: 'mj-notify' })).toBe('/panel/admin/settings/media?highlight=mj-notify');
+  });
+
+  it('the allocation tab and the image cards left the gateway, old links follow them', () => {
+    expect(resolveSettingsTarget({ section: 'gateway', tab: 'allocation' })).toBe('/panel/admin/settings/supply');
+    expect(resolveSettingsTarget({ section: 'gateway', tab: 'allocation', highlight: 'SupplyCostOrder' })).toBe(
+      '/panel/admin/settings/supply?highlight=SupplyCostOrder'
+    );
+    expect(resolveSettingsTarget({ section: 'gateway', highlight: 'session-affinity' })).toBe(
+      '/panel/admin/settings/supply?highlight=session-affinity'
+    );
+    expect(resolveSettingsTarget({ section: 'gateway', tab: 'request', highlight: 'ImageStorageProvider' })).toBe(
+      '/panel/admin/settings/media?highlight=ImageStorageProvider'
+    );
+    expect(resolveSettingsTarget({ section: 'image' })).toBe('/panel/admin/settings/media?highlight=image-proxy');
+    expect(resolveSettingsTarget({ section: 'gateway', tab: 'request' })).toBeNull();
   });
 });

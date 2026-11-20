@@ -3042,8 +3042,10 @@
       "settingAuth": "登入與註冊",
       "settingBilling": "計費設定",
       "settingPayment": "支付設定",
+      "settingSupply": "線路分配",
       "settingGateway": "閘道設定",
       "settingPrivacy": "日誌與隱私",
+      "settingMedia": "媒體與儲存",
       "settingNotify": "通知",
       "settingOrgPolicy": "組織策略",
       "settingEntries": "用戶入口",
@@ -3465,13 +3467,21 @@
           "label": "支付",
           "description": "收款方式、充值與發票"
         },
+        "supply": {
+          "label": "線路分配",
+          "description": "請求走哪條線路：分流方式、入庫、會話親和與自動路由"
+        },
         "gateway": {
           "label": "網關",
-          "description": "轉發、重試和渠道健康"
+          "description": "重試、渠道健康和請求轉發"
         },
         "privacy": {
           "label": "日誌與私隱",
           "description": "記錄甚麼、保存多久、誰能看"
+        },
+        "media": {
+          "label": "媒體與儲存",
+          "description": "生成圖片存到哪、圖片代理和 Midjourney 回調"
         },
         "notify": {
           "label": "通知",
@@ -3777,7 +3787,6 @@
       },
       "tabs": {
         "resilience": "容錯",
-        "allocation": "分配",
         "request": "請求與協定",
         "notices": "通知",
         "integrations": "整合"

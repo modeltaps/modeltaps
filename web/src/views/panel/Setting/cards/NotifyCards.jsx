@@ -21,7 +21,7 @@ import { settingsGroupUrl } from '../registry';
 // ==============================|| PLATFORM SETTINGS — 通知与集成 ||============================== //
 // Two tabs. 通知: the platform's admin notices — which kinds are sent, the channels they go to
 // and the mail server behind email (cards/MailCard.jsx). 集成: the Telegram user bot and built-in chat.
-// (The Midjourney callback card lives here but is shown under the gateway's request tab.)
+// (The Midjourney callback card lives here but is shown in the media group.)
 
 // One switch per notification kind (NOTIFY_KINDS); stored as the comma-joined list of disabled kinds.
 

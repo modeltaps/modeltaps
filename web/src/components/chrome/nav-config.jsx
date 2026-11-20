@@ -52,8 +52,10 @@ import {
   Settings,
   ShieldUser,
   SlidersHorizontal,
+  Split,
   Waypoints,
   History,
+  Image,
   Ticket,
   User,
   Users,
@@ -184,6 +186,7 @@ export const adminSections = [
       { id: 'channel', url: admin.providers(), icon: Network, labelKey: 'nav.items.channels' },
       { id: 'pricing', url: admin.models(), icon: Boxes, labelKey: 'nav.items.catalog' },
       { id: 'routing_policy', url: admin.routing(), icon: Route, labelKey: 'nav.items.routing' },
+      settingItem('supply', Split, 'nav.items.settingSupply'),
       settingItem('gateway', Waypoints, 'nav.items.settingGateway')
     ]
   },
@@ -217,6 +220,7 @@ export const adminSections = [
       settingItem('site', Globe, 'nav.items.settingSite', { match: [SETTINGS_BASE] }),
       settingItem('entries', MessagesSquare, 'nav.items.settingEntries'),
       settingItem('privacy', ShieldCheck, 'nav.items.settingPrivacy'),
+      settingItem('media', Image, 'nav.items.settingMedia'),
       settingItem('mail', Mail, 'nav.items.settingMail'),
       settingItem('notify', Bell, 'nav.items.settingNotify'),
       settingItem('modified', History, 'nav.items.settingModified')

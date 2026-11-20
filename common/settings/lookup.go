@@ -11,7 +11,7 @@ import (
 var objectPages = map[string]string{
 	"channels":         "/panel/admin/providers",
 	"models":           "/panel/admin/models",
-	"allocation":       "/panel/admin/settings/gateway?tab=allocation",
+	"allocation":       "/panel/admin/providers",
 	"user-groups":      "/panel/admin/user-groups",
 	"routing-policies": "/panel/admin/routing",
 	"organizations":    "/panel/admin/orgs",
@@ -31,7 +31,7 @@ func ConsolePath(s Setting) string {
 // without the console's translations (docs, MCP).
 var GroupTitles = map[string]string{
 	"site": "Site", "auth": "Sign-in and sign-up", "billing": "Billing", "payment": "Payment",
-	"gateway": "Gateway", "privacy": "Logs and privacy", "entries": "Entries", "mail": "Mail",
+	"supply": "Supply allocation", "gateway": "Gateway", "privacy": "Logs and privacy", "media": "Media and storage", "entries": "Entries", "mail": "Mail",
 	"notify": "Notifications", "orgpolicy": "Organization policy",
 	"channels": "Channels", "models": "Models", "allocation": "Allocation policy",
 	"user-groups": "User groups", "routing-policies": "Routing policies", "organizations": "Organizations",

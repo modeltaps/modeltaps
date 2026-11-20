@@ -85,7 +85,8 @@ export function splitFirstSentence(text) {
 export const OBJECT_PAGES = {
   channels: admin.providers(),
   models: admin.models(),
-  allocation: `${admin.settings('gateway')}?tab=allocation`,
+  // The call order is edited as the list on the providers page.
+  allocation: admin.providers(),
   'user-groups': admin.userGroups(),
   'routing-policies': admin.routing(),
   organizations: admin.orgs(),

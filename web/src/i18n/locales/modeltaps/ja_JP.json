@@ -3025,8 +3025,10 @@
       "settingAuth": "ログインと登録",
       "settingBilling": "課金設定",
       "settingPayment": "支払い設定",
+      "settingSupply": "ライン割り当て",
       "settingGateway": "ゲートウェイ設定",
       "settingPrivacy": "ログとプライバシー",
+      "settingMedia": "メディアとストレージ",
       "settingNotify": "通知",
       "settingOrgPolicy": "組織ポリシー",
       "settingEntries": "ユーザー向け入口",
@@ -3448,13 +3450,21 @@
           "label": "支払い",
           "description": "決済方法、チャージと請求書"
         },
+        "supply": {
+          "label": "ライン割り当て",
+          "description": "リクエストをどのラインが処理するか：振り分け方式、取り込み、セッション親和性と自動ルーティング"
+        },
         "gateway": {
           "label": "ゲートウェイ",
-          "description": "転送、リトライとチャネルの健全性"
+          "description": "リトライ、チャネルの健全性とリクエスト転送"
         },
         "privacy": {
           "label": "ログとプライバシー",
           "description": "何を記録し、どれだけ保存し、誰が見られるか"
+        },
+        "media": {
+          "label": "メディアとストレージ",
+          "description": "生成画像の保存先、画像プロキシと Midjourney コールバック"
         },
         "notify": {
           "label": "通知",
@@ -3760,7 +3770,6 @@
       },
       "tabs": {
         "resilience": "耐障害性",
-        "allocation": "割り当て",
         "request": "リクエストとプロトコル",
         "notices": "通知",
         "integrations": "連携"

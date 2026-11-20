@@ -44,7 +44,7 @@ func TestSettingsTools(t *testing.T) {
 	if strings.Contains(out, "very-secret-value") || !strings.Contains(out, `"(set)"`) {
 		t.Errorf("describe leaks or misses the secret state: %s", out)
 	}
-	if !strings.Contains(out, "/panel/admin/settings/gateway?highlight=SupplyCostOrder") || !strings.Contains(out, `"unknown_keys"`) {
+	if !strings.Contains(out, "/panel/admin/settings/supply?highlight=SupplyCostOrder") || !strings.Contains(out, `"unknown_keys"`) {
 		t.Errorf("describe misses the console URL or the unknown key: %s", out)
 	}
 

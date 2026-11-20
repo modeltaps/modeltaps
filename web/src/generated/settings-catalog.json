@@ -1665,6 +1665,390 @@
       ]
     },
     {
+      "key": "SupplyModeDefault",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-mode",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "balance",
+          "label": "Balance",
+          "description": "Supplies of one tier share requests by weight."
+        },
+        {
+          "value": "failover",
+          "label": "Failover",
+          "description": "The heaviest supply of a tier takes every request; the others back it up."
+        }
+      ],
+      "label": "Default supply mode",
+      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.",
+      "examples": [
+        {
+          "value": "balance",
+          "effect": "Two supplies with weights 3 and 1 take about 75% and 25% of the requests."
+        },
+        {
+          "value": "failover",
+          "effect": "The supply with weight 3 takes every request; the one with weight 1 is used only while it fails."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "model.supply_mode"
+      ],
+      "keywords": [
+        "load balancing",
+        "weight",
+        "fallback",
+        "primary",
+        "backup"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostOrder",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-mode",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "priority",
+          "label": "Priority first",
+          "description": "Cost does not order supplies: priorities and weights decide."
+        },
+        {
+          "value": "cost",
+          "label": "Cost first",
+          "description": "Supplies that are clearly cheaper and serve well take a model's requests whatever their priority."
+        }
+      ],
+      "label": "Cost and priority",
+      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.",
+      "examples": [
+        {
+          "value": "priority",
+          "effect": "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."
+        },
+        {
+          "value": "cost",
+          "effect": "A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back."
+        }
+      ],
+      "related": [
+        "SupplyCostMinSavingPercent",
+        "SupplyCostMinSuccessPercent",
+        "SupplyModeDefault",
+        "channel.fee_rate",
+        "channel.priority"
+      ],
+      "keywords": [
+        "cheapest",
+        "cost routing",
+        "price routing",
+        "lowest cost"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostMinSavingPercent",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-mode",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "max": 99,
+      "label": "Minimum saving",
+      "description": "With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.",
+      "examples": [
+        {
+          "value": "5",
+          "effect": "OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both."
+        },
+        {
+          "value": "0",
+          "effect": "Requesty (x1.05) is put ahead of OpenRouter (x1.055)."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "SupplyCostMinSuccessPercent"
+      ],
+      "keywords": [
+        "price difference",
+        "threshold",
+        "margin",
+        "cost routing"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostMinSuccessPercent",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-mode",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "label": "Minimum success rate",
+      "description": "With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
+      "examples": [
+        {
+          "value": "95",
+          "effect": "A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them."
+        },
+        {
+          "value": "0",
+          "effect": "The cheapest supply always leads, however often it fails; only pauses keep it out."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "SupplyCostMinSavingPercent",
+        "PauseRules"
+      ],
+      "keywords": [
+        "reliability",
+        "stability",
+        "error rate",
+        "health",
+        "unstable"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "ModelSupplyEnabled",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-mode",
+      "type": "bool",
+      "label": "Route by supplies",
+      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the supply mode, cost order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
+      "examples": [
+        {
+          "value": "false",
+          "effect": "Requests follow each channel's models and model mapping; the supply pages only preview what would change."
+        },
+        {
+          "value": "true",
+          "effect": "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."
+        }
+      ],
+      "related": [
+        "SupplyModeDefault",
+        "SupplyCostOrder",
+        "SupplyIntakeRules",
+        "PauseRules"
+      ],
+      "keywords": [
+        "supply routing",
+        "migration",
+        "public model",
+        "model supplies"
+      ],
+      "advanced": true,
+      "docs": "use/supply_routing.md"
+    },
+    {
+      "key": "SupplyIntakeRules",
+      "scope": "site",
+      "group": "supply",
+      "card": "supply-intake-rules",
+      "type": "json",
+      "label": "Intake rules for new upstream models",
+      "description": "What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them as a whole, and a channel can use rules of its own.",
+      "examples": [
+        {
+          "value": "[{\"name\":\"Previews wait\",\"patterns\":[\"*-preview*\",\"*-exp*\"],\"action\":\"pending\"},{\"name\":\"Chat joins\",\"endpoints\":[\"chat\",\"responses\"],\"action\":\"enable\",\"placement\":\"auto\"},{\"name\":\"Rest waits\",\"action\":\"pending\"}]",
+          "effect": "The built-in rules: gpt-5-preview waits for review, a new chat model routes at once (behind the channels that already supply it), an image model waits for review."
+        },
+        {
+          "value": "[{\"name\":\"Claude joins\",\"families\":[\"claude-*\"],\"action\":\"enable\",\"placement\":\"last\"},{\"name\":\"Rest skipped\",\"action\":\"skip\"}]",
+          "effect": "A new Claude model routes at once after the model's other supplies; any other new model is not added and stays in the list of new upstream models."
+        }
+      ],
+      "related": [
+        "ModelSupplyEnabled",
+        "SupplyModeDefault"
+      ],
+      "keywords": [
+        "new models",
+        "drift",
+        "auto add",
+        "review",
+        "upstream models"
+      ]
+    },
+    {
+      "key": "SessionAffinityEnabled",
+      "scope": "site",
+      "group": "supply",
+      "card": "session-affinity",
+      "type": "bool",
+      "label": "Keep each session on one channel",
+      "description": "Requests of one client session go to the channel that served it first, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, each request is routed on its own.",
+      "related": [
+        "SessionAffinityStrict",
+        "SessionAffinityTTLSeconds",
+        "ClaudePromptCachingEnabled"
+      ],
+      "keywords": [
+        "sticky session",
+        "prompt cache",
+        "cache hit",
+        "affinity",
+        "pinning"
+      ]
+    },
+    {
+      "key": "SessionAffinityStrict",
+      "scope": "site",
+      "group": "supply",
+      "card": "session-affinity",
+      "type": "bool",
+      "label": "Do not move a session on failure",
+      "description": "When a session's channel fails, the caller gets the error instead of a retry on another channel. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) still move the session. Leave it off to favour availability.",
+      "related": [
+        "SessionAffinityEnabled",
+        "RetryTimes"
+      ],
+      "keywords": [
+        "strict",
+        "no failover",
+        "cache",
+        "Codex"
+      ]
+    },
+    {
+      "key": "SessionAffinityTTLSeconds",
+      "scope": "site",
+      "group": "supply",
+      "card": "session-affinity",
+      "type": "int",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Session lifetime",
+      "description": "How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.",
+      "examples": [
+        {
+          "value": "3600",
+          "effect": "A coding session paused for 50 minutes comes back to the same channel; after 70 minutes it may land elsewhere."
+        },
+        {
+          "value": "300",
+          "effect": "Matches the upstream's 5-minute prompt cache: past that the cache is gone, so the session is free to move."
+        }
+      ],
+      "related": [
+        "SessionAffinityEnabled"
+      ],
+      "keywords": [
+        "TTL",
+        "session timeout",
+        "sticky duration"
+      ]
+    },
+    {
+      "key": "RoutingDecisionBillingEnabled",
+      "scope": "site",
+      "group": "supply",
+      "card": "auto-routing",
+      "type": "bool",
+      "label": "Charge the decision call",
+      "description": "Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. It is charged once per session, as a log entry of its own. When off, the decision still runs, but the site pays for it and no consume log is written.",
+      "related": [
+        "UserRoutingPolicyEnabled"
+      ],
+      "keywords": [
+        "auto routing",
+        "decision model",
+        "classifier",
+        "billing",
+        "policy"
+      ]
+    },
+    {
+      "key": "UserRoutingPolicyEnabled",
+      "scope": "site",
+      "group": "supply",
+      "card": "auto-routing",
+      "type": "bool",
+      "label": "Own routing policies",
+      "description": "Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.",
+      "related": [
+        "PersonalRoutingPolicyMaxCount",
+        "OrganizationRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "routing policy",
+        "policy/",
+        "self-service",
+        "organization policy"
+      ]
+    },
+    {
+      "key": "PersonalRoutingPolicyMaxCount",
+      "scope": "site",
+      "group": "supply",
+      "card": "auto-routing",
+      "type": "int",
+      "min": 0,
+      "label": "Policies per user",
+      "description": "How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "A user with 20 policies gets an error when creating the 21st."
+        },
+        {
+          "value": "0",
+          "effect": "Users can create as many policies as they like."
+        }
+      ],
+      "related": [
+        "UserRoutingPolicyEnabled",
+        "OrganizationRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "limit",
+        "quota",
+        "max policies"
+      ]
+    },
+    {
+      "key": "OrganizationRoutingPolicyMaxCount",
+      "scope": "site",
+      "group": "supply",
+      "card": "auto-routing",
+      "type": "int",
+      "min": 0,
+      "label": "Policies per organization",
+      "description": "How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "An organization with 20 policies gets an error when creating the 21st."
+        },
+        {
+          "value": "5",
+          "effect": "Keeps organization policies few enough to review by hand."
+        }
+      ],
+      "related": [
+        "UserRoutingPolicyEnabled",
+        "PersonalRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "limit",
+        "organization",
+        "max policies"
+      ]
+    },
+    {
       "key": "RetryTimes",
       "scope": "site",
       "group": "gateway",
@@ -2126,390 +2510,6 @@
       ]
     },
     {
-      "key": "SupplyModeDefault",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-mode",
-      "type": "enum",
-      "enum": [
-        {
-          "value": "balance",
-          "label": "Balance",
-          "description": "Supplies of one tier share requests by weight."
-        },
-        {
-          "value": "failover",
-          "label": "Failover",
-          "description": "The heaviest supply of a tier takes every request; the others back it up."
-        }
-      ],
-      "label": "Default supply mode",
-      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.",
-      "examples": [
-        {
-          "value": "balance",
-          "effect": "Two supplies with weights 3 and 1 take about 75% and 25% of the requests."
-        },
-        {
-          "value": "failover",
-          "effect": "The supply with weight 3 takes every request; the one with weight 1 is used only while it fails."
-        }
-      ],
-      "related": [
-        "SupplyCostOrder",
-        "model.supply_mode"
-      ],
-      "keywords": [
-        "load balancing",
-        "weight",
-        "fallback",
-        "primary",
-        "backup"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
-      "key": "SupplyCostOrder",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-mode",
-      "type": "enum",
-      "enum": [
-        {
-          "value": "priority",
-          "label": "Priority first",
-          "description": "Cost does not order supplies: priorities and weights decide."
-        },
-        {
-          "value": "cost",
-          "label": "Cost first",
-          "description": "Supplies that are clearly cheaper and serve well take a model's requests whatever their priority."
-        }
-      ],
-      "label": "Cost and priority",
-      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.",
-      "examples": [
-        {
-          "value": "priority",
-          "effect": "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."
-        },
-        {
-          "value": "cost",
-          "effect": "A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back."
-        }
-      ],
-      "related": [
-        "SupplyCostMinSavingPercent",
-        "SupplyCostMinSuccessPercent",
-        "SupplyModeDefault",
-        "channel.fee_rate",
-        "channel.priority"
-      ],
-      "keywords": [
-        "cheapest",
-        "cost routing",
-        "price routing",
-        "lowest cost"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
-      "key": "SupplyCostMinSavingPercent",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-mode",
-      "type": "percent",
-      "unit": "%",
-      "min": 0,
-      "max": 99,
-      "label": "Minimum saving",
-      "description": "With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.",
-      "examples": [
-        {
-          "value": "5",
-          "effect": "OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both."
-        },
-        {
-          "value": "0",
-          "effect": "Requesty (x1.05) is put ahead of OpenRouter (x1.055)."
-        }
-      ],
-      "related": [
-        "SupplyCostOrder",
-        "SupplyCostMinSuccessPercent"
-      ],
-      "keywords": [
-        "price difference",
-        "threshold",
-        "margin",
-        "cost routing"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
-      "key": "SupplyCostMinSuccessPercent",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-mode",
-      "type": "percent",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "label": "Minimum success rate",
-      "description": "With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
-      "examples": [
-        {
-          "value": "95",
-          "effect": "A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them."
-        },
-        {
-          "value": "0",
-          "effect": "The cheapest supply always leads, however often it fails; only pauses keep it out."
-        }
-      ],
-      "related": [
-        "SupplyCostOrder",
-        "SupplyCostMinSavingPercent",
-        "PauseRules"
-      ],
-      "keywords": [
-        "reliability",
-        "stability",
-        "error rate",
-        "health",
-        "unstable"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
-      "key": "ModelSupplyEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-mode",
-      "type": "bool",
-      "label": "Route by supplies",
-      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the supply mode, cost order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
-      "examples": [
-        {
-          "value": "false",
-          "effect": "Requests follow each channel's models and model mapping; the supply pages only preview what would change."
-        },
-        {
-          "value": "true",
-          "effect": "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."
-        }
-      ],
-      "related": [
-        "SupplyModeDefault",
-        "SupplyCostOrder",
-        "SupplyIntakeRules",
-        "PauseRules"
-      ],
-      "keywords": [
-        "supply routing",
-        "migration",
-        "public model",
-        "model supplies"
-      ],
-      "advanced": true,
-      "docs": "use/supply_routing.md"
-    },
-    {
-      "key": "SupplyIntakeRules",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-intake-rules",
-      "type": "json",
-      "label": "Intake rules for new upstream models",
-      "description": "What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them as a whole, and a channel can use rules of its own.",
-      "examples": [
-        {
-          "value": "[{\"name\":\"Previews wait\",\"patterns\":[\"*-preview*\",\"*-exp*\"],\"action\":\"pending\"},{\"name\":\"Chat joins\",\"endpoints\":[\"chat\",\"responses\"],\"action\":\"enable\",\"placement\":\"auto\"},{\"name\":\"Rest waits\",\"action\":\"pending\"}]",
-          "effect": "The built-in rules: gpt-5-preview waits for review, a new chat model routes at once (behind the channels that already supply it), an image model waits for review."
-        },
-        {
-          "value": "[{\"name\":\"Claude joins\",\"families\":[\"claude-*\"],\"action\":\"enable\",\"placement\":\"last\"},{\"name\":\"Rest skipped\",\"action\":\"skip\"}]",
-          "effect": "A new Claude model routes at once after the model's other supplies; any other new model is not added and stays in the list of new upstream models."
-        }
-      ],
-      "related": [
-        "ModelSupplyEnabled",
-        "SupplyModeDefault"
-      ],
-      "keywords": [
-        "new models",
-        "drift",
-        "auto add",
-        "review",
-        "upstream models"
-      ]
-    },
-    {
-      "key": "SessionAffinityEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "session-affinity",
-      "type": "bool",
-      "label": "Keep each session on one channel",
-      "description": "Requests of one client session go to the channel that served it first, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, each request is routed on its own.",
-      "related": [
-        "SessionAffinityStrict",
-        "SessionAffinityTTLSeconds",
-        "ClaudePromptCachingEnabled"
-      ],
-      "keywords": [
-        "sticky session",
-        "prompt cache",
-        "cache hit",
-        "affinity",
-        "pinning"
-      ]
-    },
-    {
-      "key": "SessionAffinityStrict",
-      "scope": "site",
-      "group": "gateway",
-      "card": "session-affinity",
-      "type": "bool",
-      "label": "Do not move a session on failure",
-      "description": "When a session's channel fails, the caller gets the error instead of a retry on another channel. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) still move the session. Leave it off to favour availability.",
-      "related": [
-        "SessionAffinityEnabled",
-        "RetryTimes"
-      ],
-      "keywords": [
-        "strict",
-        "no failover",
-        "cache",
-        "Codex"
-      ]
-    },
-    {
-      "key": "SessionAffinityTTLSeconds",
-      "scope": "site",
-      "group": "gateway",
-      "card": "session-affinity",
-      "type": "int",
-      "unit": "seconds",
-      "min": 0,
-      "label": "Session lifetime",
-      "description": "How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.",
-      "examples": [
-        {
-          "value": "3600",
-          "effect": "A coding session paused for 50 minutes comes back to the same channel; after 70 minutes it may land elsewhere."
-        },
-        {
-          "value": "300",
-          "effect": "Matches the upstream's 5-minute prompt cache: past that the cache is gone, so the session is free to move."
-        }
-      ],
-      "related": [
-        "SessionAffinityEnabled"
-      ],
-      "keywords": [
-        "TTL",
-        "session timeout",
-        "sticky duration"
-      ]
-    },
-    {
-      "key": "RoutingDecisionBillingEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "auto-routing",
-      "type": "bool",
-      "label": "Charge the decision call",
-      "description": "Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. It is charged once per session, as a log entry of its own. When off, the decision still runs, but the site pays for it and no consume log is written.",
-      "related": [
-        "UserRoutingPolicyEnabled"
-      ],
-      "keywords": [
-        "auto routing",
-        "decision model",
-        "classifier",
-        "billing",
-        "policy"
-      ]
-    },
-    {
-      "key": "UserRoutingPolicyEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "auto-routing",
-      "type": "bool",
-      "label": "Own routing policies",
-      "description": "Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.",
-      "related": [
-        "PersonalRoutingPolicyMaxCount",
-        "OrganizationRoutingPolicyMaxCount"
-      ],
-      "keywords": [
-        "routing policy",
-        "policy/",
-        "self-service",
-        "organization policy"
-      ]
-    },
-    {
-      "key": "PersonalRoutingPolicyMaxCount",
-      "scope": "site",
-      "group": "gateway",
-      "card": "auto-routing",
-      "type": "int",
-      "min": 0,
-      "label": "Policies per user",
-      "description": "How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
-      "examples": [
-        {
-          "value": "20",
-          "effect": "A user with 20 policies gets an error when creating the 21st."
-        },
-        {
-          "value": "0",
-          "effect": "Users can create as many policies as they like."
-        }
-      ],
-      "related": [
-        "UserRoutingPolicyEnabled",
-        "OrganizationRoutingPolicyMaxCount"
-      ],
-      "keywords": [
-        "limit",
-        "quota",
-        "max policies"
-      ]
-    },
-    {
-      "key": "OrganizationRoutingPolicyMaxCount",
-      "scope": "site",
-      "group": "gateway",
-      "card": "auto-routing",
-      "type": "int",
-      "min": 0,
-      "label": "Policies per organization",
-      "description": "How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
-      "examples": [
-        {
-          "value": "20",
-          "effect": "An organization with 20 policies gets an error when creating the 21st."
-        },
-        {
-          "value": "5",
-          "effect": "Keeps organization policies few enough to review by hand."
-        }
-      ],
-      "related": [
-        "UserRoutingPolicyEnabled",
-        "PersonalRoutingPolicyMaxCount"
-      ],
-      "keywords": [
-        "limit",
-        "organization",
-        "max policies"
-      ]
-    },
-    {
       "key": "ModelNameCaseInsensitiveEnabled",
       "scope": "site",
       "group": "gateway",
@@ -2760,461 +2760,6 @@
         "input limit"
       ],
       "advanced": true
-    },
-    {
-      "key": "ChatImageRequestProxy",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-proxy",
-      "type": "url",
-      "label": "Image download proxy",
-      "description": "An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and without a proxy the image hosts see this server's IP. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty downloads directly.",
-      "examples": [
-        {
-          "value": "socks5://127.0.0.1:1080",
-          "effect": "Image downloads go through the local SOCKS5 proxy on port 1080."
-        },
-        {
-          "value": "http://proxy.internal:3128",
-          "effect": "Image downloads go through an HTTP proxy in the private network."
-        }
-      ],
-      "related": [
-        "CFWorkerImageUrl"
-      ],
-      "keywords": [
-        "proxy",
-        "SOCKS5",
-        "image URL",
-        "vision",
-        "server IP"
-      ]
-    },
-    {
-      "key": "CFWorkerImageUrl",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-proxy",
-      "type": "url",
-      "label": "Cloudflare Worker image proxy",
-      "description": "A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It takes precedence over the image download proxy. Some image hosts refuse Cloudflare, and those images then fail. Empty uses no Worker.",
-      "examples": [
-        {
-          "value": "https://img-proxy.example.workers.dev",
-          "effect": "Every image linked in a request is fetched by that Worker."
-        }
-      ],
-      "related": [
-        "CFWorkerImageKey",
-        "ChatImageRequestProxy"
-      ],
-      "keywords": [
-        "Cloudflare",
-        "Worker",
-        "image proxy",
-        "vision"
-      ],
-      "advanced": true
-    },
-    {
-      "key": "CFWorkerImageKey",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-proxy",
-      "type": "secret",
-      "label": "Cloudflare Worker key",
-      "description": "The key sent to the Cloudflare Worker with every image download, for a Worker that checks one. Leave it empty when the Worker checks none or no Worker is set.",
-      "related": [
-        "CFWorkerImageUrl"
-      ],
-      "keywords": [
-        "Cloudflare",
-        "Worker",
-        "API key"
-      ],
-      "advanced": true
-    },
-    {
-      "key": "ImageStorageProvider",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "enum",
-      "enum": [
-        {
-          "value": "local",
-          "label": "This gateway",
-          "description": "Kept on this gateway for 1 hour under the server address, at most 5 downloads per link and 2 MB/s per download. Several nodes need Redis so every node can serve every link."
-        },
-        {
-          "value": "s3",
-          "label": "S3 compatible",
-          "description": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage. Without a public URL, links are signed for 1 hour and the bucket can stay private. The gateway deletes no files: add a lifecycle rule in the storage console (for example 1 day)."
-        },
-        {
-          "value": "alioss",
-          "label": "Alibaba Cloud OSS",
-          "description": "Links are signed and valid for 1 hour, so the bucket can stay private."
-        },
-        {
-          "value": "smms",
-          "label": "SM.MS",
-          "description": "Free image host; images are public."
-        },
-        {
-          "value": "imgur",
-          "label": "Imgur",
-          "description": "Free image host; images are public."
-        },
-        {
-          "value": "off",
-          "label": "Off",
-          "description": "Images come back as base64, and clients that only read the image URL get none."
-        }
-      ],
-      "label": "Image storage",
-      "description": "Where generated images are kept so a request that asks for an image URL gets a link. Gemini, Cloudflare Workers AI and Stability AI return image data only. Off answers with base64 instead: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change applies at once on every node.",
-      "related": [
-        "ImageStorageRehostUpstream",
-        "ServerAddress"
-      ],
-      "keywords": [
-        "image hosting",
-        "S3",
-        "R2",
-        "OSS",
-        "base64",
-        "b64_json",
-        "generated images"
-      ],
-      "docs": "deployment/storage.md"
-    },
-    {
-      "key": "ImageStorageRehostUpstream",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "bool",
-      "label": "Also store upstream image and video links",
-      "description": "Image and video links from upstreams are swapped for links on this site, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on as it is. When off, upstream links pass through.",
-      "related": [
-        "ImageStorageProvider"
-      ],
-      "keywords": [
-        "rehost",
-        "mirror",
-        "image link",
-        "video",
-        "Midjourney",
-        "Kling"
-      ],
-      "docs": "deployment/storage.md"
-    },
-    {
-      "key": "ImageStorageS3Endpoint",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "url",
-      "label": "S3 endpoint",
-      "description": "The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and are signed.",
-      "examples": [
-        {
-          "value": "https://<account>.r2.cloudflarestorage.com",
-          "effect": "Cloudflare R2; the region is auto."
-        },
-        {
-          "value": "https://s3.eu-central-1.amazonaws.com",
-          "effect": "AWS S3 in Frankfurt; the region eu-central-1 is read from the address."
-        }
-      ],
-      "related": [
-        "ImageStorageS3Region",
-        "ImageStorageS3BucketName",
-        "ImageStorageS3CDNURL"
-      ],
-      "keywords": [
-        "S3",
-        "R2",
-        "MinIO",
-        "endpoint"
-      ],
-      "docs": "deployment/storage.md"
-    },
-    {
-      "key": "ImageStorageS3Region",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "S3 region",
-      "description": "The region requests are signed for; usually left empty. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.",
-      "examples": [
-        {
-          "value": "us-east-1",
-          "effect": "Signs for us-east-1, for MinIO or another storage that expects a fixed region."
-        }
-      ],
-      "related": [
-        "ImageStorageS3Endpoint"
-      ],
-      "keywords": [
-        "region",
-        "S3"
-      ]
-    },
-    {
-      "key": "ImageStorageS3BucketName",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "S3 bucket",
-      "description": "The bucket images are uploaded to. It can stay private unless a public URL is set.",
-      "related": [
-        "ImageStorageS3Endpoint",
-        "ImageStorageS3CDNURL"
-      ],
-      "keywords": [
-        "bucket",
-        "S3"
-      ]
-    },
-    {
-      "key": "ImageStorageS3AccessKeyId",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "S3 access key ID",
-      "description": "The ID of an access key that may write to the bucket; its secret goes in the next field.",
-      "related": [
-        "ImageStorageS3AccessKeySecret"
-      ],
-      "keywords": [
-        "access key",
-        "credentials",
-        "S3"
-      ]
-    },
-    {
-      "key": "ImageStorageS3AccessKeySecret",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "secret",
-      "label": "S3 access key secret",
-      "description": "The secret of the S3 access key. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
-      "related": [
-        "ImageStorageS3AccessKeyId"
-      ],
-      "keywords": [
-        "secret key",
-        "credentials",
-        "S3"
-      ]
-    },
-    {
-      "key": "ImageStorageS3CDNURL",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "url",
-      "label": "S3 public URL",
-      "description": "A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links signed for 1 hour, and the bucket can stay private.",
-      "examples": [
-        {
-          "value": "https://img.example.com",
-          "effect": "Images get links under https://img.example.com/ that work as long as the file exists."
-        }
-      ],
-      "related": [
-        "ImageStorageS3Endpoint",
-        "ImageStorageS3BucketName"
-      ],
-      "keywords": [
-        "CDN",
-        "public URL",
-        "custom domain"
-      ]
-    },
-    {
-      "key": "ImageStorageS3ExpirationDays",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "int",
-      "unit": "days",
-      "min": 0,
-      "label": "S3 Expires header",
-      "description": "Days written into the Expires header of each uploaded image, for caches and CDNs. It deletes nothing: use a lifecycle rule of the storage for that. 0 writes no header.",
-      "examples": [
-        {
-          "value": "1",
-          "effect": "An image uploaded today says it expires tomorrow; the file stays until a lifecycle rule removes it."
-        },
-        {
-          "value": "0",
-          "effect": "No Expires header."
-        }
-      ],
-      "related": [
-        "ImageStorageS3CDNURL"
-      ],
-      "keywords": [
-        "expires",
-        "cache header",
-        "lifecycle"
-      ],
-      "advanced": true
-    },
-    {
-      "key": "ImageStorageOSSEndpoint",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "OSS endpoint",
-      "description": "The endpoint of the Alibaba Cloud OSS region the bucket is in.",
-      "examples": [
-        {
-          "value": "oss-cn-beijing.aliyuncs.com",
-          "effect": "A bucket in Beijing; the region cn-beijing is read from the address."
-        }
-      ],
-      "related": [
-        "ImageStorageOSSRegion",
-        "ImageStorageOSSBucketName"
-      ],
-      "keywords": [
-        "Aliyun",
-        "OSS",
-        "endpoint"
-      ]
-    },
-    {
-      "key": "ImageStorageOSSRegion",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "OSS region",
-      "description": "The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) need it, or uploads fail.",
-      "examples": [
-        {
-          "value": "cn-hangzhou",
-          "effect": "Signs for Hangzhou, for an endpoint the region cannot be read from."
-        }
-      ],
-      "related": [
-        "ImageStorageOSSEndpoint"
-      ],
-      "keywords": [
-        "region",
-        "OSS"
-      ]
-    },
-    {
-      "key": "ImageStorageOSSBucketName",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "OSS bucket",
-      "description": "The OSS bucket images are uploaded to; it can stay private, since links are signed.",
-      "related": [
-        "ImageStorageOSSEndpoint"
-      ],
-      "keywords": [
-        "bucket",
-        "OSS"
-      ]
-    },
-    {
-      "key": "ImageStorageOSSAccessKeyId",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "string",
-      "label": "OSS AccessKey ID",
-      "description": "The AccessKey ID of a RAM user that may write to the bucket; its secret goes in the next field.",
-      "related": [
-        "ImageStorageOSSAccessKeySecret"
-      ],
-      "keywords": [
-        "AccessKey",
-        "RAM",
-        "credentials",
-        "OSS"
-      ]
-    },
-    {
-      "key": "ImageStorageOSSAccessKeySecret",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "secret",
-      "label": "OSS AccessKey secret",
-      "description": "The AccessKey secret of the OSS user. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
-      "related": [
-        "ImageStorageOSSAccessKeyId"
-      ],
-      "keywords": [
-        "AccessKey secret",
-        "credentials",
-        "OSS"
-      ]
-    },
-    {
-      "key": "ImageStorageSMMSSecret",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "secret",
-      "label": "SM.MS API token",
-      "description": "The API token of your account on the free image host, used for uploads. Images there are public.",
-      "related": [
-        "ImageStorageProvider"
-      ],
-      "keywords": [
-        "SM.MS",
-        "smms",
-        "image host",
-        "token"
-      ]
-    },
-    {
-      "key": "ImageStorageImgurClientId",
-      "scope": "site",
-      "group": "gateway",
-      "card": "image-storage",
-      "type": "secret",
-      "label": "Imgur client ID",
-      "description": "The client ID of an application registered with Imgur, used for anonymous uploads. Images there are public.",
-      "related": [
-        "ImageStorageProvider"
-      ],
-      "keywords": [
-        "Imgur",
-        "image host",
-        "client id"
-      ]
-    },
-    {
-      "key": "MjNotifyEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "mj-notify",
-      "type": "bool",
-      "label": "Midjourney callbacks",
-      "description": "Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call comes from the upstream, not this site, so it carries the upstream's view of the task and tells the upstream the caller's address. When off, the address is dropped and callers poll the task status.",
-      "keywords": [
-        "Midjourney",
-        "notifyHook",
-        "callback",
-        "webhook",
-        "MJ"
-      ]
     },
     {
       "key": "ModelLibraryRulesEnabled",
@@ -3525,6 +3070,461 @@
         "banned words",
         "keyword filter",
         "moderation"
+      ]
+    },
+    {
+      "key": "ChatImageRequestProxy",
+      "scope": "site",
+      "group": "media",
+      "card": "image-proxy",
+      "type": "url",
+      "label": "Image download proxy",
+      "description": "An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and without a proxy the image hosts see this server's IP. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty downloads directly.",
+      "examples": [
+        {
+          "value": "socks5://127.0.0.1:1080",
+          "effect": "Image downloads go through the local SOCKS5 proxy on port 1080."
+        },
+        {
+          "value": "http://proxy.internal:3128",
+          "effect": "Image downloads go through an HTTP proxy in the private network."
+        }
+      ],
+      "related": [
+        "CFWorkerImageUrl"
+      ],
+      "keywords": [
+        "proxy",
+        "SOCKS5",
+        "image URL",
+        "vision",
+        "server IP"
+      ]
+    },
+    {
+      "key": "CFWorkerImageUrl",
+      "scope": "site",
+      "group": "media",
+      "card": "image-proxy",
+      "type": "url",
+      "label": "Cloudflare Worker image proxy",
+      "description": "A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It takes precedence over the image download proxy. Some image hosts refuse Cloudflare, and those images then fail. Empty uses no Worker.",
+      "examples": [
+        {
+          "value": "https://img-proxy.example.workers.dev",
+          "effect": "Every image linked in a request is fetched by that Worker."
+        }
+      ],
+      "related": [
+        "CFWorkerImageKey",
+        "ChatImageRequestProxy"
+      ],
+      "keywords": [
+        "Cloudflare",
+        "Worker",
+        "image proxy",
+        "vision"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "CFWorkerImageKey",
+      "scope": "site",
+      "group": "media",
+      "card": "image-proxy",
+      "type": "secret",
+      "label": "Cloudflare Worker key",
+      "description": "The key sent to the Cloudflare Worker with every image download, for a Worker that checks one. Leave it empty when the Worker checks none or no Worker is set.",
+      "related": [
+        "CFWorkerImageUrl"
+      ],
+      "keywords": [
+        "Cloudflare",
+        "Worker",
+        "API key"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ImageStorageProvider",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "local",
+          "label": "This gateway",
+          "description": "Kept on this gateway for 1 hour under the server address, at most 5 downloads per link and 2 MB/s per download. Several nodes need Redis so every node can serve every link."
+        },
+        {
+          "value": "s3",
+          "label": "S3 compatible",
+          "description": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage. Without a public URL, links are signed for 1 hour and the bucket can stay private. The gateway deletes no files: add a lifecycle rule in the storage console (for example 1 day)."
+        },
+        {
+          "value": "alioss",
+          "label": "Alibaba Cloud OSS",
+          "description": "Links are signed and valid for 1 hour, so the bucket can stay private."
+        },
+        {
+          "value": "smms",
+          "label": "SM.MS",
+          "description": "Free image host; images are public."
+        },
+        {
+          "value": "imgur",
+          "label": "Imgur",
+          "description": "Free image host; images are public."
+        },
+        {
+          "value": "off",
+          "label": "Off",
+          "description": "Images come back as base64, and clients that only read the image URL get none."
+        }
+      ],
+      "label": "Image storage",
+      "description": "Where generated images are kept so a request that asks for an image URL gets a link. Gemini, Cloudflare Workers AI and Stability AI return image data only. Off answers with base64 instead: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change applies at once on every node.",
+      "related": [
+        "ImageStorageRehostUpstream",
+        "ServerAddress"
+      ],
+      "keywords": [
+        "image hosting",
+        "S3",
+        "R2",
+        "OSS",
+        "base64",
+        "b64_json",
+        "generated images"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageRehostUpstream",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "bool",
+      "label": "Also store upstream image and video links",
+      "description": "Image and video links from upstreams are swapped for links on this site, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on as it is. When off, upstream links pass through.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "rehost",
+        "mirror",
+        "image link",
+        "video",
+        "Midjourney",
+        "Kling"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageS3Endpoint",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "url",
+      "label": "S3 endpoint",
+      "description": "The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and are signed.",
+      "examples": [
+        {
+          "value": "https://<account>.r2.cloudflarestorage.com",
+          "effect": "Cloudflare R2; the region is auto."
+        },
+        {
+          "value": "https://s3.eu-central-1.amazonaws.com",
+          "effect": "AWS S3 in Frankfurt; the region eu-central-1 is read from the address."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Region",
+        "ImageStorageS3BucketName",
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "S3",
+        "R2",
+        "MinIO",
+        "endpoint"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageS3Region",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 region",
+      "description": "The region requests are signed for; usually left empty. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.",
+      "examples": [
+        {
+          "value": "us-east-1",
+          "effect": "Signs for us-east-1, for MinIO or another storage that expects a fixed region."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Endpoint"
+      ],
+      "keywords": [
+        "region",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3BucketName",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 bucket",
+      "description": "The bucket images are uploaded to. It can stay private unless a public URL is set.",
+      "related": [
+        "ImageStorageS3Endpoint",
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "bucket",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3AccessKeyId",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 access key ID",
+      "description": "The ID of an access key that may write to the bucket; its secret goes in the next field.",
+      "related": [
+        "ImageStorageS3AccessKeySecret"
+      ],
+      "keywords": [
+        "access key",
+        "credentials",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3AccessKeySecret",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "S3 access key secret",
+      "description": "The secret of the S3 access key. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "related": [
+        "ImageStorageS3AccessKeyId"
+      ],
+      "keywords": [
+        "secret key",
+        "credentials",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3CDNURL",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "url",
+      "label": "S3 public URL",
+      "description": "A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links signed for 1 hour, and the bucket can stay private.",
+      "examples": [
+        {
+          "value": "https://img.example.com",
+          "effect": "Images get links under https://img.example.com/ that work as long as the file exists."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Endpoint",
+        "ImageStorageS3BucketName"
+      ],
+      "keywords": [
+        "CDN",
+        "public URL",
+        "custom domain"
+      ]
+    },
+    {
+      "key": "ImageStorageS3ExpirationDays",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "int",
+      "unit": "days",
+      "min": 0,
+      "label": "S3 Expires header",
+      "description": "Days written into the Expires header of each uploaded image, for caches and CDNs. It deletes nothing: use a lifecycle rule of the storage for that. 0 writes no header.",
+      "examples": [
+        {
+          "value": "1",
+          "effect": "An image uploaded today says it expires tomorrow; the file stays until a lifecycle rule removes it."
+        },
+        {
+          "value": "0",
+          "effect": "No Expires header."
+        }
+      ],
+      "related": [
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "expires",
+        "cache header",
+        "lifecycle"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ImageStorageOSSEndpoint",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS endpoint",
+      "description": "The endpoint of the Alibaba Cloud OSS region the bucket is in.",
+      "examples": [
+        {
+          "value": "oss-cn-beijing.aliyuncs.com",
+          "effect": "A bucket in Beijing; the region cn-beijing is read from the address."
+        }
+      ],
+      "related": [
+        "ImageStorageOSSRegion",
+        "ImageStorageOSSBucketName"
+      ],
+      "keywords": [
+        "Aliyun",
+        "OSS",
+        "endpoint"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSRegion",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS region",
+      "description": "The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) need it, or uploads fail.",
+      "examples": [
+        {
+          "value": "cn-hangzhou",
+          "effect": "Signs for Hangzhou, for an endpoint the region cannot be read from."
+        }
+      ],
+      "related": [
+        "ImageStorageOSSEndpoint"
+      ],
+      "keywords": [
+        "region",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSBucketName",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS bucket",
+      "description": "The OSS bucket images are uploaded to; it can stay private, since links are signed.",
+      "related": [
+        "ImageStorageOSSEndpoint"
+      ],
+      "keywords": [
+        "bucket",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSAccessKeyId",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS AccessKey ID",
+      "description": "The AccessKey ID of a RAM user that may write to the bucket; its secret goes in the next field.",
+      "related": [
+        "ImageStorageOSSAccessKeySecret"
+      ],
+      "keywords": [
+        "AccessKey",
+        "RAM",
+        "credentials",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSAccessKeySecret",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "OSS AccessKey secret",
+      "description": "The AccessKey secret of the OSS user. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "related": [
+        "ImageStorageOSSAccessKeyId"
+      ],
+      "keywords": [
+        "AccessKey secret",
+        "credentials",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageSMMSSecret",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "SM.MS API token",
+      "description": "The API token of your account on the free image host, used for uploads. Images there are public.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "SM.MS",
+        "smms",
+        "image host",
+        "token"
+      ]
+    },
+    {
+      "key": "ImageStorageImgurClientId",
+      "scope": "site",
+      "group": "media",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "Imgur client ID",
+      "description": "The client ID of an application registered with Imgur, used for anonymous uploads. Images there are public.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "Imgur",
+        "image host",
+        "client id"
+      ]
+    },
+    {
+      "key": "MjNotifyEnabled",
+      "scope": "site",
+      "group": "media",
+      "card": "mj-notify",
+      "type": "bool",
+      "label": "Midjourney callbacks",
+      "description": "Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call comes from the upstream, not this site, so it carries the upstream's view of the task and tells the upstream the caller's address. When off, the address is dropped and callers poll the task status.",
+      "keywords": [
+        "Midjourney",
+        "notifyHook",
+        "callback",
+        "webhook",
+        "MJ"
       ]
     },
     {

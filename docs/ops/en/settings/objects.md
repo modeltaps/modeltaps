@@ -27,7 +27,7 @@ Examples:
 - `10` Tried before every channel at 0 that serves the same model in the same group.
 - `0` The default. A backup at -1 is reached only while every channel at 0 fails.
 
-See also: [Weight](./objects.md#channel-weight) · [Priority](./objects.md#supply-priority) · [Cost and priority](./gateway.md#SupplyCostOrder)
+See also: [Weight](./objects.md#channel-weight) · [Priority](./objects.md#supply-priority) · [Cost and priority](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ Examples:
 - `3` Next to a channel of weight 1 at the same priority, takes about 3 / (3 + 1) = 75% of the requests.
 - `1` The default: channels of one priority share requests equally.
 
-See also: [Priority](./objects.md#channel-priority) · [Weight](./objects.md#supply-weight) · [Default supply mode](./gateway.md#SupplyModeDefault)
+See also: [Priority](./objects.md#channel-priority) · [Weight](./objects.md#supply-weight) · [Default supply mode](./supply.md#SupplyModeDefault)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ Examples:
 - `3` Vercel AI Gateway card payments: a $3.00 processing fee on $100 of credit.
 - `0` An official vendor API billed at list price.
 
-See also: [Payment cost](./billing.md#PaymentCostPercent) · [Cost and priority](./gateway.md#SupplyCostOrder) · [Group ratio](./objects.md#user_group-ratio)
+See also: [Payment cost](./billing.md#PaymentCostPercent) · [Cost and priority](./supply.md#SupplyCostOrder) · [Group ratio](./objects.md#user_group-ratio)
 
 Guide: [use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -252,7 +252,7 @@ Examples:
 - `failover` Supplies of weights 3 and 1 in one tier: the weight 3 supply takes every request while it works.
 - `balance` The same supplies take about 75% and 25% of the requests.
 
-See also: [Default supply mode](./gateway.md#SupplyModeDefault) · [Supply order](./objects.md#model-allocation) · [Weight](./objects.md#supply-weight)
+See also: [Default supply mode](./supply.md#SupplyModeDefault) · [Supply order](./objects.md#model-allocation) · [Weight](./objects.md#supply-weight)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -295,7 +295,7 @@ Examples:
 - `2` Above two supplies at 1: they are used only while this supply fails.
 - `1` Next to another supply at 1, the two form one tier and share its requests.
 
-See also: [Weight](./objects.md#supply-weight) · [Supply order](./objects.md#model-allocation) · [Cost and priority](./gateway.md#SupplyCostOrder)
+See also: [Weight](./objects.md#supply-weight) · [Supply order](./objects.md#model-allocation) · [Cost and priority](./supply.md#SupplyCostOrder)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -314,7 +314,7 @@ Examples:
 - `3` With a weight 1 supply in its tier: about 75% of the requests under balance, all of them under failover.
 - `1` Two supplies of weight 1 share a tier 50 / 50 under balance.
 
-See also: [Priority](./objects.md#supply-priority) · [Supply mode](./objects.md#model-supply_mode) · [Default supply mode](./gateway.md#SupplyModeDefault)
+See also: [Priority](./objects.md#supply-priority) · [Supply mode](./objects.md#model-supply_mode) · [Default supply mode](./supply.md#SupplyModeDefault)
 
 <a id="supply-enabled"></a>
 
@@ -326,7 +326,7 @@ Where: Models › supplies
 
 Whether the supply takes the model's requests. Off, it keeps its settings but is skipped. Supplies an intake rule added wait switched off until you switch them on; switching a supply on also accepts its cost, so the price check leaves it alone.
 
-See also: [Intake rules for new upstream models](./gateway.md#SupplyIntakeRules)
+See also: [Intake rules for new upstream models](./supply.md#SupplyIntakeRules)
 
 <a id="supply-upstream_model"></a>
 
@@ -362,7 +362,7 @@ Examples:
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` The official Anthropic API first; channel 7 only while it fails.
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` Channels 3 and 5 share the first position: about 75% and 25% of the requests.
 
-See also: [Supply order](./objects.md#model-allocation) · [Priority](./objects.md#supply-priority) · [Cost and priority](./gateway.md#SupplyCostOrder)
+See also: [Supply order](./objects.md#model-allocation) · [Priority](./objects.md#supply-priority) · [Cost and priority](./supply.md#SupplyCostOrder)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
