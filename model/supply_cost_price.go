@@ -69,6 +69,8 @@ func priceFromChannelPrice(catalog *Price, cp *ChannelPrice) (*Price, bool) {
 		return nil, false
 	}
 	p := clonePrice(catalog)
+	// The channel's own list has no off-peak discount of the catalog price's vendor.
+	p.OffPeak = nil
 	switch catalog.Type {
 	case TimesPriceType:
 		if cp.Request <= 0 {

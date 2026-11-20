@@ -81,7 +81,8 @@ func (p *Pricing) DiffPrices(prices []*Price) []PriceChange {
 			change.Kind = PriceChangeRaised
 		case inDelta < -priceEpsilon || outDelta < -priceEpsilon:
 			change.Kind = PriceChangeLowered
-		case existing.Type != price.Type || math.Abs(priceCacheRead(existing)-priceCacheRead(price)) > priceEpsilon:
+		case existing.Type != price.Type || math.Abs(priceCacheRead(existing)-priceCacheRead(price)) > priceEpsilon ||
+			!sameOffPeak(existing, price):
 			change.Kind = PriceChangeOther
 		default:
 			change.Kind = PriceChangeUnchanged

@@ -1,4 +1,12 @@
 {
+  "pricing_edit": {
+    "offPeak": {
+      "title": "オフピーク価格",
+      "summary": "オフピーク時間は価格の {{percent}}% を請求します。ピーク時間（UTC）：{{hours}}。それ以外はオフピークです。ベンダーがオフピークとする祝日は通常価格で請求します。",
+      "weekdays": "月〜金",
+      "remove": "常に通常価格"
+    }
+  },
   "channelPage": {
     "stats": {
       "all": "すべて",
@@ -2191,6 +2199,8 @@
       "decisionCall": "{{policy}} の判定呼び出し"
     },
     "quotaDetail": {
+      "offPeak": "オフピーク価格",
+      "offPeakValue": "価格の {{percent}}%",
       "audioLength": "音声の長さ",
       "seconds": "{{count}} 秒",
       "unitPrice": "単価",

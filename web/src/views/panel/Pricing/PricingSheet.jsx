@@ -16,6 +16,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
 import ExtraRatiosSelector from './ExtraRatiosSelector';
 import LongContextSelector from './LongContextSelector';
+import OffPeakNote from './OffPeakNote';
 import { valueToRate, convertUnit, getPriceTypeOptions, formatRatePreview, isFlatPriceType } from './pricingUtils';
 
 const EMPTY = {
@@ -54,7 +55,9 @@ export function buildPricePayload(values, unitType, localUnit) {
       output: outputRate,
       locked: values.locked,
       extra_ratios: values.extra_ratios,
-      long_context: normalizeLongContext(values.long_context)
+      long_context: normalizeLongContext(values.long_context),
+      // Kept as loaded (OffPeakNote can only remove it); omitted clears it.
+      off_peak: values.off_peak || undefined
     }
   };
 }
@@ -254,6 +257,14 @@ export function PriceFields({ control, type, ownedby = [], units, children }) {
           control={control}
           name="long_context"
           render={({ field }) => <LongContextSelector value={field.value || {}} onChange={field.onChange} />}
+        />
+      )}
+
+      {type === 'tokens' && (
+        <Controller
+          control={control}
+          name="off_peak"
+          render={({ field }) => <OffPeakNote value={field.value} onChange={field.onChange} />}
         />
       )}
     </>

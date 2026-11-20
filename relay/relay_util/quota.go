@@ -84,9 +84,11 @@ type Quota struct {
 	// requestedOutputTokens 是请求声明的输出上限（max_tokens 等），0 表示未声明；用于预扣估算。
 	requestedOutputTokens int
 	price                 model.Price
-	groupName             string
-	isBackupGroup         bool // 新增字段记录是否使用备用分组
-	backupGroupName       string
+	// startedAt is when the request started; prices with off-peak hours are charged by it.
+	startedAt       time.Time
+	groupName       string
+	isBackupGroup   bool // 新增字段记录是否使用备用分组
+	backupGroupName string
 	// groupRatio is the ratio requests are charged at: the group's ratio. Requests are charged
 	// the catalog (official) price times it, whatever channel serves them; the site's margin and
 	// discounts are set through the group ratios.
@@ -216,6 +218,7 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		tokenAccessListId: tokenAccessListIdFrom(c),
 	}
 	quota.requestedOutputTokens = requestedMaxOutputTokens(c)
+	quota.startedAt = time.Now()
 	quota.audioSecondsEstimate = c.GetFloat64(config.GinAudioSecondsEstimateKey)
 	quota.routingDecision = RoutingDecisionFromContext(c)
 	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
@@ -392,7 +395,7 @@ func (q *Quota) UpdateUserRealtimeQuota(usage *types.UsageEvent, nowUsage *types
 	promptTokens, completionTokens := q.getComputeTokensByUsageEvent(nowUsage)
 	// 长上下文分档：实时路径逐增量结算，用累计输入 token（而非单次增量）判断档位，
 	// 与最终结算按整次请求原始输入判档的效果保持收敛；对本次增量套用分档倍率。
-	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.InputTokens)
+	inRatio, outRatio := q.price.RequestMultipliers(usage.InputTokens, q.startedAt)
 	increaseQuota := q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio, q.outputRatio*outRatio, q.groupRatio)
 
 	cacheQuota, err := model.CacheIncreaseUserRealtimeQuota(q.userId, increaseQuota)

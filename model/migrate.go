@@ -636,6 +636,34 @@ func postMigrations() []*gormigrate.Migration {
 		foldLogIOSiteDefaults(),
 		migrateLogIOToKeys(),
 		migrateLogIOToOrgSelection(),
+		backfillOfficialOffPeak(),
+	}
+}
+
+// backfillOfficialOffPeak gives the stored prices of models whose official price has an off-peak
+// discount (DeepSeek) that schedule, where it is still the official price: unlocked rows with no
+// schedule yet. Later syncs keep it like any other part of the price.
+func backfillOfficialOffPeak() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611201601",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("prices") || !tx.Migrator().HasColumn(&Price{}, "off_peak") {
+				return nil
+			}
+			for name, official := range officialTokenPrices() {
+				if official.offPeak == nil {
+					continue
+				}
+				schedule := datatypes.NewJSONType(*official.offPeak)
+				err := tx.Model(&Price{}).Where("model = ? AND locked = ? AND off_peak IS NULL", name, false).
+					Update("off_peak", schedule).Error
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
 	}
 }
 

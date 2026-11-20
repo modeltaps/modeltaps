@@ -1,4 +1,12 @@
 {
+  "pricing_edit": {
+    "offPeak": {
+      "title": "非高峰价",
+      "summary": "非高峰时段按 {{percent}}% 收费。高峰时段（UTC）：{{hours}}，其余时间为非高峰。厂商算作非高峰的法定节假日仍按全价收费。",
+      "weekdays": "周一至周五",
+      "remove": "一律按全价"
+    }
+  },
   "channelPage": {
     "stats": {
       "all": "全部",
@@ -2211,6 +2219,8 @@
       "decisionCall": "{{policy}} 的决策调用"
     },
     "quotaDetail": {
+      "offPeak": "非高峰价",
+      "offPeakValue": "按 {{percent}}% 收费",
       "audioLength": "音频时长",
       "seconds": "{{count}} 秒",
       "unitPrice": "单价",

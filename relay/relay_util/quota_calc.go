@@ -165,7 +165,7 @@ func (q *Quota) getComputeTokensByUsageEvent(usage *types.UsageEvent) (promptTok
 func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
 	// 长上下文分档：按原始输入 token（未经缓存折算）判断档位，超阈值时整次请求套用分档倍率。
-	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
+	inRatio, outRatio := q.price.RequestMultipliers(usage.PromptTokens, q.startedAt)
 	// 上游按处理档位（OpenAI fast / flex、Claude fast、US 区推理）整体调价时，token 部分同比例计费。
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
@@ -179,7 +179,7 @@ func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 func (q *Quota) channelCostQuota(usage *types.Usage) int {
 	price := q.costPrice
 	promptTokens, completionTokens := getComputeTokensWith(price, usage)
-	inRatio, outRatio := price.GetLongContextMultiplier(usage.PromptTokens)
+	inRatio, outRatio := price.RequestMultipliers(usage.PromptTokens, q.startedAt)
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
 	q.audioSeconds = usage.AudioSeconds
@@ -211,7 +211,7 @@ func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
 // costQuotaAt prices the usage from the price table at the given ratio, without the group ratio.
 func (q *Quota) costQuotaAt(usage *types.Usage, ratio float64) int {
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
-	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
+	inRatio, outRatio := q.price.RequestMultipliers(usage.PromptTokens, q.startedAt)
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
 	q.audioSeconds = usage.AudioSeconds
@@ -229,7 +229,7 @@ func (q *Quota) ExpectedUpstreamCost(usage *types.Usage) float64 {
 	if q.listPrice != nil {
 		price := q.listPrice
 		promptTokens, completionTokens := getComputeTokensWith(price, usage)
-		inRatio, outRatio := price.GetLongContextMultiplier(usage.PromptTokens)
+		inRatio, outRatio := price.RequestMultipliers(usage.PromptTokens, q.startedAt)
 		tier := usage.TierMultiplier()
 		q.GetExtraBillingData(usage.ExtraBilling)
 		q.audioSeconds = usage.AudioSeconds

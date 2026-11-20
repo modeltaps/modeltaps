@@ -343,6 +343,10 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 			meta["long_context_input_ratio"] = inRatio
 			meta["long_context_output_ratio"] = outRatio
 		}
+		// Off-peak pricing: the share of the price charged because the request started off peak.
+		if share := q.price.OffPeakMultiplier(q.startedAt); share != 1 {
+			meta["off_peak_ratio"] = share
+		}
 
 		// The upstream's own charge for the request, kept with the gateway's estimate of it.
 		// RecordConsumeLog stores both as columns and takes them out of the metadata.

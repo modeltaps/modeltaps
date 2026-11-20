@@ -118,6 +118,12 @@ Some vendors announce a price that starts on a date, or an introductory price th
 
 When an introductory price ends and the vendor has not published the next one, the alert asks you to check the vendor's pricing page, which it links. Set the new price by hand if it changed; the alert stays open until a release carries the new price.
 
+## Off-peak prices
+
+Some vendors charge less off peak. DeepSeek charges half price outside 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday; the built-in official prices carry those hours, so users are charged half price off peak too. A request is priced by the time it started, and its cost and the upstream charge check follow the same rule; the log details show "Off-peak price".
+
+The model page and the price list still show the peak price. DeepSeek also counts Chinese public holidays as off peak; Modeltaps does not know them yet and charges the full price on those days, so it never charges less than the vendor. **Charge full price** on a model's price form removes its off-peak discount, and a locked price never gets one added. Through another channel (such as OpenRouter) the cost comes from that channel's own price list, without a discount.
+
 ## When a price source has problems
 
 When a channel's price list or models.dev cannot be read, Modeltaps keeps the prices it read last and shows when the reads started failing, and why, on the channel's **Models** tab. After two failed reads over at least 20 hours, a **Price source issue** alert opens and one notice is sent; the next good read closes it. Only sources an automatic sync reads are watched.

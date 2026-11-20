@@ -1003,6 +1003,12 @@ export default function LogDetailDialog({
                     </>
                   )}
                   <KeyValueRow label={t('logPage.quotaDetail.groupRatioValue')} value={groupRatio} />
+                  {Number(metadata.off_peak_ratio) > 0 && (
+                    <KeyValueRow
+                      label={t('logPage.quotaDetail.offPeak')}
+                      value={t('logPage.quotaDetail.offPeakValue', { percent: Math.round(Number(metadata.off_peak_ratio) * 100) })}
+                    />
+                  )}
                   {billing ? (
                     <>
                       <KeyValueRow label={t('logPage.quotaDetail.quoteBilling')} value={renderQuota(billing.quote_quota || 0, 6)} />

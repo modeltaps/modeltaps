@@ -72,7 +72,9 @@ type Price struct {
 
 	ExtraRatios *datatypes.JSONType[map[string]float64] `json:"extra_ratios,omitempty" gorm:"type:json"`
 	LongContext *datatypes.JSONType[LongContextTier]    `json:"long_context,omitempty" gorm:"type:json"`
-	ModelInfo   *ModelInfoResponse                      `json:"model_info,omitempty" gorm:"-"`
+	// OffPeak discounts the price outside the vendor's peak hours (see OffPeakPricing).
+	OffPeak   *datatypes.JSONType[OffPeakPricing] `json:"off_peak,omitempty" gorm:"type:json"`
+	ModelInfo *ModelInfoResponse                  `json:"model_info,omitempty" gorm:"-"`
 
 	// Unconfigured 标记「价格表里查无此模型」的兜底 Price(非持久化)。
 	// 计费侧据 unpriced_model_policy 处理,避免静默按某个数字计费(参见 ApplyUnpricedPolicy)。
@@ -219,6 +221,7 @@ func UpdatePrices(tx *gorm.DB, models []string, prices *Price) error {
 			Locked:      prices.Locked,
 			ExtraRatios: prices.ExtraRatios,
 			LongContext: prices.LongContext,
+			OffPeak:     prices.OffPeak,
 		}).Error
 
 	return err

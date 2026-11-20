@@ -1463,6 +1463,12 @@
     "updateOk": "Updated successfully"
   },
   "pricing_edit": {
+    "offPeak": {
+      "title": "Off-peak price",
+      "summary": "Off peak, {{percent}}% of the price is charged. Peak hours (UTC): {{hours}}; every other time is off peak. Public holidays the vendor counts as off peak are charged the full price.",
+      "weekdays": "Mon–Fri",
+      "remove": "Charge full price"
+    },
     "delTip": "Delete this item?",
     "name": "Name",
     "type": "Type"
@@ -2279,6 +2285,8 @@
       "decisionCall": "Decision call for {{policy}}"
     },
     "quotaDetail": {
+      "offPeak": "Off-peak price",
+      "offPeakValue": "{{percent}}% of the price",
       "audioLength": "Audio length",
       "seconds": "{{count}} s",
       "unitPrice": "Unit price",

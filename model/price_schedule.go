@@ -199,7 +199,8 @@ func samePrice(a, b *Price) bool {
 	if b.LongContext != nil {
 		bLC = b.LongContext.Data()
 	}
-	return aLC.Threshold == bLC.Threshold && sameRatio(aLC.InputRatio, bLC.InputRatio) && sameRatio(aLC.OutputRatio, bLC.OutputRatio)
+	return aLC.Threshold == bLC.Threshold && sameRatio(aLC.InputRatio, bLC.InputRatio) && sameRatio(aLC.OutputRatio, bLC.OutputRatio) &&
+		sameOffPeak(a, b)
 }
 
 func sameRatio(a, b float64) bool {

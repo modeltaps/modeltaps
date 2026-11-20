@@ -28,6 +28,8 @@ type officialTokenPrice struct {
 	// extra maps a usage extra key (config.UsageExtra*) to its USD price per 1M tokens.
 	extra       map[string]float64
 	longContext *LongContextTier
+	// offPeak is the vendor's off-peak discount, nil when it has none.
+	offPeak *OffPeakPricing
 	// free marks a model the vendor lists as free of charge; it is the only case where the input
 	// price may be zero.
 	free bool
@@ -154,9 +156,18 @@ func geminiLivePrice(textInput, audioInput, imageInput, textOutput, audioOutput 
 // deepseekPrice: DeepSeek has no cache write fee. Cache hits arrive as cached_tokens on the OpenAI
 // format and as cache_read_input_tokens on the Anthropic format, and cache creation tokens on the
 // Anthropic format are billed as cache misses.
+// deepseekOffPeak: half price outside 01:00-04:00 and 06:00-10:00 UTC, Monday to Friday. DeepSeek
+// also counts Chinese public holidays as off peak; they are billed at the full price (see
+// OffPeakPricing). https://api-docs.deepseek.com/quick_start/pricing (checked 2026-11-20)
+var deepseekOffPeak = &OffPeakPricing{Ratio: 0.5, Peak: []PeakWindow{
+	{Days: []int{1, 2, 3, 4, 5}, From: "01:00", To: "04:00"},
+	{Days: []int{1, 2, 3, 4, 5}, From: "06:00", To: "10:00"},
+}}
+
 func deepseekPrice(cacheMiss, cacheHit, output float64) officialTokenPrice {
 	return officialTokenPrice{
 		channelType: config.ChannelTypeDeepseek,
+		offPeak:     deepseekOffPeak,
 		input:       cacheMiss,
 		output:      output,
 		extra: map[string]float64{
@@ -410,6 +421,10 @@ func (o officialTokenPrice) toPrice(modelName string) *Price {
 	if o.longContext != nil {
 		jsonLC := datatypes.NewJSONType(*o.longContext)
 		price.LongContext = &jsonLC
+	}
+	if o.offPeak != nil {
+		jsonOP := datatypes.NewJSONType(*o.offPeak)
+		price.OffPeak = &jsonOP
 	}
 
 	return price
