@@ -15,6 +15,15 @@ The upgrade scripts below run `docker pull ghcr.io/modeltaps/modeltaps:latest` a
 From the version that stores API keys as hashes, the database keeps only the hash of each key and the plaintext is cleared. This step cannot be undone: downgrading to an older version makes every API key invalid. Back up the database before upgrading, and restore that backup together with the old version if you need to roll back. The version that introduces management keys does the same with each account's access token: it is moved to a hash and the plaintext cleared, so after a downgrade no old access token works.
 :::
 
+### Upgrading from 0.5.0 to 0.6.0
+
+The database is migrated by itself. Check these after starting the new version:
+
+- **Supply routing** stays as it was on an installation that already has users. To order, share and pause channels by supplies (dragging and priorities on the providers page), turn on **Route by supplies** in **Platform settings › Gateway › Supply mode and cost**. Saving it first migrates the channels to supplies, so no channel model stops being served.
+- **Prompt cache:** an installation that never saved the site-wide prompt cache switch turns it on. Set API keys used for one-off prompts, where a cache write costs 25% more, to Off.
+- **Supply pause rules:** the switch is gone and every failed request goes through the pause rules. Channels are disabled automatically only by channel tests, no longer on live requests.
+- **Request body retention** is set on the account or the organization, not on the key. What was kept stays kept.
+
 ### Upgrading from 0.4.0 to 0.5.0
 
 Do these before starting the new version; the database is migrated by itself.
