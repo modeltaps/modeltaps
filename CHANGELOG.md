@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-11-21
+
+### Upgrading from 0.7.3
+
+Nothing needs action. Two things behave differently. A session that moved to another channel
+after a failure now stays on it until an hour after its last request, so a backup channel keeps
+serving such sessions after the first channel is back; pause or disable a channel to move its
+sessions off it at once. Sites that saved their own pause rules keep them unchanged: only the
+built-in rules now also pause on a 503 or 529 that carries `Retry-After`.
+
 ### Changed
 
 - A session that moved to another channel after a failure stays there, where its prompt cache
