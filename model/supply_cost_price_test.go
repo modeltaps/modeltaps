@@ -29,6 +29,11 @@ func TestSupplyCostPrice(t *testing.T) {
 		if !near(p.GetExtraRatio(config.UsageExtraCachedRead), 0.1) || !near(p.GetExtraRatio(config.UsageExtraCachedWrite), 1.25) {
 			t.Errorf("cache ratios = %v", p.ExtraRatios.Data())
 		}
+		// The one cache read price the channel lists is the cost of a cache hit under either usage
+		// kind, cached_read_tokens or cached_tokens.
+		if !near(p.GetExtraRatio(config.UsageExtraCache), 0.1) {
+			t.Errorf("cached_tokens ratio = %v, want the channel's 0.1", p.GetExtraRatio(config.UsageExtraCache))
+		}
 		// Parts the channel does not list keep the catalog ratios.
 		if !near(p.GetExtraRatio(config.UsageExtraCachedWrite1h), 2) || p.LongContext == nil {
 			t.Error("catalog ratios for unlisted parts were dropped")

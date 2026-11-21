@@ -94,6 +94,8 @@ A supply whose cost is above what the site's normal price brings in loses money 
 
 > default group ratio × (1 − payment cost)
 
+The check compares the input and output cost with the catalog price. Cache reads are not part of it: they are a share of the input, and a channel that charges more for them often charges much less for the rest, so its requests still earn. A supply's price details show what cache reads cost on the channel next to what you sell them at, and say when they cost more, so you can judge a supply whose requests are mostly cache hits.
+
 With a margin set (the line is above 1), new supplies above the line wait for review, and existing backups above it are switched off for review. Supplies already taking requests are left on, and admins are told about them. The **Pricing** card lists every channel's break-even ratio, the supplies that would lose money and what each user group brings in.
 
 Discount groups are not checked: a discount is your own choice. The Pricing card still shows which channels lose money on each group.

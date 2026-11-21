@@ -30,14 +30,51 @@ type SupplyCost struct {
 	Input  *float64 `json:"input,omitempty"`
 	Output *float64 `json:"output,omitempty"`
 	Flat   *float64 `json:"flat,omitempty"`
-	// AboveQuote is true when some part of the cost is above what the model's price brings in:
-	// the catalog price times the default group's ratio, less the cost of taking payments
-	// (NetRevenueLine). Requests served by this supply lose money.
+	// CacheRead is what cache reads cost on the channel and QuoteCacheRead what the catalog charges
+	// for them, in USD per million tokens; both are set when the catalog prices cache reads apart
+	// from input (cacheReadPrices). CacheReadAbove is true when cache reads cost more than they
+	// bring in. The price details say so, but it is not part of AboveQuote and holds no supply
+	// back: cache reads are a share of the input, and a channel that charges more for them often
+	// charges much less for the rest, so its requests still earn. Judging a supply by this one
+	// share held back supplies whose input cost a ninth of the quote.
+	CacheRead      *float64 `json:"cache_read,omitempty"`
+	QuoteCacheRead *float64 `json:"quote_cache_read,omitempty"`
+	CacheReadAbove bool     `json:"cache_read_above,omitempty"`
+	// AboveQuote is true when some part of the cost (input or output) is above what the model's
+	// price brings in: the catalog price times the default group's ratio, less the cost of taking
+	// payments (NetRevenueLine). Requests served by this supply lose money.
 	AboveQuote bool `json:"above_quote"`
 	// CostToCatalog is the cost over the catalog price, the highest of its parts (1.05: the
 	// channel costs 5% more than the catalog price). The settings preview compares it with other
 	// markups. 0 when the catalog price is 0.
 	CostToCatalog float64 `json:"cost_to_catalog,omitempty"`
+}
+
+// cacheReadPrices returns what a cache read costs on the channel and what the catalog charges for
+// it, in ratio units (the input price times the cache read ratio). known is false when the
+// catalog does not price cache reads apart from input: a cache hit is then charged, and counted
+// as costing, the input price.
+//
+// Cache reads are most of the input of an agent's requests, so admins are shown the two prices
+// side by side (SupplyCost.CacheRead, QuoteCacheRead).
+func cacheReadPrices(cost, catalog *Price) (costRead, quoteRead float64, known bool) {
+	if catalog.ExtraRatios == nil || catalog.Type == TimesPriceType || catalog.Type == MinutesPriceType {
+		return 0, 0, false
+	}
+	listed := catalog.ExtraRatios.Data()
+	for _, key := range cacheReadKeys {
+		ratio, ok := listed[key]
+		quote := catalog.GetInput() * ratio
+		if !ok || quote <= 0 {
+			continue
+		}
+		c := cost.GetInput() * cost.GetExtraRatio(key)
+		// A price with both kinds (DeepSeek) is judged by the one that costs the most over its quote.
+		if !known || c/quote > costRead/quoteRead {
+			costRead, quoteRead, known = c, quote, true
+		}
+	}
+	return costRead, quoteRead, known
 }
 
 // costToCatalog is the highest part of cost over catalog.
@@ -83,6 +120,10 @@ func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice
 		out.Output = tokenPricePerMillion(cost.GetOutput())
 		out.AboveQuote = cost.GetInput() > catalog.GetInput()*line ||
 			cost.GetOutput() > catalog.GetOutput()*line
+		if c, q, ok := cacheReadPrices(cost, catalog); ok {
+			out.CacheRead, out.QuoteCacheRead = tokenPricePerMillion(c), tokenPricePerMillion(q)
+			out.CacheReadAbove = c > q*line
+		}
 	}
 	out.CostToCatalog = costToCatalog(cost, catalog)
 	return out

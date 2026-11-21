@@ -4969,6 +4969,7 @@
     "filterSame": "Show only models priced: {{kind}}",
     "cost": "Channel cost",
     "costWithFee": "Channel cost (incl. {{rate}}% fee)",
+    "cacheReadAbove": "Cache reads cost {{cost}} / M on this channel, above the {{sell}} / M they are sold at.",
     "titleOfficial": "Official list price",
     "officialHint": "This channel is the vendor at its own address, so it charges the official list price (built into the gateway)."
   },

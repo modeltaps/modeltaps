@@ -37,6 +37,27 @@ describe('UpstreamPriceCell', () => {
     expect(screen.getByText(i18n.t('modelSupply.aboveQuote'))).toBeTruthy();
   });
 
+  it('tells cache reads that cost more than they are sold at, without marking the supply', () => {
+    show({
+      upstream_price: { model: 'v/m', input: 2.7, output: 13.5, cache_read: 0.9 },
+      cost: {
+        known: true,
+        source: 'channel_price',
+        input: 2.7,
+        output: 13.5,
+        cache_read: 0.9,
+        quote_cache_read: 0.3,
+        cache_read_above: true,
+        above_quote: false
+      },
+      traffic: 'balanced'
+    });
+    // Input and output are below the quote: the supply is not marked as losing money.
+    expect(screen.queryByTestId('supply-price-loss')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /v\/m|m/ }));
+    expect(screen.getByText(i18n.t('upstreamPrice.cacheReadAbove', { cost: '$0.9', sell: '$0.3' }))).toBeTruthy();
+  });
+
   it('trusts the channel cost over the listed price when it is not above the quote', () => {
     show({
       upstream_price: { model: 'v/m', input: 1, output: 2 },

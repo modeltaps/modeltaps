@@ -54,6 +54,12 @@ export default function UpstreamPriceDetails({
         ? usd(cost.flat)
         : `${usd(cost.input ?? 0)} / ${usd(cost.output ?? 0)}`
       : '';
+  // Cache reads that cost more than they are sold at are told here, next to the cost and the sell
+  // price. They do not put the supply above the quote: its input may cost far less than its price.
+  const lossLines =
+    cost?.cache_read_above && cost.cache_read != null && cost.quote_cache_read != null
+      ? [...losses, t('upstreamPrice.cacheReadAbove', { cost: usd(cost.cache_read), sell: usd(cost.quote_cache_read) })]
+      : losses;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -99,7 +105,7 @@ export default function UpstreamPriceDetails({
           </dl>
         )}
 
-        {(sellText || costText || losses.length > 0) && (
+        {(sellText || costText || lossLines.length > 0) && (
           <div className="space-y-1 border-t border-border pt-2">
             {costText && (
               <p className="flex justify-between gap-3">
@@ -117,7 +123,7 @@ export default function UpstreamPriceDetails({
                 <span className="tabular-nums text-foreground">{sellText}</span>
               </p>
             )}
-            {losses.map((line) => (
+            {lossLines.map((line) => (
               <p key={line} className="text-warning">
                 {line}
               </p>
@@ -166,7 +172,10 @@ UpstreamPriceDetails.propTypes = {
     source: PropTypes.string,
     input: PropTypes.number,
     output: PropTypes.number,
-    flat: PropTypes.number
+    flat: PropTypes.number,
+    cache_read: PropTypes.number,
+    quote_cache_read: PropTypes.number,
+    cache_read_above: PropTypes.bool
   }),
   losses: PropTypes.arrayOf(PropTypes.string),
   align: PropTypes.oneOf(['start', 'end']),

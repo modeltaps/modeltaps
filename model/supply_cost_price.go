@@ -22,6 +22,11 @@ const (
 	CostSourceCostRatio    = "cost_ratio"    // the catalog price times the channel's cost ratio
 )
 
+// cacheReadKeys are the usage kinds a prompt cache hit is counted as: cached_tokens on the OpenAI
+// format, cached_read_tokens on the Anthropic one. A price lists a ratio for the kinds its model
+// reports.
+var cacheReadKeys = []string{config.UsageExtraCache, config.UsageExtraCachedRead}
+
 // CostSourceUpstream is the cost of one request taken from what its upstream said it charged
 // (the consume log's cost_source). A supply never has it: its cost is a price list.
 const CostSourceUpstream = "upstream"
@@ -103,7 +108,11 @@ func priceFromChannelPrice(catalog *Price, cp *ChannelPrice) (*Price, bool) {
 			}
 		}
 		if cp.CacheRead > 0 {
-			extra[config.UsageExtraCachedRead] = cp.CacheRead / cp.Input
+			// The channel lists one cache read price; a cache hit is billed as cached_read_tokens
+			// on the Anthropic format and as cached_tokens on the OpenAI one.
+			for _, key := range cacheReadKeys {
+				extra[key] = cp.CacheRead / cp.Input
+			}
 		}
 		if cp.CacheWrite > 0 {
 			extra[config.UsageExtraCachedWrite] = cp.CacheWrite / cp.Input
