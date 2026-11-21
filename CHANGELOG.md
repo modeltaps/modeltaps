@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-21
+
+### Upgrading from 0.6.0
+
+Nothing needs action. Consume logs gain a `cost_source` column and a migration adds DeepSeek's
+off-peak schedule to stored unlocked DeepSeek prices; both run on start.
+
+### Added
+
+- Settings assistant (root only) in the command palette, listed first: ask where a setting is or
+  what to set, and it reads the related settings, streams its answer and can propose changes,
+  which the admin ticks and applies through the settings page's own save and admin log. Sign-in,
+  payment, secret, server address and object settings are never offered for applying.
+- Off-peak prices: a price can carry an off-peak ratio with weekly peak windows (UTC); DeepSeek's
+  official prices charge half outside its peak hours.
+- Price source health: every read of a channel price list or models.dev is recorded, a refreshed
+  list that lost half its models is held, and a source failing for 20 hours raises an alert.
+  Built-in official prices that models.dev disputes by 10% or more raise an alert as well.
+- Consume logs record where a request's channel cost comes from (`cost_source`) and the channel
+  fee it includes; admins see both in the log details.
+- A supply's cost shows what cache reads cost on its channel next to their sell price.
+- Palette results link to the row of a list, which scrolls into view and flashes.
+- `VITE_WATCH_POLL=<ms>` makes the dev server poll for file changes.
+
+### Changed
+
+- Supply allocation and media settings move out of the gateway group into their own groups; old
+  links follow.
+- Deleting a user group that is still in use asks for a successor group and moves accounts, keys
+  and channels to it in one transaction (`DELETE /api/user_group/:id?successor=`).
+- The pricing page and log details state the long-context tier, the processing tier and the
+  off-peak price that change a charge; the billing guide describes them in all four languages.
+- Upstream charges that arrive after a request (OpenRouter, Cheaper Inference) become the
+  request's cost.
+
+### Fixed
+
+- A request whose channel cost was unknown was logged at cost 0 and counted as profit; the profit
+  per minute now leaves it out and shows the unknown share apart.
+- Supply costs above the quote were shown in the wrong unit.
+- Supply notices no longer mention the cost floor and markup removed in 0.5.0.
+- Cached-token cost on OpenAI, Gemini and DeepSeek models uses the channel's cache read price.
+
 ## [0.6.0] - 2026-11-20
 
 ### Upgrading from 0.5.0
