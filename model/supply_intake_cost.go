@@ -72,8 +72,8 @@ func notifyHeldAboveQuote(channel *Channel, held []supplyCostOverQuote) {
 	sort.Strings(lines)
 	body := fmt.Sprintf("Channel \"%s\" (#%d) now offers these models, but at more than their quoted price, "+
 		"so the new supplies are switched off and wait for review on each model's Supplies tab. "+
-		"Confirm a supply to accept the cost (with the cost floor on, its requests are charged the channel "+
-		"cost; otherwise the difference is lost), raise the quote first, or keep it off.\n\n%s",
+		"Confirm a supply to accept the cost (its requests are still charged the quoted price, so each "+
+		"loses the difference), raise the quote first, or keep it off.\n\n%s",
 		channel.Name, channel.Id, strings.Join(lines, "\n"))
 	notify.SendKind(notify.KindSupplyAboveQuote, "New supplies above the quoted price wait for review", body)
 }

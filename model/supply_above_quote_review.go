@@ -116,9 +116,9 @@ func notifyAboveQuoteReview(r *SupplyAboveQuoteReview) {
 			b.WriteString("\n\n")
 		}
 		b.WriteString("These supplies take requests and cost more than the quoted price. They were left on, since " +
-			"switching them off could leave the model without a supply. With the cost floor on, their requests " +
-			"are charged the channel cost; otherwise the difference is lost. Raise the quote, move the supply " +
-			"down, or switch it off.\n\n")
+			"switching them off could leave the model without a supply. Users pay the quoted price whatever " +
+			"supply serves them, so each of these requests loses the difference. Raise the quote, move the " +
+			"supply down, or switch it off.\n\n")
 		b.WriteString(aboveQuoteLines(r.Serving))
 	}
 	if len(r.Unheld) > 0 {
@@ -126,8 +126,9 @@ func notifyAboveQuoteReview(r *SupplyAboveQuoteReview) {
 			b.WriteString("\n\n")
 		}
 		b.WriteString("These backup supplies cost more than what their model's price brings in, but were left on " +
-			"because the platform markup has not been set. Set it under Platform settings, Billing; from then " +
-			"on such backups wait for review.\n\n")
+			"because the site sells at no margin yet: the default group's ratio, less the payment cost, is " +
+			"not above 1. Raise the default group's ratio under Users, User groups; from then on such " +
+			"backups wait for review.\n\n")
 		b.WriteString(aboveQuoteLines(r.Unheld))
 	}
 	notify.SendKind(notify.KindSupplyAboveQuote, "Supplies above the quoted price to review", b.String())

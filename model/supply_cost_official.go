@@ -13,8 +13,8 @@ import (
 // URL of its own), so it charges the vendor's list price.
 const CostSourceOfficial = "official"
 
-// Official prices are read on every billed request with the cost floor on; they only change with a
-// release or an announced price change, so the index is rebuilt every few minutes.
+// Official prices are read on every billed request (the cost of a vendor channel); they only change
+// with a release or an announced price change, so the index is rebuilt every few minutes.
 const officialCostIndexTTL = 10 * time.Minute
 
 var officialCostIndex struct {

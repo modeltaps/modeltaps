@@ -160,8 +160,8 @@ type ModelCostSummary struct {
 	// quote; AboveQuoteBackup counts backups that do.
 	AboveQuote       int `json:"above_quote"`
 	AboveQuoteBackup int `json:"above_quote_backup"`
-	// CostUnknown counts supplies taking traffic whose cost is not known: the floor cannot
-	// protect them.
+	// CostUnknown counts supplies taking traffic whose cost is not known: the price check
+	// cannot judge them.
 	CostUnknown int `json:"cost_unknown"`
 	// MaxInput and MaxOutput are the highest channel cost per million tokens among the supplies
 	// above the quote that take traffic; MaxFlat the same for per-request or per-minute models.
@@ -265,8 +265,8 @@ func NotifyNewAboveQuote(before map[int]*ModelSupplyView) {
 	}
 	sort.Strings(lines)
 	body := "These supplies now cost more than the model's quoted price and take requests. " +
-		"With the cost floor on, those requests are charged the channel cost; otherwise the " +
-		"difference is lost. Raise the quote, move the supply down, or use a cheaper upstream.\n\n" +
+		"Users pay the quoted price whatever supply serves them, so each of those requests loses " +
+		"the difference. Raise the quote, move the supply down, or use a cheaper upstream.\n\n" +
 		strings.Join(lines, "\n")
 	notify.SendKind(notify.KindSupplyAboveQuote, "Supplies above the quoted price", body)
 }
