@@ -1210,7 +1210,8 @@
       "vertexExpressKey": "請輸入 API Key（從 Google Cloud Console 獲取）",
       "remark": "供管理員查看的備註，例如密鑰來源、到期時間。每個渠道單獨保存，不隨標籤分組同步。",
       "need2response_models": "一行一個模型名（也可以用逗號分隔）。這些模型的 chat/completions 請求會改走 Responses 接口，再轉換回 chat 格式。填寫的模型會加到內置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不對該模型做轉換，適用於上游在 chat/completions 上就能提供該模型的情況。留空則使用內置列表。",
-      "manageKeyCheaperInference": "選填。填一把有 account:read 權限的 Cheaper Inference 密鑰可顯示錢包餘額；不填時用上面的密鑰嘗試。"
+      "manageKeyCheaperInference": "選填。填一把有 account:read 權限的 Cheaper Inference 密鑰可顯示錢包餘額；不填時用上面的密鑰嘗試。",
+      "manageKeyVenice": "選填。Venice 只允許管理員（Admin）密鑰讀取帳戶餘額；只填推理密鑰時讀不到餘額。"
     },
     "fetchModelsFrom": "從{{source}}獲取模型列表",
     "fetchModelsFromChannel": "從渠道獲取模型列表",

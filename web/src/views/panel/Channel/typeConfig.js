@@ -836,6 +836,9 @@ const typeConfig = {
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Venice' }]
     },
+    prompt: {
+      manage_key: 'channelForm.prompt.manageKeyVenice'
+    },
     modelGroup: 'Venice'
   },
   83: {

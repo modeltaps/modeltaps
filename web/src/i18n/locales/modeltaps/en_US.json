@@ -1208,7 +1208,8 @@
       "vertexExpressKey": "Enter an API key (from the Google Cloud Console)",
       "remark": "A note for admins, such as where the key comes from or when it expires. Kept per channel and not shared across a tag.",
       "need2response_models": "One model per line (commas also work). Chat completions requests for these models are sent to the Responses API and converted back. Entries are added to the built-in list (o1-pro, o3-pro, o3 / o4-mini deep research, codex-mini-latest); put - before a model to stop converting it on this channel, for upstreams that serve it on chat completions. Leave empty to use the built-in list.",
-      "manageKeyCheaperInference": "Optional. A Cheaper Inference key with the account:read scope shows the wallet balance; the key above is tried when this is empty."
+      "manageKeyCheaperInference": "Optional. A Cheaper Inference key with the account:read scope shows the wallet balance; the key above is tried when this is empty.",
+      "manageKeyVenice": "Optional. Venice only shows the account balance to an Admin key; with an inference key alone the balance cannot be read."
     },
     "fetchModelsFrom": "Fetch models from {{source}}",
     "fetchModelsFromChannel": "Fetch models from channel",
