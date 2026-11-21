@@ -57,7 +57,7 @@ func current(s settings.Setting) (value *string, modified bool) {
 // ---------------------------------------------------------------- settings_search
 
 type searchParams struct {
-	Query           string `json:"query" description:"Words to look for in setting keys, names, descriptions and keywords (all must match). Empty lists everything the filters allow." required:"false"`
+	Query           string `json:"query" description:"English words to look for in setting keys, names, descriptions and keywords. Settings with every word come first; when none has them all, those with the most. Words no setting has are ignored. Empty lists everything the filters allow." required:"false"`
 	Scope           string `json:"scope" description:"Only settings of this object: site, channel, model, supply, allocation, user_group, routing_policy, organization, token." required:"false"`
 	Group           string `json:"group" description:"Only one settings page group or object page, e.g. gateway, billing, channels." required:"false"`
 	ModifiedOnly    bool   `json:"modified_only" description:"Only site settings whose value differs from the default." required:"false"`

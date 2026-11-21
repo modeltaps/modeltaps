@@ -28,7 +28,9 @@ import { normalizeSynonyms, scoreTiers } from './commandScore';
 // looked up, links to the settings, and may carry a change plan the admin reviews and applies
 // (AssistantProposal). Each question is billed to the admin like a playground request.
 
-const MODEL_STORAGE_KEY = 'settingsAssistant.model';
+// v2: the model is remembered once the admin picks it; the old key held whatever was used last,
+// mostly the earlier fast default.
+const MODEL_STORAGE_KEY = 'settingsAssistant.model.v2';
 
 // The model picker in the message box: just the model name, a rounded surface on hover or while
 // the list is open, no field border.
@@ -42,8 +44,22 @@ const ANSWER_CLASS =
 
 // Batch models answer hours later; they are left out.
 const BATCH = /(^|[-_.])batch($|[-_.])/i;
-// The first default: a fast, cheap model that calls tools well, when the site has one.
-const PREFERRED = [/claude.*haiku/i, /gpt-5.*mini/i, /gemini.*flash(?!-lite)/i, /claude.*sonnet/i, /deepseek-chat/i];
+// Models offered first, best first: the default is a strong model that reads several settings and
+// reasons about a problem well (a fast one missed the setting made for the case and proposed
+// switching protections off). Questions are rare, so quality is worth the price. Faster ones follow.
+const PREFERRED = [
+  /claude.*sonnet/i,
+  /^gpt-5(?!.*(mini|nano|codex|chat|audio|realtime|search|image))/i,
+  /gemini.*pro(?!.*image)/i,
+  /claude.*haiku/i,
+  /gpt-5.*mini/i,
+  /gemini.*flash(?!-lite)/i,
+  /deepseek-chat/i
+];
+
+// The newest model of a family: the highest version sorts last.
+const newest = (names, pattern) =>
+  names.filter((name) => pattern.test(name)).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
 
 // The models offered first in the picker: the last one used, then the preferred ones on this site.
 export function recommendedModels(names, last) {
@@ -52,7 +68,7 @@ export function recommendedModels(names, last) {
   // One model per family: a family the last model already belongs to adds no second one.
   for (const pattern of PREFERRED) {
     if (picks.some((name) => pattern.test(name))) continue;
-    const hit = names.find((name) => pattern.test(name));
+    const hit = newest(names, pattern);
     if (hit) picks.push(hit);
   }
   return picks.slice(0, 5);
@@ -60,7 +76,7 @@ export function recommendedModels(names, last) {
 
 export function defaultAssistantModel(names) {
   for (const pattern of PREFERRED) {
-    const hit = names.find((name) => pattern.test(name));
+    const hit = newest(names, pattern);
     if (hit) return hit;
   }
   return names[0] || '';
@@ -90,6 +106,11 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
   const { names, loading: modelsLoading } = useToolModels();
   const [draft, setDraft] = useState('');
   const [model, setModel] = useState(() => localStorage.getItem(MODEL_STORAGE_KEY) || '');
+  // Only a model the admin picks is remembered; otherwise the default follows the preferred list.
+  const pickModel = (name) => {
+    setModel(name);
+    if (name) localStorage.setItem(MODEL_STORAGE_KEY, name);
+  };
   // The conversation as shown: { role: 'user', text } and { role: 'assistant', status, steps, answer, error, proposal }.
   const [turns, setTurns] = useState([]);
   // The conversation as the model reads it (with its tool calls).
@@ -143,7 +164,6 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
       if (!question || !model || running) return;
       const controller = new AbortController();
       abortRef.current = controller;
-      localStorage.setItem(MODEL_STORAGE_KEY, model);
       setDraft('');
       setTurns((list) => [...list, { role: 'user', text: question }, { role: 'assistant', status: 'running', steps: [] }]);
       try {
@@ -290,7 +310,7 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
                 <Combobox
                   id="settings-assistant-model"
                   value={model}
-                  onValueChange={setModel}
+                  onValueChange={pickModel}
                   groups={modelGroups}
                   placeholder={t('settingsAssistant.model')}
                   searchPlaceholder={t('settingsAssistant.searchModels')}

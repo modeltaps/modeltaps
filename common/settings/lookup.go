@@ -68,13 +68,19 @@ type Filter struct {
 
 // Search returns the entries every word of query appears in, best matches first: the key, then
 // the label, then the rest. An empty query matches every entry the filter lets through.
+//
+// Words no entry contains are dropped first, so a word in another language or a typo does not
+// empty the result (the catalog is English). When no entry has every remaining word, the entries
+// with the most of them are returned, so a question-like query still finds something.
 func Search(query string, f Filter) []Setting {
-	words := strings.Fields(strings.ToLower(query))
+	words := knownWords(strings.Fields(strings.ToLower(query)))
 	type scored struct {
-		s     Setting
-		score int
+		s       Setting
+		matched int
+		score   int
 	}
 	var hits []scored
+	best := 0
 	for i, s := range All() {
 		if f.Scope != "" && s.Scope != f.Scope {
 			continue
@@ -86,14 +92,13 @@ func Search(query string, f Filter) []Setting {
 			continue
 		}
 		text := SearchText(s)
-		ok := true
-		score := 0
+		matched, score := 0, 0
 		key, label := strings.ToLower(s.Key), strings.ToLower(s.Label)
 		for _, w := range words {
 			if !strings.Contains(text, w) {
-				ok = false
-				break
+				continue
 			}
+			matched++
 			switch {
 			case key == w:
 				score += 100
@@ -105,18 +110,51 @@ func Search(query string, f Filter) []Setting {
 				score += 1
 			}
 		}
-		if !ok {
+		if len(words) > 0 && matched == 0 {
 			continue
 		}
 		if s.Advanced && !f.Advanced {
 			score -= 10
 		}
-		hits = append(hits, scored{s, score*10000 - i})
+		best = max(best, matched)
+		hits = append(hits, scored{s, matched, score*10000 - i})
 	}
+	kept := hits[:0]
+	for _, h := range hits {
+		if h.matched == best {
+			kept = append(kept, h)
+		}
+	}
+	hits = kept
 	sort.SliceStable(hits, func(i, j int) bool { return hits[i].score > hits[j].score })
 	out := make([]Setting, len(hits))
 	for i, h := range hits {
 		out[i] = h.s
 	}
 	return out
+}
+
+// knownWords drops the words no entry contains. When none is left the words are kept, so the
+// search finds nothing rather than everything.
+func knownWords(words []string) []string {
+	if len(words) == 0 {
+		return words
+	}
+	texts := make([]string, 0, len(All()))
+	for _, s := range All() {
+		texts = append(texts, SearchText(s))
+	}
+	known := words[:0:0]
+	for _, w := range words {
+		for _, t := range texts {
+			if strings.Contains(t, w) {
+				known = append(known, w)
+				break
+			}
+		}
+	}
+	if len(known) == 0 {
+		return words
+	}
+	return known
 }
