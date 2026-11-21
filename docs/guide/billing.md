@@ -33,7 +33,7 @@ Most chat and text models are billed per token, with input and output priced sep
 
 > Cost = input tokens × input unit price + output tokens × output unit price
 
-The unit price is the price shown on the pricing page, that is **model unit price × group ratio**. Input and output each use their own price, with no further multipliers applied.
+The unit price is the price shown on the pricing page, that is **model unit price × group ratio**. Input and output each use their own price. The price of a request changes only in the cases described below: special token types, a long-context tier, a processing tier and off-peak hours.
 
 ## Per-request pricing (times)
 
@@ -64,11 +64,28 @@ The actual ratios for a model are whatever **View details** shows; types without
 
 ## Long-context tiers
 
-A few models have long-context tiers configured: when the input tokens of a request exceed the configured threshold, the input and output prices for the entire request are each multiplied by the corresponding tier ratio. Below the threshold, prices are unchanged.
+A few models have long-context tiers configured: when the input tokens of a request exceed the configured threshold, the input and output prices for the entire request are each multiplied by the corresponding tier ratio. Below the threshold, prices are unchanged. A model with a tier shows its threshold and ratios under the price table in **View details**.
+
+## Processing tiers
+
+Some upstreams let a request choose how it is processed and charge a different rate for it. When the upstream reports the tier it used, the token part of the request is charged at that rate:
+
+| Tier the upstream reports | Price |
+| --- | --- |
+| `priority`, `fast` | × 2 |
+| `ultrafast` | × 6 |
+| `flex` | × 0.5 |
+| US-only inference (`inference_geo` is `us`) | × 1.1, on top of the tier |
+
+A request at the standard tier pays the listed price. Which tiers a model offers, and how to ask for one, is in the vendor's own documentation.
+
+## Off-peak prices
+
+Some vendors charge less outside their peak hours. A model with an off-peak price is charged a share of its listed price when the request starts outside the peak hours. The pricing page shows the peak price; **View details** shows the share and the peak hours, in UTC. Public holidays a vendor also counts as off peak are charged the full price.
 
 ## Pre-deduction and settlement
 
-When a request starts, the system pre-deducts some quota based on the input tokens; after the request finishes it settles against actual usage, refunding or charging the difference. As a result:
+When a request starts, the system reserves quota for it: the input tokens plus the output the request may produce (its `max_tokens`, up to a limit the site sets), at the model's price. After the request finishes it settles against actual usage, refunding or charging the difference. As a result:
 
 - if the balance or API key quota is insufficient, the request is rejected before it is sent;
 - if quota runs out during a streaming request, the connection is interrupted;
@@ -78,7 +95,7 @@ When a request starts, the system pre-deducts some quota based on the input toke
 ## Reviewing billing details
 
 - **Usage** page: spend, token volume and request counts by time, model, API key and application.
-- **Logs** page: the cost of each individual request; expand a record to see the actual input price, output price, group ratio, raw charge and final cost for that call, along with the breakdown of cache, reasoning and other token types.
+- **Logs** page: the cost of each individual request; expand a record to see the actual input price, output price, group ratio, raw charge and final cost for that call, along with the breakdown of cache, reasoning and other token types. A long-context tier, a processing tier or an off-peak price that applied to the call is listed there too.
 - **Transactions** tab of the **Billing** page (opened from the user menu at the bottom of the sidebar): top-ups, redemptions, system adjustments and other accounting records, which do not appear in the request logs.
 
 Redemption codes may be restricted to one kind of account: a **Personal only** code can only be redeemed into a personal account, and an **Organization only** code can only be redeemed into an organization quota pool from the organization context. Redeeming in the wrong context is rejected and the code stays usable — see [Organizations](/guide/organization).

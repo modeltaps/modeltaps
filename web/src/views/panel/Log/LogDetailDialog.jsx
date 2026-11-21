@@ -720,8 +720,9 @@ export default function LogDetailDialog({
   const showNativeFinish = Boolean(userIsAdmin || platformIsAdmin);
   const groupRatio = metadata.group_ratio || 1;
   const originalQuota = calculateOriginalQuota(item);
-  // Requests charged with the cost floor carry their breakdown: the quote, the channel cost
-  // (shown to users only when it was charged) and which one applied.
+  // Logs written by v0.4.0 with the cost floor on carry its breakdown: the quote, the channel cost
+  // (shown to users only when it was charged) and which one applied. The cost floor was removed in
+  // v0.5.0, so newer logs have none.
   const billing = metadata.billing && typeof metadata.billing === 'object' ? metadata.billing : null;
   const quota = item.quota || 0;
 
@@ -1007,6 +1008,21 @@ export default function LogDetailDialog({
                     <KeyValueRow
                       label={t('logPage.quotaDetail.offPeak')}
                       value={t('logPage.quotaDetail.offPeakValue', { percent: Math.round(Number(metadata.off_peak_ratio) * 100) })}
+                    />
+                  )}
+                  {(Number(metadata.long_context_input_ratio) > 0 || Number(metadata.long_context_output_ratio) > 0) && (
+                    <KeyValueRow
+                      label={t('logPage.quotaDetail.longContext')}
+                      value={t('logPage.quotaDetail.longContextValue', {
+                        input: Number(metadata.long_context_input_ratio) || 1,
+                        output: Number(metadata.long_context_output_ratio) || 1
+                      })}
+                    />
+                  )}
+                  {Number(metadata.service_tier_ratio) > 0 && (
+                    <KeyValueRow
+                      label={t('logPage.quotaDetail.serviceTier')}
+                      value={`${[metadata.service_tier, metadata.inference_geo].filter(Boolean).join(' · ')} ×${+Number(metadata.service_tier_ratio).toFixed(4)}`}
                     />
                   )}
                   {billing ? (

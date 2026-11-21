@@ -2225,6 +2225,9 @@
     "quotaDetail": {
       "offPeak": "非高峰价",
       "offPeakValue": "按 {{percent}}% 收费",
+      "longContext": "长上下文分档",
+      "longContextValue": "输入 ×{{input}}，输出 ×{{output}}",
+      "serviceTier": "处理档位",
       "audioLength": "音频时长",
       "seconds": "{{count}} 秒",
       "unitPrice": "单价",
@@ -2282,6 +2285,7 @@
     "ppmCostUnknownHint": "成本未知的请求不计入利润，这里的金额是它们的扣费。给渠道同步价格表或设置成本倍率后即可计入。"
   },
   "modelpricePage": {
+    "longContextRule": "输入超过 {{threshold}} token 的请求，整次请求按输入价 ×{{input}}、输出价 ×{{output}} 计费。",
     "routing": {
       "badge": "路由策略",
       "badgeTitle": "路由策略：每个会话的首条消息决定由哪个模型应答",

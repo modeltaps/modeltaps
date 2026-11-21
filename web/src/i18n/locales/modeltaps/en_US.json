@@ -2310,6 +2310,9 @@
     "quotaDetail": {
       "offPeak": "Off-peak price",
       "offPeakValue": "{{percent}}% of the price",
+      "longContext": "Long-context tier",
+      "longContextValue": "input ×{{input}}, output ×{{output}}",
+      "serviceTier": "Processing tier",
       "audioLength": "Audio length",
       "seconds": "{{count}} s",
       "unitPrice": "Unit price",
@@ -2369,6 +2372,7 @@
     "ppmCostUnknownHint": "Requests whose channel cost is not known are left out of the profit; the amount is what they were charged. Sync the channel's prices or set its cost ratio to count them."
   },
   "modelpricePage": {
+    "longContextRule": "Requests with more than {{threshold}} input tokens are charged {{input}}× the input price and {{output}}× the output price, for the whole request.",
     "routing": {
       "badge": "Routing policy",
       "badgeTitle": "A routing policy: the first message of each session decides which model answers",

@@ -22,6 +22,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from '@/components/ui/sonner';
 import { MODALITY_OPTIONS } from 'constants/Modality';
+import PriceRuleNotes from './PriceRuleNotes';
 import { CAPABILITY_OPTIONS } from 'constants/Capability';
 
 const copyText = (text, label) => {
@@ -292,6 +293,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
                 </TableBody>
               </Table>
             </div>
+            <PriceRuleNotes price={priceData?.price} />
           </div>
 
           {priceData?.price?.extra_ratios && Object.keys(priceData.price.extra_ratios).length > 0 && (

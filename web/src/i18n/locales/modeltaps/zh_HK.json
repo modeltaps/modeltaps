@@ -2224,6 +2224,9 @@
     "quotaDetail": {
       "offPeak": "非高峰價",
       "offPeakValue": "按 {{percent}}% 收費",
+      "longContext": "長上下文分檔",
+      "longContextValue": "輸入 ×{{input}}，輸出 ×{{output}}",
+      "serviceTier": "處理檔位",
       "audioLength": "音訊時長",
       "seconds": "{{count}} 秒",
       "unitPrice": "單價",
@@ -2281,6 +2284,7 @@
     "ppmCostUnknownHint": "成本未知的請求不計入利潤，這裏的金額是它們的扣費。為渠道同步價格表或設定成本倍率後即可計入。"
   },
   "modelpricePage": {
+    "longContextRule": "輸入超過 {{threshold}} token 的請求，整次請求按輸入價 ×{{input}}、輸出價 ×{{output}} 計費。",
     "routing": {
       "badge": "路由策略",
       "badgeTitle": "路由策略：每個會話的首條訊息決定由哪個模型應答",

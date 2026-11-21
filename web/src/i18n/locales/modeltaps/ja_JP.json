@@ -2205,6 +2205,9 @@
     "quotaDetail": {
       "offPeak": "オフピーク価格",
       "offPeakValue": "価格の {{percent}}%",
+      "longContext": "ロングコンテキスト料金",
+      "longContextValue": "入力 ×{{input}}、出力 ×{{output}}",
+      "serviceTier": "処理ティア",
       "audioLength": "音声の長さ",
       "seconds": "{{count}} 秒",
       "unitPrice": "単価",
@@ -2264,6 +2267,7 @@
     "ppmCostUnknownHint": "コストが不明なリクエストは利益に含めていません。金額はその課金額です。チャネルの価格表を同期するか、コスト倍率を設定すると計上されます。"
   },
   "modelpricePage": {
+    "longContextRule": "入力が {{threshold}} トークンを超えるリクエストは、リクエスト全体が入力価格 ×{{input}}、出力価格 ×{{output}} で課金されます。",
     "routing": {
       "badge": "ルーティングポリシー",
       "badgeTitle": "ルーティングポリシー: 各セッションの最初のメッセージが応答するモデルを決めます",
