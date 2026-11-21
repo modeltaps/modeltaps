@@ -2277,6 +2277,10 @@
       }
     }
   },
+  "analytics_index": {
+    "ppmCostUnknown": "成本未知 {{amount}}",
+    "ppmCostUnknownHint": "成本未知的请求不计入利润，这里的金额是它们的扣费。给渠道同步价格表或设置成本倍率后即可计入。"
+  },
   "modelpricePage": {
     "routing": {
       "badge": "路由策略",

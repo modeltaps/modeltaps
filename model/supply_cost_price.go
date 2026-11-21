@@ -22,6 +22,10 @@ const (
 	CostSourceCostRatio    = "cost_ratio"    // the catalog price times the channel's cost ratio
 )
 
+// CostSourceUpstream is the cost of one request taken from what its upstream said it charged
+// (the consume log's cost_source). A supply never has it: its cost is a price list.
+const CostSourceUpstream = "upstream"
+
 // SupplyCostPrice returns the price list of what the channel charges for upstreamModel, in the
 // same ratio units as the catalog price, fee included and without any group ratio. Parts the
 // channel's price does not list (1h cache writes, long-context tiers) keep the catalog's ratios.

@@ -98,7 +98,10 @@ type Quota struct {
 	costRatio   float64
 	// costPrice is the serving channel's cost as a price list (list price with its fee), nil when
 	// unknown (see LoadSupplyCost). It only feeds the cost figures, never the charge.
-	costPrice *model.Price
+	// costSource is where it comes from (model.CostSourceChannelPrice, CostSourceCostRatio or
+	// CostSourceOfficial).
+	costPrice  *model.Price
+	costSource string
 	// listPrice is the channel's list price without its fee (model.SupplyListPrice), nil when
 	// unknown: the price the upstream charges against its credits, logged as the expected cost.
 	listPrice *model.Price
@@ -256,6 +259,9 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 	if channel := model.ChannelGroup.GetChannel(quota.channelId); channel != nil {
 		quota.costRatio = channel.GetCostRatio()
 	}
+	// The channel's cost for this request, whatever path the request takes. A request whose cost
+	// cannot be told is logged without a cost source and left out of the profit figures.
+	quota.LoadSupplyCost(c)
 
 	// App 归因(W9-B):c 在 handler 同步栈上活着,当场读取 App 请求头。只读 Referer/X-Title/User-Agent,
 	// 绝不读取任何鉴权头。经 sanitize(去控制字符 + 长度上限)后暂存,GetLogMeta 时非空才写 metadata。

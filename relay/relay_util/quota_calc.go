@@ -186,26 +186,39 @@ func (q *Quota) channelCostQuota(usage *types.Usage) int {
 	return q.calcQuotaWith(price, promptTokens, completionTokens, price.GetInput()*inRatio*tier, price.GetOutput()*outRatio*tier, 1+q.feeRate)
 }
 
-// GetCostQuotaByUsage is the request's cost for the cost and margin figures: what the upstream
-// says it charged, with the channel's fee, when it is one whose charge is known to be USD
-// (upstreamCostTypes); else the channel's list price with its fee (channelCostQuota); 0 when the
-// cost is not known. It is never charged. The upstream's own figure follows where the request
-// actually went (a gateway's fallback host, a long-context tier, a cache hit) where the list price
-// is an estimate.
+// requestCost is the request's cost for the cost and margin figures, and where it comes from:
+// what the upstream says it charged, with the channel's fee, when it is one whose charge is known
+// to be USD (upstreamCostTypes); else the channel's list price with its fee (channelCostQuota).
+// It is never charged. The upstream's own figure follows where the request actually went (a
+// gateway's fallback host, a long-context tier, a cache hit) where the list price is an estimate.
 //
-// Requests billed without a chosen channel's price (task and Midjourney settlements) fall back
-// to the catalog price at the channel's cost ratio, as before.
-func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
+// A model without a price of its own (its unpriced policy charges a default) has no channel
+// price to compare with and falls back to the catalog price at the channel's cost ratio.
+//
+// An empty source means the cost is not known: no price list, no cost ratio and not a vendor
+// channel. The cost is then 0, and the log keeps the empty source so the request is told apart
+// from one that cost nothing and stays out of the profit figures (model.GetRpmTpmStatistics).
+func (q *Quota) requestCost(usage *types.Usage) (costQuota int, source string) {
 	if usage != nil && usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
-		return int(math.Round(usage.UpstreamCost * (1 + q.feeRate) * config.QuotaPerUnit))
+		return int(math.Round(usage.UpstreamCost * (1 + q.feeRate) * config.QuotaPerUnit)), model.CostSourceUpstream
 	}
 	if q.costPrice != nil {
-		return q.channelCostQuota(usage)
+		source = q.costSource
+		if source == "" {
+			source = model.CostSourceChannelPrice
+		}
+		return q.channelCostQuota(usage), source
 	}
-	if q.costRatio <= 0 {
-		return 0
+	if q.costRatio > 0 {
+		return q.costQuotaAt(usage, q.costRatio), model.CostSourceCostRatio
 	}
-	return q.costQuotaAt(usage, q.costRatio)
+	return 0, ""
+}
+
+// GetCostQuotaByUsage is the cost of requestCost: 0 when the cost is not known.
+func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) int {
+	costQuota, _ := q.requestCost(usage)
+	return costQuota
 }
 
 // costQuotaAt prices the usage from the price table at the given ratio, without the group ratio.
@@ -225,6 +238,10 @@ func (q *Quota) costQuotaAt(usage *types.Usage, ratio float64) int {
 // It is the channel's list price, without the fee: upstreams deduct the list price from the
 // account's credits (the fee was paid when the credits were bought), so this is what their own
 // per-request and daily figures are compared with. Without a known list price, the catalog price.
+//
+// Unlike the request's cost (requestCost), it is always a figure: a guess at the catalog price is
+// still worth comparing with an upstream's bill, while a guessed cost would pass for a known one
+// in the profit figures.
 func (q *Quota) ExpectedUpstreamCost(usage *types.Usage) float64 {
 	if q.listPrice != nil {
 		price := q.listPrice

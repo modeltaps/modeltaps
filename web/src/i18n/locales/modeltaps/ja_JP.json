@@ -2259,6 +2259,10 @@
       }
     }
   },
+  "analytics_index": {
+    "ppmCostUnknown": "コスト不明 {{amount}}",
+    "ppmCostUnknownHint": "コストが不明なリクエストは利益に含めていません。金額はその課金額です。チャネルの価格表を同期するか、コスト倍率を設定すると計上されます。"
+  },
   "modelpricePage": {
     "routing": {
       "badge": "ルーティングポリシー",

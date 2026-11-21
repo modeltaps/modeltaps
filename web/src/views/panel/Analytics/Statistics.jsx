@@ -130,6 +130,7 @@ export default function Statistics() {
 
   const cny = (usd) => (siteInfo.PaymentUSDRate ? formatSpendAmount(usd * siteInfo.PaymentUSDRate, '¥') : undefined);
   const cnyHint = siteInfo.PaymentUSDRate ? t('analytics_index.cnyEstimateNote', { rate: siteInfo.PaymentUSDRate }) : undefined;
+  const costUnknownCpm = Number(rpmTpm.cost_unknown_cpm) || 0;
 
   const rechargeLabel = (
     <DropdownMenu>
@@ -206,9 +207,21 @@ export default function Statistics() {
           { label: t('analytics_index.cpmDescription'), value: formatSpendAmount(rpmTpm.cpm), valueTitle: cny(rpmTpm.cpm), hint: cnyHint },
           {
             label: t('analytics_index.ppmDescription'),
-            value: formatSpendAmount(rpmTpm.ppm ?? 0),
+            // Requests whose channel cost is not known are not in the profit; what they were
+            // charged is shown next to it, so the figure is not read as the whole picture.
+            value:
+              costUnknownCpm > 0 ? (
+                <>
+                  {formatSpendAmount(rpmTpm.ppm ?? 0)}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    · {t('analytics_index.ppmCostUnknown', { amount: formatSpendAmount(costUnknownCpm) })}
+                  </span>
+                </>
+              ) : (
+                formatSpendAmount(rpmTpm.ppm ?? 0)
+              ),
             valueTitle: cny(rpmTpm.ppm ?? 0),
-            hint: cnyHint
+            hint: costUnknownCpm > 0 ? t('analytics_index.ppmCostUnknownHint') : cnyHint
           }
         ]}
       />

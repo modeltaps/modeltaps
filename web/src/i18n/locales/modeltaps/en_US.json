@@ -2364,6 +2364,10 @@
       }
     }
   },
+  "analytics_index": {
+    "ppmCostUnknown": "cost unknown {{amount}}",
+    "ppmCostUnknownHint": "Requests whose channel cost is not known are left out of the profit; the amount is what they were charged. Sync the channel's prices or set its cost ratio to count them."
+  },
   "modelpricePage": {
     "routing": {
       "badge": "Routing policy",

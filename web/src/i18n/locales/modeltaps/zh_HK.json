@@ -2276,6 +2276,10 @@
       }
     }
   },
+  "analytics_index": {
+    "ppmCostUnknown": "成本未知 {{amount}}",
+    "ppmCostUnknownHint": "成本未知的請求不計入利潤，這裏的金額是它們的扣費。為渠道同步價格表或設定成本倍率後即可計入。"
+  },
   "modelpricePage": {
     "routing": {
       "badge": "路由策略",

@@ -32,6 +32,7 @@ func (l *Log) RedactForMember() {
 	l.UpstreamRequestId = ""
 	l.UpstreamCost = 0
 	l.ExpectedCost = 0
+	l.CostSource = ""
 	l.ChannelId = 0
 	l.Channel = nil
 

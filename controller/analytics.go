@@ -86,6 +86,9 @@ type RpmTpmStatistics struct {
 	TPM int64   `json:"tpm"`
 	CPM float64 `json:"cpm"` // Cost Per Minute (美元)
 	PPM float64 `json:"ppm"` // Profit Per Minute (美元)
+	// CostUnknownCPM is what requests whose cost is not known were charged per minute; they are
+	// left out of PPM (see model.RpmTpmStatistics).
+	CostUnknownCPM float64 `json:"cost_unknown_cpm"`
 }
 
 func GetStatisticsDetail(c *gin.Context) {
@@ -115,10 +118,11 @@ func GetStatisticsDetail(c *gin.Context) {
 	rpmTpmStats, err := model.GetRpmTpmStatistics(0)
 	if err == nil {
 		statisticsDetail.RpmTpmStatistics = &RpmTpmStatistics{
-			RPM: rpmTpmStats.RPM,
-			TPM: rpmTpmStats.TPM,
-			CPM: rpmTpmStats.CPM,
-			PPM: rpmTpmStats.PPM,
+			RPM:            rpmTpmStats.RPM,
+			TPM:            rpmTpmStats.TPM,
+			CPM:            rpmTpmStats.CPM,
+			PPM:            rpmTpmStats.PPM,
+			CostUnknownCPM: rpmTpmStats.CostUnknownCPM,
 		}
 	}
 

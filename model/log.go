@@ -46,6 +46,12 @@ type Log struct {
 	// per day with the account's cost report (see GetExpectedDailyCosts). Admin only.
 	UpstreamCost float64 `json:"upstream_cost" gorm:"default:0"`
 	ExpectedCost float64 `json:"expected_cost" gorm:"default:0"`
+	// CostSource is where CostQuota comes from: CostSourceUpstream (what the upstream said it
+	// charged), CostSourceChannelPrice, CostSourceCostRatio or CostSourceOfficial. Empty when the
+	// request's cost is not known: its CostQuota is 0 then, which a source tells apart from a
+	// request that cost nothing, and the request is left out of the profit figures
+	// (GetRpmTpmStatistics). Also empty on logs written before the column existed. Admin only.
+	CostSource string `json:"cost_source" gorm:"type:varchar(16);default:''"`
 	// Client is the coding agent that sent the request (agentclient.ClaudeCode, Codex, ...):
 	// named by the client endpoint it called, else recognised from its User-Agent; empty for
 	// other callers and for logs written before the column existed. No index, as for
@@ -164,13 +170,16 @@ func RecordLogWithTx(tx *gorm.DB, userId int, logType int, content string) {
 	}
 }
 
-// Metadata keys RecordConsumeLog moves into the upstream_cost and expected_cost columns, and
-// RecordConsumeLog / RecordRelayErrorLog into the client column.
+// Metadata keys RecordConsumeLog moves into the upstream_cost, expected_cost and cost_source
+// columns, and RecordConsumeLog / RecordRelayErrorLog into the client column.
 const (
 	LogMetaUpstreamCost = "_upstream_cost"
 	LogMetaExpectedCost = "_expected_cost"
+	LogMetaCostSource   = "_cost_source"
 	LogMetaClient       = "_client"
-	// LogMetaBilling is the breakdown of a request charged with the cost floor (SupplyCostFloorBilling).
+	// LogMetaBilling is the breakdown v0.4.0 wrote for a request charged with the cost floor, which
+	// could charge the channel cost instead of the quote. Nothing writes it since the cost floor was
+	// removed in v0.5.0; the key stays so logs from then are still redacted and shown.
 	LogMetaBilling = "billing"
 )
 
@@ -238,13 +247,15 @@ func RecordConsumeLog(
 		UpstreamRequestId: upstreamRequestId,
 	}
 
-	// The two costs travel in the metadata map and are stored as columns; they are removed from
-	// the map, which users can read.
+	// The two costs and the cost source travel in the metadata map and are stored as columns; they
+	// are removed from the map, which users can read.
 	// The estimate may come alone: the upstream cost is then filled in later (EnrichLogByRequestId).
 	log.UpstreamCost, _ = metadata[LogMetaUpstreamCost].(float64)
 	log.ExpectedCost, _ = metadata[LogMetaExpectedCost].(float64)
+	log.CostSource, _ = metadata[LogMetaCostSource].(string)
 	delete(metadata, LogMetaUpstreamCost)
 	delete(metadata, LogMetaExpectedCost)
+	delete(metadata, LogMetaCostSource)
 	log.Client = takeLogClient(metadata)
 
 	if metadata != nil {
@@ -718,7 +729,7 @@ func GetAllLogsList(params *LogsListParams, page LogExportPage) ([]*Log, error) 
 func GetUserLogsList(userId int, params *LogsListParams) (*DataResult[Log], error) {
 	var logs []*Log
 
-	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
+	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost", "cost_source")
 
 	if params.LogType != LogTypeUnknown {
 		tx = tx.Where("type = ?", params.LogType)
@@ -790,7 +801,7 @@ func CountAllUserLogsList(userId int, params *LogsListParams) (LogExportStat, er
 func GetAllUserLogsList(userId int, params *LogsListParams, page LogExportPage) ([]*Log, error) {
 	var logs []*Log
 
-	tx := userLogsExportQuery(userId, params).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
+	tx := userLogsExportQuery(userId, params).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost", "cost_source")
 	err := orderLogExportPage(tx, params.Order, page).Find(&logs).Error
 	if err != nil {
 		return nil, err
@@ -813,7 +824,7 @@ func SearchAllLogs(keyword string) (logs []*Log, err error) {
 }
 
 func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
-	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost").Find(&logs).Error
+	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost", "cost_source").Find(&logs).Error
 	RedactLogsForMember(logs)
 	return logs, err
 }
@@ -1060,17 +1071,22 @@ type RpmTpmStatistics struct {
 	RPM int64   `json:"rpm"`
 	TPM int64   `json:"tpm"`
 	CPM float64 `json:"cpm"`
-	PPM float64 `json:"ppm"` // Profit Per Minute (美元)：每分钟利润 = (收入 - 成本) / QuotaPerUnit
+	// PPM is the profit per minute in USD: what the requests whose cost is known were charged,
+	// less that cost. CostUnknownCPM is what the other requests were charged; it is in CPM and in
+	// neither side of PPM, since counting an unknown cost as zero would show it all as profit.
+	PPM            float64 `json:"ppm"`
+	CostUnknownCPM float64 `json:"cost_unknown_cpm"`
 }
 
 // GetRpmTpmStatistics 统计最近60秒的实时流量（滑动窗口，仅消费日志）。
 // userId 为 0 时统计全站，否则仅统计该用户。
 func GetRpmTpmStatistics(userId int) (*RpmTpmStatistics, error) {
 	var result struct {
-		RPM        int64 `gorm:"column:rpm"`
-		TPM        int64 `gorm:"column:tpm"`
-		TotalQuota int64 `gorm:"column:total_quota"`
-		CostQuota  int64 `gorm:"column:cost_quota"`
+		RPM              int64 `gorm:"column:rpm"`
+		TPM              int64 `gorm:"column:tpm"`
+		TotalQuota       int64 `gorm:"column:total_quota"`
+		ProfitQuota      int64 `gorm:"column:profit_quota"`
+		CostUnknownQuota int64 `gorm:"column:cost_unknown_quota"`
 	}
 
 	// 获取最近60秒的统计数据
@@ -1078,7 +1094,9 @@ func GetRpmTpmStatistics(userId int) (*RpmTpmStatistics, error) {
 	startTime := now - 60
 
 	query := DB.Table("logs").
-		Select("COUNT(*) as rpm, COALESCE(SUM(prompt_tokens + completion_tokens), 0) as tpm, COALESCE(SUM(quota), 0) as total_quota, COALESCE(SUM(cost_quota), 0) as cost_quota").
+		Select("COUNT(*) as rpm, COALESCE(SUM(prompt_tokens + completion_tokens), 0) as tpm, COALESCE(SUM(quota), 0) as total_quota, "+
+			"COALESCE(SUM(CASE WHEN COALESCE(cost_source, '') <> '' THEN quota - cost_quota ELSE 0 END), 0) as profit_quota, "+
+			"COALESCE(SUM(CASE WHEN COALESCE(cost_source, '') = '' THEN quota ELSE 0 END), 0) as cost_unknown_quota").
 		Where("type = ? AND created_at >= ?", LogTypeConsume, startTime)
 	if userId != 0 {
 		query = query.Where("user_id = ?", userId)
@@ -1093,14 +1111,16 @@ func GetRpmTpmStatistics(userId int) (*RpmTpmStatistics, error) {
 	// 计算每分钟消费金额 (美元)
 	// total_quota 是系统内部的配额单位，需要转换为美元
 	cpm := float64(result.TotalQuota) / float64(config.QuotaPerUnit)
-	// 每分钟利润 = (收入 - 成本) / QuotaPerUnit
-	ppm := float64(result.TotalQuota-result.CostQuota) / float64(config.QuotaPerUnit)
+	// The profit counts requests whose cost is known; what the others were charged is kept apart.
+	ppm := float64(result.ProfitQuota) / float64(config.QuotaPerUnit)
+	costUnknownCPM := float64(result.CostUnknownQuota) / float64(config.QuotaPerUnit)
 
 	return &RpmTpmStatistics{
-		RPM: result.RPM,
-		TPM: result.TPM,
-		CPM: cpm,
-		PPM: ppm,
+		RPM:            result.RPM,
+		TPM:            result.TPM,
+		CPM:            cpm,
+		PPM:            ppm,
+		CostUnknownCPM: costUnknownCPM,
 	}, nil
 }
 
