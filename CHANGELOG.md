@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-21
+
+### Upgrading from 0.7.1
+
+Nothing needs action.
+
+### Changed
+
+- The channel list shows, below each balance, the key's spend limit where the upstream reports it
+  (for example "Key limit $500/day" for OpenRouter), or "Manage key" where it does not; both link
+  to the upstream page where the key is edited.
+
 ## [0.7.1] - 2026-11-21
 
 ### Upgrading from 0.7.0
