@@ -238,10 +238,12 @@ export function CostMark({ summary, unit, onOpen }) {
   const isM = unit === 'M';
   const lines = [];
   if (summary.above_quote > 0) {
+    // The summary's costs are USD per million tokens (not price ratios): shown in the list's unit.
+    const perUnit = (perMillion) => '$' + +(isM ? perMillion : perMillion / 1000).toPrecision(4);
     const max =
       summary.max_flat != null
         ? '$' + +summary.max_flat.toPrecision(4)
-        : `${ValueFormatter(summary.max_input ?? 0, true, isM)} / ${ValueFormatter(summary.max_output ?? 0, true, isM)}`;
+        : `${perUnit(summary.max_input ?? 0)} / ${perUnit(summary.max_output ?? 0)}`;
     lines.push(t('modelsPage.aboveQuoteTip', { count: summary.above_quote, max }));
   }
   if (summary.cost_unknown > 0) lines.push(t('modelsPage.costUnknownTip', { count: summary.cost_unknown }));

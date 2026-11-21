@@ -24,8 +24,15 @@ describe('CostMark', () => {
     const mark = screen.getByTestId('cost-mark');
     expect(mark.className).toContain('text-warning');
     expect(mark.getAttribute('aria-label')).toContain('2 supplies');
+    // The costs come in USD per million tokens and are shown as they are in that unit.
+    expect(mark.getAttribute('aria-label')).toContain('$5.775 / $34.65');
     fireEvent.click(mark);
     expect(onOpen).toHaveBeenCalled();
+  });
+
+  it('shows the costs per thousand tokens when the list does', () => {
+    render(createElement(CostMark, { summary: { above_quote: 1, max_input: 5.775, max_output: 34.65 }, unit: 'K' }));
+    expect(screen.getByTestId('cost-mark').getAttribute('aria-label')).toContain('$0.005775 / $0.03465');
   });
 
   it('marks supplies of unknown cost in a muted tone', () => {
