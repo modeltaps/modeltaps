@@ -6,6 +6,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/metrics"
 	"github.com/modeltaps/modeltaps/model"
@@ -85,9 +86,10 @@ func Relay(c *gin.Context) {
 	channel := relay.getProvider().GetChannel()
 	firstChannel := channel
 	notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
-	relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
+	relay_util.RecordRelayAttempt(c, channel.Id, apiErr, isRequestFault(channel.Type, apiErr))
 	firstModel := RoutingModelName(c)
 	var breakReason string
+	sameChannelTried := false
 
 	// A routing policy may name more models than one (a fallback policy's models, an auto policy's
 	// target and then its fallback): each round retries the lines of one model, and when they are
@@ -106,6 +108,24 @@ func Relay(c *gin.Context) {
 
 		// Evaluate once: shouldRetry records the failure in the provider metrics.
 		retryable := shouldRetry(c, apiErr, channel.Type)
+
+		// A session already on this channel has its prompt cache there. A failure that often
+		// passes on a second try is tried once more on the same channel before the request moves
+		// to another one, where the cache would have to be written again.
+		if !done && !sameChannelTried && retrySameChannel(c, apiErr) {
+			sameChannelTried = true
+			if retryErr, retryDone, ok := retryOnSameChannel(relay, channel, apiErr); ok {
+				if retryErr == nil {
+					metrics.RecordProvider(c, 200)
+					return
+				}
+				apiErr, done = retryErr, retryDone
+				notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
+				relay_util.RecordRelayAttempt(c, channel.Id, apiErr, isRequestFault(channel.Type, apiErr))
+				retryable = shouldRetry(c, apiErr, channel.Type)
+			}
+		}
+
 		if done || !retryable {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_skip model=%s channel_id=%d status_code=%d upstream_id=%s done=%t should_retry=%t total_channels=%d error=\"%s\"",
 				modelName, channel.Id, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), done, retryable, totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
@@ -210,7 +230,7 @@ func Relay(c *gin.Context) {
 				modelName, channel.Id, attemptCount, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), apiErr.OpenAIError.Type, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 
 			notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
-			relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
+			relay_util.RecordRelayAttempt(c, channel.Id, apiErr, isRequestFault(channel.Type, apiErr))
 			pendingCooldown = true
 			retryable := shouldRetry(c, apiErr, channel.Type)
 			if done || !retryable {
@@ -257,7 +277,7 @@ func Relay(c *gin.Context) {
 			return
 		}
 		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
-		relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
+		relay_util.RecordRelayAttempt(c, channel.Id, apiErr, isRequestFault(channel.Type, apiErr))
 	}
 
 	if apiErr != nil {
@@ -398,6 +418,60 @@ func RelayHandler(relay RelayBaseInterface) (err *types.OpenAIErrorWithStatusCod
 func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) bool {
 	skipChannel(c, channel.Id)
 	return c.GetBool(lastFailurePausedKey)
+}
+
+// sameChannelRetryDelay is the pause before a failed attempt is sent to the same channel again,
+// and sameChannelRetryWindow how soon after the request arrived the failure must have come: a
+// quick failure is a hiccup worth a second try, a slow one has cost the caller enough already.
+var (
+	sameChannelRetryDelay  = 300 * time.Millisecond
+	sameChannelRetryWindow = 5 * time.Second
+)
+
+// retrySameChannel reports whether a failed attempt is tried once more on its channel before
+// the request moves on. It is, when retries are on, the request's session was already bound to
+// the channel (so its prompt cache is there), the upstream failed in a way that often passes on a
+// second try (a 500, 502, 503 or 529, or a dropped connection, answered quickly), it did not say
+// when to come back, and the pause rules left the channel in rotation. It is one try on top of
+// RetryTimes, which counts the other channels.
+func retrySameChannel(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if config.RetryTimes <= 0 || apiErr == nil || apiErr.LocalError || apiErr.OpenAIError.RateLimitResetAt > 0 {
+		return false
+	}
+	// An upstream that did not answer has had its time; a second wait helps nobody.
+	if requester.IsUpstreamTimeout(apiErr) {
+		return false
+	}
+	if c.GetString(model.SessionAffinityContextKey) != "hit" || c.GetBool(lastFailurePausedKey) {
+		return false
+	}
+	if time.Since(c.GetTime("requestStartTime")) > sameChannelRetryWindow {
+		return false
+	}
+	switch apiErr.StatusCode {
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, 529:
+		return true
+	}
+	return false
+}
+
+// retryOnSameChannel sends the request to channel once more after a short pause. ok is false
+// when it was not sent: the caller left, or the channel could not be picked again; the request
+// then goes on to the other channels as after any failure.
+func retryOnSameChannel(relay RelayBaseInterface, channel *model.Channel, failure *types.OpenAIErrorWithStatusCode) (apiErr *types.OpenAIErrorWithStatusCode, done bool, ok bool) {
+	c := relay.getContext()
+	select {
+	case <-time.After(sameChannelRetryDelay):
+	case <-c.Request.Context().Done():
+		return nil, false, false
+	}
+	if err := relay.setProvider(relay.getOriginalModel()); err != nil || relay.getProvider().GetChannel().Id != channel.Id {
+		return nil, false, false
+	}
+	logger.LogWarn(c.Request.Context(), fmt.Sprintf("retry_same_channel model=%s channel_id=%d status_code=%d",
+		RoutingModelName(c), channel.Id, failure.StatusCode))
+	apiErr, done = RelayHandler(relay)
+	return apiErr, done, true
 }
 
 // skipChannel keeps the rest of this request away from a channel that failed it.

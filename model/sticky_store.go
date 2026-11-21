@@ -67,3 +67,10 @@ func stickyForget(sessionHash string, keyType int) {
 	}
 	stickyMemory.Del(stickyMemoryKey(sessionHash, keyType))
 }
+
+// ForgetSessionBindings drops every session binding held in this process (the bindings in Redis,
+// shared with other nodes, are left alone). Tests that set up a fresh set of channels call it so
+// sessions of an earlier set do not carry over.
+func ForgetSessionBindings() {
+	stickyMemory.Clear()
+}

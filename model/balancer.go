@@ -239,6 +239,12 @@ func (cc *ChannelsChooser) ChangeStatus(channelId int, status bool) {
 // "hit" 沿用会话已绑定的渠道，"bound" 为会话新绑定了渠道；未识别出会话时为空。
 const SessionAffinityContextKey = "session_affinity"
 
+// sessionBoundInRequestKey marks a request that bound its session to a channel itself. A channel
+// is sometimes picked more than once for one request (chat completions look at the provider
+// before the request is read); the later picks find the binding the first one made, which is
+// still a new binding and not a session that was already on the channel.
+const sessionBoundInRequestKey = "session_affinity_bound_in_request"
+
 // isAccountPoolChannelType 账号池类型沿用各自原有的会话识别与 TTL，且始终开启。
 func isAccountPoolChannelType(channelType int) bool {
 	switch channelType {
@@ -282,55 +288,90 @@ func setSessionAffinity(ginContext interface{}, value string) {
 	}
 }
 
-// checkStickySession 检查是否有粘性 session 映射，如果有且渠道可用，则返回该渠道
-func (cc *ChannelsChooser) checkStickySession(channelIds []int, filters []ChannelsFilterFunc, modelName string, ginContext interface{}) *Channel {
-	if ginContext == nil || len(channelIds) == 0 {
+// checkStickySession returns the channel the request's session is bound to when it can still take
+// the request, whichever tier it is in. A session stays on the channel that holds its prompt
+// cache: when a channel tried before it comes back, new sessions go there and this one does not
+// move again. The binding is dropped when its channel is gone, disabled, paused or cooling down,
+// no longer serves the model, or is excluded by a filter (it failed this request, or cannot serve
+// this kind of request); the caller then picks by order and weight and binds the session to what
+// it picks. Callers hold the read lock.
+func (cc *ChannelsChooser) checkStickySession(tiers [][]int, filters []ChannelsFilterFunc, modelName string, ginContext interface{}) *Channel {
+	if ginContext == nil {
 		return nil
 	}
 	setSessionAffinity(ginContext, "")
 
-	// 以第一个候选渠道决定 key 类型（同一优先级内通常类型一致；账号池类型各用各的 key）
-	firstChoice, ok := cc.Channels[channelIds[0]]
-	if !ok {
-		return nil
-	}
+	// The first channel of a tier decides the key: account pool types each have their own, every
+	// other type shares the generic one, so each key is looked up once.
+	tried := map[int]bool{}
+	for _, tier := range tiers {
+		if len(tier) == 0 {
+			continue
+		}
+		firstChoice, ok := cc.Channels[tier[0]]
+		if !ok {
+			continue
+		}
+		keyOf := 0
+		if isAccountPoolChannelType(firstChoice.Channel.Type) {
+			keyOf = firstChoice.Channel.Type
+		}
+		if tried[keyOf] {
+			continue
+		}
+		tried[keyOf] = true
 
-	sessionHash, keyType := stickyKey(firstChoice.Channel, modelName, ginContext)
-	if sessionHash == "" {
-		return nil
-	}
+		sessionHash, keyType := stickyKey(firstChoice.Channel, modelName, ginContext)
+		if sessionHash == "" {
+			continue
+		}
+		mappedChannelID := stickyLookup(sessionHash, keyType)
+		if mappedChannelID <= 0 {
+			continue
+		}
 
-	mappedChannelID := stickyLookup(sessionHash, keyType)
-	if mappedChannelID <= 0 {
-		return nil
-	}
-
-	// 映射的渠道不存在、已禁用、不在本优先级候选里、冷却中或被过滤器排除时，解除绑定，
-	// 由下方按权重重新选择并重新绑定。
-	mappedChoice, ok := cc.Channels[mappedChannelID]
-	if !ok || mappedChoice.Disable || !utils.Contains(mappedChannelID, channelIds) || cc.IsInCooldown(mappedChannelID, modelName) {
-		stickyForget(sessionHash, keyType)
-		return nil
-	}
-	for _, filter := range filters {
-		if filter(mappedChannelID, mappedChoice) {
+		mappedChoice, ok := cc.Channels[mappedChannelID]
+		usable := ok && !mappedChoice.Disable && tiersContain(tiers, mappedChannelID) && !cc.IsInCooldown(mappedChannelID, modelName)
+		if usable {
+			for _, filter := range filters {
+				if filter(mappedChannelID, mappedChoice) {
+					usable = false
+					break
+				}
+			}
+		}
+		if !usable {
 			stickyForget(sessionHash, keyType)
-			return nil
+			continue
+		}
+
+		// 通用会话亲和按最后一次请求续期，长会话不会中途换渠道。
+		if keyType == redis.StickyChannelTypeGeneric {
+			_ = stickyBind(sessionHash, mappedChannelID, keyType, stickyTTL(keyType))
+		}
+		if gc, ok := ginContext.(*gin.Context); ok && gc.GetBool(sessionBoundInRequestKey) {
+			setSessionAffinity(ginContext, "bound")
+		} else {
+			setSessionAffinity(ginContext, "hit")
+		}
+
+		if gc, ok := ginContext.(*gin.Context); ok {
+			logger.LogInfo(gc.Request.Context(), fmt.Sprintf("✓ Using sticky session for %s channel %d (session: %s)",
+				getChannelTypeName(mappedChoice.Channel.Type), mappedChannelID, sessionHashPreview(sessionHash)))
+		}
+
+		return mappedChoice.Channel
+	}
+	return nil
+}
+
+func tiersContain(tiers [][]int, channelId int) bool {
+	for _, tier := range tiers {
+		if utils.Contains(channelId, tier) {
+			return true
 		}
 	}
-
-	// 通用会话亲和按最后一次请求续期，长会话不会中途换渠道。
-	if keyType == redis.StickyChannelTypeGeneric {
-		_ = stickyBind(sessionHash, mappedChannelID, keyType, stickyTTL(keyType))
-	}
-	setSessionAffinity(ginContext, "hit")
-
-	if gc, ok := ginContext.(*gin.Context); ok {
-		logger.LogInfo(gc.Request.Context(), fmt.Sprintf("✓ Using sticky session for %s channel %d (session: %s)",
-			getChannelTypeName(mappedChoice.Channel.Type), mappedChannelID, sessionHashPreview(sessionHash)))
-	}
-
-	return mappedChoice.Channel
+	return false
 }
 
 // createStickySession 为选定的渠道创建粘性 session 映射
@@ -351,6 +392,9 @@ func (cc *ChannelsChooser) createStickySession(channel *Channel, modelName strin
 		return
 	}
 	setSessionAffinity(ginContext, "bound")
+	if gc, ok := ginContext.(*gin.Context); ok {
+		gc.Set(sessionBoundInRequestKey, true)
+	}
 
 	if gc, ok := ginContext.(*gin.Context); ok {
 		logger.LogInfo(gc.Request.Context(), fmt.Sprintf("✓ Created sticky session for %s channel %d (session: %s)",
@@ -624,14 +668,9 @@ func extractMessageContent(msgMap map[string]interface{}) string {
 	return ""
 }
 
+// balancer picks a channel of one tier by weight and binds the request's session to it. The
+// session's existing binding is looked up before the tiers are tried (checkStickySession).
 func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFunc, modelName string, ginContext interface{}) *Channel {
-	// 1. 检查粘性 session（优先级最高）
-	stickyChannel := cc.checkStickySession(channelIds, filters, modelName, ginContext)
-	if stickyChannel != nil {
-		return stickyChannel
-	}
-
-	// 2. 按权重选择渠道
 	totalWeight := 0
 
 	validChannels := make([]*ChannelChoice, 0, len(channelIds))
@@ -815,7 +854,11 @@ func (cc *ChannelsChooser) NextByValidatedModel(group, validatedModelName string
 		return nil, ErrNoChannelsAvailableSentinel
 	}
 
-	for _, tier := range cc.routeTiers(validatedModelName, channelsPriority) {
+	tiers := cc.routeTiers(validatedModelName, channelsPriority)
+	if channel := cc.checkStickySession(tiers, filters, validatedModelName, ginContext); channel != nil {
+		return channel, nil
+	}
+	for _, tier := range tiers {
 		if channel := cc.balancer(tier, filters, validatedModelName, ginContext); channel != nil {
 			return channel, nil
 		}

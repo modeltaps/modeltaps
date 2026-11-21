@@ -18,15 +18,17 @@ type RelayAttempt struct {
 	Cooldown  bool `json:"cooldown,omitempty"`
 }
 
-// RecordRelayAttempt 记下一次失败的尝试。
-func RecordRelayAttempt(c *gin.Context, channelID int, apiErr *types.OpenAIErrorWithStatusCode) {
+// RecordRelayAttempt 记下一次失败的尝试。requestFault says the upstream refused the request for
+// what it asks (a plain 400): the attempt is listed in the log like any other, but it is not the
+// channel's failure and does not lower its success rate.
+func RecordRelayAttempt(c *gin.Context, channelID int, apiErr *types.OpenAIErrorWithStatusCode, requestFault bool) {
 	if c == nil || apiErr == nil {
 		return
 	}
 	attempts := RelayAttempts(c)
 	c.Set(relayAttemptsKey, append(attempts, RelayAttempt{ChannelID: channelID, Status: apiErr.StatusCode}))
 	// 本地拒绝（参数、额度等）不是渠道的问题，不计入渠道成功率。
-	if !apiErr.LocalError {
+	if !apiErr.LocalError && !requestFault {
 		modelName := c.GetString("new_model")
 		if modelName == "" {
 			modelName = c.GetString("original_model")

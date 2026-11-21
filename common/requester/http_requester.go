@@ -12,9 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -66,9 +68,38 @@ func (r *HTTPRequester) do(req *http.Request) (*http.Response, *types.OpenAIErro
 		if errors.Is(err, safefetch.ErrForbiddenAddr) {
 			return nil, common.StringErrorWrapper(ErrUpstreamNotPublic.Error(), "upstream_address_not_public", http.StatusForbidden)
 		}
-		return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+		return nil, common.ErrorWrapper(err, transportErrorCode(err), http.StatusInternalServerError)
 	}
 	return resp, nil
+}
+
+// CodeUpstreamTimeout is the error code of a request the upstream accepted and did not answer
+// in time. It may be a stalled upstream or only a long request, so by itself it says nothing
+// about the channel (see IsUpstreamTimeout).
+const CodeUpstreamTimeout = "upstream_timeout"
+
+// transportErrorCode names a failed round trip: CodeUpstreamTimeout when the connection was
+// made and the wait for the answer ran out, "http_request_failed" for everything else (no
+// connection, a refused or reset one, a caller that left).
+func transportErrorCode(err error) string {
+	var netErr net.Error
+	if !errors.Is(err, context.DeadlineExceeded) && !(errors.As(err, &netErr) && netErr.Timeout()) {
+		return "http_request_failed"
+	}
+	// Timeouts while connecting are the network's or the host's, not a slow answer.
+	var opErr *net.OpError
+	if errors.As(err, &opErr) && opErr.Op == "dial" {
+		return "http_request_failed"
+	}
+	if strings.Contains(err.Error(), "TLS handshake timeout") {
+		return "http_request_failed"
+	}
+	return CodeUpstreamTimeout
+}
+
+// IsUpstreamTimeout reports whether err is a request the upstream did not answer in time.
+func IsUpstreamTimeout(err *types.OpenAIErrorWithStatusCode) bool {
+	return err != nil && err.OpenAIError.Code == CodeUpstreamTimeout
 }
 
 // NewHTTPRequester 创建一个新的 HTTPRequester 实例。
@@ -324,6 +355,13 @@ func HandleErrorResp(resp *http.Response, toOpenAIError HttpErrorHandler, isPref
 		} else {
 			openAIErrorWithStatusCode.OpenAIError.Message = fmt.Sprintf("bad response status code %d", resp.StatusCode)
 		}
+	}
+
+	// A rate-limited or overloaded upstream that says when to come back is taken at its word,
+	// whatever the provider: its own error handler may have read a more specific reset time
+	// already, which is kept.
+	if openAIErrorWithStatusCode.OpenAIError.RateLimitResetAt == 0 && retryAfterStatus(resp.StatusCode) {
+		openAIErrorWithStatusCode.OpenAIError.RateLimitResetAt = retryAfterResetAt(resp.Header, time.Now())
 	}
 
 	return openAIErrorWithStatusCode

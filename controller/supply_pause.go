@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -90,6 +91,24 @@ func probeModelFor(channel *model.Channel, pausedModel string) string {
 		}
 	}
 	return channel.TestModel
+}
+
+// ProbeSupply sends the channel the test request a recovery uses, for the model when one is
+// given, and returns why it failed; nil when it passed. The relay uses it to tell a stalled
+// upstream from a request that was only long.
+func ProbeSupply(channelId int, modelName string, timeout time.Duration) error {
+	channel, err := model.GetChannelById(channelId)
+	if err != nil {
+		return err
+	}
+	openaiErr, testErr := testChannelWithTimeout(channel, probeModelFor(channel, modelName), timeout)
+	if testErr != nil {
+		return testErr
+	}
+	if openaiErr != nil {
+		return errors.New(openaiErr.OpenAIError.Message)
+	}
+	return nil
 }
 
 // recoverDuePauses ends the pauses whose time is up: without a probe they resume; with one a

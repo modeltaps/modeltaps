@@ -88,6 +88,29 @@ When a host up the order is unavailable, Vercel still moves to the next, so requ
 
 Vercel tells us with every request which host served it and what it charged: the host is kept in the log details as **Served by host**, and the charge as the upstream cost. The cost and margin figures use that charge (with the channel's fee) instead of an estimate from the price list, so the cost stays right when Vercel falls back to another host.
 
+## When a supply fails
+
+What happens depends on what the upstream said, not on the failure alone:
+
+| What happened | How it is recognised | This request | The supply afterwards |
+|---|---|---|---|
+| The request itself is refused | A 400 about the request: a malformed body, an unsupported parameter, a context that is too long, refused content | Returned to the caller, not tried elsewhere | Nothing, and it does not lower the supply's success rate |
+| Out of balance or quota | 402, `insufficient_quota`, the known "balance too low" messages, or a balance refresh that finds nothing left | Moves to the next supply | The whole channel is paused for 30 minutes and tested before it resumes; admins are told. A balance refresh that finds money ends the pause |
+| Key or account rejected | 401, `invalid_api_key`, `account_deactivated`, a disable keyword | Moves on | The whole channel is paused for an hour and tested before it resumes |
+| The channel does not have the model | "model not found" and the like | Moves on | That model is paused on the channel |
+| Rate limited or over capacity, with a time to come back | 429, 503 or 529 with `Retry-After` (or the provider's own reset time) | Moves on | That model is paused on the channel until that time |
+| Rate limited, no time given | 429 | Moves on | That model cools down for the rate limit cooldown (5 seconds by default) |
+| Upstream error | 500, 502, 503, 504, a dropped connection | Moves on | Paused only on the third in a minute, for 2 minutes, and tested before it resumes |
+| No answer in time | The upstream accepted the request and stayed silent | Moves on while the retry time limit allows | A test request is sent at once; the model is paused only when that fails too |
+| The answer had already started | The stream broke after its first bytes | Cannot move: the caller has part of the answer | Counted like an upstream error |
+
+Two things follow from keeping "this request failed" apart from "this supply is down":
+
+- **A request is saved on little evidence, a supply is judged on more.** One failure is enough to try the next supply. Pausing a supply takes an upstream that says so (balance, key, a time to come back), a failure that repeats, or a test request that fails as well. A request that got no answer in time proves nothing by itself, since it may have been a long request on a healthy channel: it is never counted, only checked.
+- **A session stays where its prompt cache is.** With session affinity on, a session's requests go to the channel that served it. When that channel answers one of them with an upstream error, the request is sent to it once more before it moves, because such errors usually pass and another channel has to write the cache again. This extra try is skipped when retries are set to 0. A session that did move stays on its new channel, also after the old one is back; new sessions start on the first supply again.
+
+The table shows the built-in pause rules. **Gateway settings → Resilience** replaces them with your own.
+
 ## The price check
 
 A supply whose cost is above what the site's normal price brings in loses money on every request it serves. The line is:

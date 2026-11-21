@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A session that moved to another channel after a failure stays there, where its prompt cache
+  now is, instead of going back as soon as the earlier channel can be picked again. New sessions
+  still start on the first supply.
+- A session's request that its channel answers with an upstream error (500, 502, 503 or 529) is
+  sent to that channel once more before it moves to another one, so an error that passes no
+  longer costs a rewrite of the prompt cache. This extra try is skipped when retries are set to 0.
+- A rate limit or an overloaded upstream that says when to come back (`Retry-After`,
+  `retry-after-ms`) pauses the model on that channel until then, whichever the provider. Before,
+  only some providers' own reset times were read and the others cooled down for the fixed 5
+  seconds.
+- A request the upstream did not answer in time no longer counts as a failure of the channel. A
+  test request is sent at once and the model is paused on the channel only when that fails too:
+  a long request cannot pause a healthy channel, and a stalled one is out after one request.
+- A 400 about the request itself (a malformed body, an unsupported parameter, a context that is
+  too long) no longer lowers the channel's success rate.
+- The operations guide has a section on what happens when a supply fails: which failures move a
+  request, which pause a supply, and where a session goes.
+
+### Fixed
+
+- The first request of a new session on `/v1/chat/completions` was recorded as a session
+  affinity hit instead of a new binding, so with strict session affinity it was not retried on
+  another channel.
+
 ## [0.7.3] - 2026-11-21
 
 ### Upgrading from 0.7.2

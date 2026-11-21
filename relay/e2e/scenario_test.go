@@ -14,6 +14,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/relay"
 
 	"github.com/spf13/viper"
 )
@@ -35,6 +36,9 @@ func setRelayRequestTimeout(t *testing.T, seconds int) {
 	viper.Set("relay_request_timeout", seconds)
 	requester.InitHttpClient()
 	t.Cleanup(func() {
+		// A request the upstream did not answer starts a test request in the background (the
+		// stall check); let it finish before the client it uses is replaced.
+		relay.WaitRelayErrorHandling()
 		viper.Set("relay_request_timeout", old)
 		requester.InitHttpClient()
 	})
@@ -385,7 +389,9 @@ func TestUpstreamTimeoutUndoesPreConsumedQuota(t *testing.T) {
 		// 挂起时长必须大于上面配置的 1s 超时。
 		Delay: 3 * time.Second,
 		JSON:  ChatCompletionJSON("gpt-4o-mini", "too late", 11, 7),
-		Hook:  func() { inFlightQuota.Store(int64(readUserQuota(h.User.Id))) },
+		// Only the caller's request is observed: the test request the stall check sends after
+		// the timeout reaches this hook too, when the pre-consumed quota is already given back.
+		Hook: func() { inFlightQuota.CompareAndSwap(0, int64(readUserQuota(h.User.Id))) },
 	})
 
 	quotaBefore := h.UserQuota(t)

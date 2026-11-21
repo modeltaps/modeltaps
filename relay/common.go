@@ -899,54 +899,87 @@ func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channe
 }
 
 func shouldRetryBadRequest(c *gin.Context, channelType int, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if !channelFaultBadRequest(channelType, apiErr) {
+		return false
+	}
+	switch channelType {
+	case config.ChannelTypeAnthropic, config.ChannelTypeBedrock:
+		return true
+	}
+	if geminiKeyRejected(apiErr) {
+		return true
+	}
+	// Gemini 3 thoughtSignature 不可用：客户端 history 携带的签名在当前 channel/account
+	// 上无法校验，上游回 400。文案有多种变体（"Thought signature is not valid" /
+	// "Corrupted thought signature" / …），统一由 gemini.IsThoughtSignatureFailure 判定，
+	// 不再逐字符串硬编码。
+	//
+	// 这里刻意不再要求 Param == "INVALID_ARGUMENT"：不同文案对应的 errorInfo.status
+	// 不完全一致（如 corrupted 一类可能落在别的枚举），而补救手段都相同，因此只以
+	// 消息语义为准；无限重试由 thought_signature_retried 幂等标志兜底。
+	//
+	// 首次撞到（thought_signature_retried 未置）：在此置标志位并返回 true，进入 retry
+	// 循环，retry 前由 relayGeminiOnly.handleThoughtSignatureFailure 将请求里的
+	// thoughtSignature 替换为官方哨兵 skip_thought_signature_validator。已剥过哨兵还挂
+	// 说明上游有别的问题，不再死磕。
+	//
+	// 标志位置位由 shouldRetryBadRequest 集中负责（而非 handleX），保证：
+	//   - "决定是否重试" 与 "改写 body" 的责任分离
+	//   - 即使没有 bytes 缓存（如不带签名的请求误命中），也不会因 handleX 走空路径
+	//     而漏置标志位、退化为无限重试
+	if c.GetBool("thought_signature_retried") {
+		return false
+	}
+	c.Set("thought_signature_retried", true)
+	return true
+}
+
+// channelFaultBadRequest reports the 400s that blame the channel and not the request: an empty
+// balance or a rejected key some upstreams answer with a 400, and a Gemini thought signature
+// the channel's account cannot check. Another channel may serve the same request.
+func channelFaultBadRequest(channelType int, apiErr *types.OpenAIErrorWithStatusCode) bool {
 	switch channelType {
 	case config.ChannelTypeAnthropic:
 		return strings.Contains(apiErr.OpenAIError.Message, "Your credit balance is too low")
 	case config.ChannelTypeBedrock:
 		return strings.Contains(apiErr.OpenAIError.Message, "Operation not allowed")
 	default:
-		// gemini: 单渠道密钥失效属于"该渠道的问题"，应继续重试其他渠道而不是终止整条链。
-		// 上游已知的 message 变体（大小写不统一，故全部 ToLower 后匹配）：
-		//   - "API key not valid. Please pass a valid API key."
-		//   - "API Key not found. Please pass a valid API key."
-		//   - "API key expired. Please renew the API key."
-		// 注意：reason=API_KEY_INVALID 来自 errorInfo.Details[].Reason，不会进 Message，
-		// 因此这里只匹配 Message 文案，不要尝试匹配 reason 字符串。
-		if apiErr.OpenAIError.Param == "INVALID_ARGUMENT" {
-			msg := strings.ToLower(apiErr.OpenAIError.Message)
-			if strings.Contains(msg, "api key not valid") ||
-				strings.Contains(msg, "api key not found") ||
-				strings.Contains(msg, "api key expired") {
-				return true
-			}
-		}
-		// Gemini 3 thoughtSignature 不可用：客户端 history 携带的签名在当前 channel/account
-		// 上无法校验，上游回 400。文案有多种变体（"Thought signature is not valid" /
-		// "Corrupted thought signature" / …），统一由 gemini.IsThoughtSignatureFailure 判定，
-		// 不再逐字符串硬编码。
-		//
-		// 这里刻意不再要求 Param == "INVALID_ARGUMENT"：不同文案对应的 errorInfo.status
-		// 不完全一致（如 corrupted 一类可能落在别的枚举），而补救手段都相同，因此只以
-		// 消息语义为准；无限重试由 thought_signature_retried 幂等标志兜底。
-		//
-		// 首次撞到（thought_signature_retried 未置）：在此置标志位并返回 true，进入 retry
-		// 循环，retry 前由 relayGeminiOnly.handleThoughtSignatureFailure 将请求里的
-		// thoughtSignature 替换为官方哨兵 skip_thought_signature_validator。已剥过哨兵还挂
-		// 说明上游有别的问题，不再死磕。
-		//
-		// 标志位置位由 shouldRetryBadRequest 集中负责（而非 handleX），保证：
-		//   - "决定是否重试" 与 "改写 body" 的责任分离
-		//   - 即使没有 bytes 缓存（如不带签名的请求误命中），也不会因 handleX 走空路径
-		//     而漏置标志位、退化为无限重试
-		if gemini.IsThoughtSignatureFailure(apiErr.OpenAIError.Message) {
-			if c.GetBool("thought_signature_retried") {
-				return false
-			}
-			c.Set("thought_signature_retried", true)
-			return true
-		}
+		return geminiKeyRejected(apiErr) || gemini.IsThoughtSignatureFailure(apiErr.OpenAIError.Message)
+	}
+}
+
+// geminiKeyRejected reports a Gemini 400 saying the channel's key is not accepted. That is the
+// channel's problem, so other channels are still tried. Known messages (the case varies, so
+// they are matched in lower case):
+//   - "API key not valid. Please pass a valid API key."
+//   - "API Key not found. Please pass a valid API key."
+//   - "API key expired. Please renew the API key."
+//
+// reason=API_KEY_INVALID sits in errorInfo.Details[].Reason and never reaches Message, so only
+// the message text is matched.
+func geminiKeyRejected(apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if apiErr.OpenAIError.Param != "INVALID_ARGUMENT" {
 		return false
 	}
+	msg := strings.ToLower(apiErr.OpenAIError.Message)
+	return strings.Contains(msg, "api key not valid") ||
+		strings.Contains(msg, "api key not found") ||
+		strings.Contains(msg, "api key expired")
+}
+
+// isRequestFault reports whether the upstream refused the request for what it asks: a 400 for a
+// malformed body, an unsupported parameter, a context that is too long, refused content. The
+// channel did its job, so the failure is not retried on other channels and not counted against
+// this one. A 400 that blames the channel (see channelFaultBadRequest), says the channel can no
+// longer serve, or says the model is missing there is not one.
+func isRequestFault(channelType int, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if apiErr == nil || apiErr.LocalError || apiErr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+	if controller.IsChannelUnusableError(channelType, apiErr) || isModelNotFoundErr(apiErr) {
+		return false
+	}
+	return !channelFaultBadRequest(channelType, apiErr)
 }
 
 // isModelNotFoundErr 判定上游错误是否属于"模型不存在 / 无可用端点"类的配置错误。

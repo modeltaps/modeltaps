@@ -90,7 +90,9 @@ func DefaultPauseRules() []PauseRule {
 			Action: PauseActionPause, Seconds: 3600, Scope: PauseScopeChannel, Probe: true, Notify: true,
 		},
 		{
-			Name: "rate_limit_reset", StatusCodes: []int{http.StatusTooManyRequests}, RateLimitReset: true,
+			// The upstream said when it takes requests again (Retry-After and the like): a rate
+			// limit, or a 503 / 529 for being over capacity. It is paused until then at once.
+			Name: "rate_limit_reset", StatusCodes: []int{http.StatusTooManyRequests, http.StatusServiceUnavailable, 529}, RateLimitReset: true,
 			Action: PauseActionPause, Scope: PauseScopeModel,
 		},
 		{
