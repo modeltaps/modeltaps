@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-21
+
+### Upgrading from 0.7.2
+
+Venice channels show no balance until an Admin key is set as the channel's management key.
+
+### Fixed
+
+- A Venice channel can take a management key. Venice returns the account balance only to an
+  Admin key, so with an inference key alone the balance never showed.
+
 ## [0.7.2] - 2026-11-21
 
 ### Upgrading from 0.7.1
