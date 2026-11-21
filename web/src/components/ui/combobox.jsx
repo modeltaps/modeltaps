@@ -11,8 +11,9 @@ import { FloatingPanel } from '@/components/ui/floating';
 // item's `value`, which we set to the label). Use when an option list is long
 // enough that a plain Select becomes hard to scan (e.g. channel types).
 //
-// options: [{ value: string, label: string, icon?: node, hint?: node }]; `icon` renders before the
-// label (also in the trigger), `hint` as muted text at the end of the row.
+// options: [{ value: string, label: string, icon?: node, hint?: node, keywords?: string[] }]; `icon`
+// renders before the label (also in the trigger), `hint` as muted text at the end of the row,
+// `keywords` are matched by the search too (e.g. a model's vendor).
 // groups (optional, replaces options): [{ key: string, heading?: node, options: [...] }]. Groups
 // render in order with a separator between them; cmdk filters every group while searching and
 // hides the separators and any group left without a match.
@@ -97,6 +98,7 @@ export function Combobox({
     <Command.Item
       key={o.value}
       value={o.label}
+      keywords={o.keywords}
       onSelect={() => {
         onValueChange?.(o.value);
         setOpen(false);

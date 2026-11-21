@@ -1075,7 +1075,8 @@
       "creem": "決済ゲートウェイ"
     },
     "advanced": "詳細",
-    "placeholderAsk": "検索、または設定アシスタントに質問"
+    "placeholderAsk": "検索、または設定アシスタントに質問",
+    "related": "関連する設定"
   },
   "common": {
     "error": "エラーが発生しました",
@@ -5208,8 +5209,19 @@
     ],
     "recommended": "おすすめ",
     "allModels": "すべてのモデル",
+    "otherModels": "その他のモデル",
     "searchModels": "モデルを検索",
     "noMatch": "一致するモデルがありません",
-    "entryHint": "設定の場所や設定方法を聞く"
+    "entryHint": "設定の場所や設定方法を聞く",
+    "step": {
+      "search": "「{{query}}」を検索",
+      "list": "設定を一覧",
+      "modified": "変更済みの設定を一覧",
+      "describe": "{{names}}を確認",
+      "effective": "{{names}}の有効値を確認",
+      "effectiveOf": "{{object}} での{{names}}の有効値を確認",
+      "docs": "ドキュメント「{{query}}」を確認",
+      "propose_other": "変更案を作成（{{count}} 件）"
+    }
   }
 }

@@ -1094,7 +1094,8 @@
       "creem": "支付網關"
     },
     "advanced": "進階",
-    "placeholderAsk": "搜尋，或問設定助手"
+    "placeholderAsk": "搜尋，或問設定助手",
+    "related": "相關設定"
   },
   "common": {
     "error": "出錯了",
@@ -5222,8 +5223,19 @@
     "examples": ["上游一直返回 429，怎樣讓請求自動換渠道", "新用戶註冊送的額度在哪裏改", "哪些設定和預設值不一樣"],
     "recommended": "推薦",
     "allModels": "全部模型",
+    "otherModels": "其他模型",
     "searchModels": "搜尋模型",
     "noMatch": "沒有符合的模型",
-    "entryHint": "問設定在哪、怎麼配"
+    "entryHint": "問設定在哪、怎麼配",
+    "step": {
+      "search": "搜尋「{{query}}」",
+      "list": "列出設定",
+      "modified": "列出改過的設定",
+      "describe": "查看{{names}}",
+      "effective": "查{{names}}的生效值",
+      "effectiveOf": "查{{names}}在 {{object}} 上的生效值",
+      "docs": "查文件「{{query}}」",
+      "propose_other": "擬定變更方案（{{count}} 項）"
+    }
   }
 }

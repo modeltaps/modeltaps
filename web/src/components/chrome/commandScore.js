@@ -83,3 +83,59 @@ export function scoreTiers(query, { primary = [], secondary = [], tertiary = [] 
   if (words.every((w) => has(second, w, synonyms))) return 0.5;
   return 0.2;
 }
+
+// For a query written as a sentence ("上游老是 429，怎么让它少重试一点"), which no entry has every
+// word of: how much of it an entry covers. The query becomes terms (Latin words and numbers of two
+// characters or more, pairs of adjacent CJK characters, and the console words of any synonym it
+// contains); each term counts 3 in the name, 2 in the secondary words and 1 in the rest. 0 when
+// nothing matches.
+const RUNS = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+|[\p{L}\p{N}]+/gu;
+const CJK = /^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+export function sentenceTerms(query, synonyms = {}) {
+  const q = normalizeText(query);
+  const terms = new Set();
+  for (const run of q.match(RUNS) || []) {
+    if (CJK.test(run)) {
+      for (let i = 0; i + 1 < run.length; i += 1) terms.add(run.slice(i, i + 2));
+    } else if (run.length >= 2) terms.add(run);
+  }
+  for (const [word, others] of Object.entries(synonyms)) {
+    if (q.includes(word)) others.forEach((other) => terms.add(normalizeText(other)));
+  }
+  return [...terms].filter(Boolean);
+}
+
+// `weights` (term → weight, default 1) lets rare terms count more than common ones.
+export function sentenceScore(terms, { primary = [], secondary = [], tertiary = [] }, weights = {}) {
+  const name = primary.map(normalizeText).join(' ');
+  const second = secondary.map(normalizeText).join(' ');
+  const rest = tertiary.map(normalizeText).join(' ');
+  let score = 0;
+  for (const term of terms) {
+    const weight = weights[term] ?? 1;
+    if (name.includes(term)) score += 3 * weight;
+    else if (second.includes(term)) score += 2 * weight;
+    else if (rest.includes(term)) score += weight;
+  }
+  return score;
+}
+
+// Scores of many entries for one sentence. A term found in many of them says little ("上游" is in
+// half the gateway settings), so each term is weighted by how rare it is among them; terms in
+// none are dropped. Entries scoring under `share` of the best one get 0.
+export function rankSentence(query, tiersList, synonyms = {}, share = 0.5) {
+  const texts = tiersList.map(({ primary = [], secondary = [], tertiary = [] }) =>
+    [...primary, ...secondary, ...tertiary].map(normalizeText).join(' ')
+  );
+  const weights = {};
+  const terms = sentenceTerms(query, synonyms).filter((term) => {
+    const count = texts.filter((text) => text.includes(term)).length;
+    if (count === 0) return false;
+    weights[term] = Math.log(1 + texts.length / count);
+    return true;
+  });
+  const scores = tiersList.map((tiers) => sentenceScore(terms, tiers, weights));
+  const best = Math.max(0, ...scores);
+  return scores.map((score) => (best > 0 && score >= best * share ? score : 0));
+}

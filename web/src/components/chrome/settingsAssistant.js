@@ -88,6 +88,62 @@ async function readJSON(res) {
 
 export class AssistantError extends Error {}
 
+// Reads a chat completion: a streamed one (server-sent events) as it arrives, telling onText the
+// text so far, or a plain JSON one. Returns the message { content, tool_calls }.
+export async function readChatMessage(res, onText) {
+  const type = res.headers?.get?.('content-type') || '';
+  if (!type.includes('text/event-stream') || !res.body?.getReader) {
+    const body = await readJSON(res);
+    const message = body?.choices?.[0]?.message;
+    if (!message) throw new AssistantError(body?.error?.message || 'empty reply');
+    if (message.content) onText?.(message.content);
+    return message;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let content = '';
+  let seen = false;
+  const calls = [];
+  const take = (line) => {
+    if (!line.startsWith('data:')) return;
+    const data = line.slice(5).trim();
+    if (!data || data === '[DONE]') return;
+    let chunk;
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      return;
+    }
+    if (chunk.error) throw new AssistantError(chunk.error.message || 'stream error');
+    const delta = chunk.choices?.[0]?.delta;
+    if (!delta) return;
+    seen = true;
+    if (delta.content) {
+      content += delta.content;
+      onText?.(content);
+    }
+    for (const part of delta.tool_calls || []) {
+      const index = part.index ?? calls.length;
+      const call = (calls[index] ||= { id: '', type: 'function', function: { name: '', arguments: '' } });
+      if (part.id) call.id = part.id;
+      if (part.function?.name) call.function.name += part.function.name;
+      if (part.function?.arguments) call.function.arguments += part.function.arguments;
+    }
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const lines = buffer.split(/\r?\n/);
+    buffer = done ? '' : lines.pop();
+    lines.forEach(take);
+    if (done) break;
+  }
+  if (!seen) throw new AssistantError('empty reply');
+  const toolCalls = calls.filter(Boolean);
+  return { role: 'assistant', content, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) };
+}
+
 // The one tool the browser answers itself: the model proposes setting changes; the admin reviews
 // them in the conversation and applies the ticked ones through the settings page's own save. The
 // proposal is checked by /mcp/admin/plan, which writes nothing.
@@ -129,7 +185,8 @@ export const newConversation = (language) => [{ role: 'system', content: systemP
 
 // One turn: the question is added to `history` (the conversation so far, with the model's tool
 // calls), the model is asked and its tool calls run until it answers. onStep({ name, args }) is
-// told each tool call. Returns { history, answer, steps, proposal } where proposal is the checked
+// told each tool call, onText(text) the reply of the current round as it streams (a round that
+// ends in tool calls is followed by onText('')). Returns { history, answer, steps, proposal } where proposal is the checked
 // plan of the last propose_setting_changes call of the turn, or null.
 export async function askSettingsAssistant({
   question,
@@ -140,6 +197,7 @@ export async function askSettingsAssistant({
   describe = () => null,
   augment = (name, args, text) => text,
   onStep,
+  onText,
   signal,
   fetchImpl = (...args) => fetch(...args),
   maxRounds = MAX_ROUNDS
@@ -194,12 +252,13 @@ export async function askSettingsAssistant({
       method: 'POST',
       signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, tools, tool_choice: last ? 'none' : 'auto', temperature: 0.2 })
+      body: JSON.stringify({ model, messages, tools, tool_choice: last ? 'none' : 'auto', temperature: 0.2, stream: true })
     });
-    const body = await readJSON(res);
-    if (!res.ok) throw new AssistantError(body?.error?.message || body?.message || `HTTP ${res.status}`);
-    const message = body?.choices?.[0]?.message;
-    if (!message) throw new AssistantError('empty reply');
+    if (!res.ok) {
+      const body = await readJSON(res);
+      throw new AssistantError(body?.error?.message || body?.message || `HTTP ${res.status}`);
+    }
+    const message = await readChatMessage(res, onText);
     const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
     if (calls.length === 0 || last) {
       const answer = message.content || '';
@@ -207,6 +266,8 @@ export async function askSettingsAssistant({
       return { history: messages, answer, steps, proposal };
     }
 
+    // Text written before tool calls ("let me look that up") is not the answer.
+    onText?.('');
     messages.push({ role: 'assistant', content: message.content || '', tool_calls: calls });
     for (const call of calls) {
       const name = call.function?.name || '';

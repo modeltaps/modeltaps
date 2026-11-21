@@ -1095,7 +1095,8 @@
       "creem": "支付网关"
     },
     "advanced": "高级",
-    "placeholderAsk": "搜索，或问设置助手"
+    "placeholderAsk": "搜索，或问设置助手",
+    "related": "相关设置"
   },
   "common": {
     "error": "出错了",
@@ -5223,8 +5224,19 @@
     "examples": ["上游一直返回 429，怎么让请求自动换渠道", "新用户注册送的额度在哪里改", "哪些设置和默认值不一样"],
     "recommended": "推荐",
     "allModels": "全部模型",
+    "otherModels": "其他模型",
     "searchModels": "搜索模型",
     "noMatch": "没有匹配的模型",
-    "entryHint": "问设置在哪、怎么配"
+    "entryHint": "问设置在哪、怎么配",
+    "step": {
+      "search": "搜索「{{query}}」",
+      "list": "列出设置",
+      "modified": "列出改过的设置",
+      "describe": "查看{{names}}",
+      "effective": "查{{names}}的生效值",
+      "effectiveOf": "查{{names}}在 {{object}} 上的生效值",
+      "docs": "查文档「{{query}}」",
+      "propose_other": "拟定变更方案（{{count}} 项）"
+    }
   }
 }

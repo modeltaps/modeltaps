@@ -1077,7 +1077,8 @@
       "creem": "payment gateways"
     },
     "advanced": "Advanced",
-    "placeholderAsk": "Search, or ask the settings assistant"
+    "placeholderAsk": "Search, or ask the settings assistant",
+    "related": "Related settings"
   },
   "common": {
     "error": "Something went wrong",
@@ -5341,8 +5342,20 @@
     ],
     "recommended": "Recommended",
     "allModels": "All models",
+    "otherModels": "Other models",
     "searchModels": "Search models",
     "noMatch": "No matching model",
-    "entryHint": "Where a setting is, how to set it"
+    "entryHint": "Where a setting is, how to set it",
+    "step": {
+      "search": "Searched “{{query}}”",
+      "list": "Listed the settings",
+      "modified": "Listed the changed settings",
+      "describe": "Read {{names}}",
+      "effective": "Checked the value of {{names}}",
+      "effectiveOf": "Checked the value of {{names}} for {{object}}",
+      "docs": "Read the docs on “{{query}}”",
+      "propose_one": "Drafted a change plan ({{count}} change)",
+      "propose_other": "Drafted a change plan ({{count}} changes)"
+    }
   }
 }

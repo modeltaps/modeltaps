@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { PANEL } from 'routes/paths';
 import { marked } from 'marked';
-import { ArrowUp, Square } from 'lucide-react';
+import { ArrowUp, Loader2, Square } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,11 +13,13 @@ import { Combobox } from '@/components/ui/combobox';
 import { catalogEntries, catalogEntry, settingLabel, settingSearchTiers } from '@/components/settings/catalog';
 import { settingHref } from '@/components/settings/SettingHelp';
 import { modelTraits } from '@/components/model/traits';
+import BrandIcon from '@/components/brand/BrandIcon';
+import { CUSTOM_VENDOR, groupOptions, inferVendor } from '@/components/model/modelSelectIndex';
 import { sanitizeHtml } from 'utils/sanitize';
 import usePlaygroundKey from 'views/panel/ApiCatalog/playground/usePlaygroundKey';
 import useCatalogModels from 'views/panel/ApiCatalog/useCatalogModels';
 import { cardTitleKey, groupLabelKey } from 'views/panel/Setting/registry';
-import { askSettingsAssistant, newConversation, withConsoleMatches } from './settingsAssistant';
+import { PROPOSE_TOOL, askSettingsAssistant, newConversation, withConsoleMatches } from './settingsAssistant';
 import AssistantProposal from './AssistantProposal';
 import { normalizeSynonyms, scoreTiers } from './commandScore';
 
@@ -57,9 +59,24 @@ const PREFERRED = [
   /deepseek-chat/i
 ];
 
-// The newest model of a family: the highest version sorts last.
+// The version of a model name as numbers ("gpt-5.6-mini" → [5, 6]); dates (4 digits or more) are
+// not versions.
+const versionOf = (name) => (name.match(/\d+/g) || []).filter((d) => d.length < 4).map(Number);
+
+const compareVersions = (a, b) => {
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const d = (a[i] ?? -1) - (b[i] ?? -1);
+    if (d !== 0) return d;
+  }
+  return 0;
+};
+
+// The newest model of a family: the highest version, and of one version the plainest name
+// (claude-sonnet-5-5 before claude-sonnet-5-5-fast or a dated snapshot).
 const newest = (names, pattern) =>
-  names.filter((name) => pattern.test(name)).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
+  names
+    .filter((name) => pattern.test(name))
+    .sort((a, b) => compareVersions(versionOf(b), versionOf(a)) || a.length - b.length || a.localeCompare(b))[0];
 
 // The models offered first in the picker: the last one used, then the preferred ones on this site.
 export function recommendedModels(names, last) {
@@ -176,7 +193,8 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
           describe,
           augment: (name, args, toolText) => withConsoleMatches(name, args, toolText, match),
           signal: controller.signal,
-          onStep: (step) => updateLast((turn) => ({ steps: [...turn.steps, step] }))
+          onStep: (step) => updateLast((turn) => ({ steps: [...turn.steps, step] })),
+          onText: (partial) => updateLast(() => ({ answer: partial }))
         });
         historyRef.current = result.history;
         updateLast(() => ({ status: 'done', answer: result.answer || t('settingsAssistant.noAnswer'), proposal: result.proposal }));
@@ -236,12 +254,34 @@ export default function SettingsAssistantDialog({ question: initialQuestion, onC
   const noModels = !modelsLoading && names.length === 0;
   const exampleList = t('settingsAssistant.examples', { returnObjects: true });
   const examples = Array.isArray(exampleList) ? exampleList : [];
+  // Recommended first, then every other model by vendor (newest vendor and model first), each
+  // with its vendor's logo; the vendor name is searchable too.
   const modelGroups = useMemo(() => {
     const recommended = recommendedModels(names, localStorage.getItem(MODEL_STORAGE_KEY));
-    const option = (id) => ({ value: id, label: id });
+    const option = (id) => {
+      const vendor = inferVendor(id);
+      return {
+        value: id,
+        label: id,
+        keywords: vendor.name ? [vendor.name] : undefined,
+        icon: (
+          <BrandIcon
+            brandKey={vendor.key === CUSTOM_VENDOR ? undefined : vendor.key}
+            model={id}
+            fallbackText={vendor.name || id}
+            className="size-4"
+          />
+        )
+      };
+    };
+    const rest = groupOptions(names.filter((n) => !recommended.includes(n)).map((id) => ({ id })));
     return [
       { key: 'recommended', heading: t('settingsAssistant.recommended'), options: recommended.map(option) },
-      { key: 'all', heading: t('settingsAssistant.allModels'), options: names.filter((n) => !recommended.includes(n)).map(option) }
+      ...rest.map((group) => ({
+        key: `vendor-${group.key}`,
+        heading: group.key === CUSTOM_VENDOR ? t('settingsAssistant.otherModels') : group.name,
+        options: group.items.map((item) => option(item.id))
+      }))
     ].filter((g) => g.options.length > 0);
   }, [names, t]);
 
@@ -355,27 +395,68 @@ SettingsAssistantDialog.propTypes = {
   onClose: PropTypes.func.isRequired
 };
 
-// One answer: what was looked up (the latest while it runs, folded once answered), the answer and
-// the change plan, if any.
+// A tool call in the admin's words: "Searched “retry”", "Read Retry times and Rate limit cooldown". `describe(key)` gives
+// the console name of a setting; `language` joins several names.
+export function stepText(t, step, describe, language) {
+  let args;
+  try {
+    args = JSON.parse(step.args || '{}') || {};
+  } catch {
+    args = {};
+  }
+  const names = (keys) => {
+    const list = (Array.isArray(keys) ? keys : [keys]).filter(Boolean).map((key) => describe(key)?.label || key);
+    try {
+      return new Intl.ListFormat(language?.replace('_', '-'), { type: 'conjunction' }).format(list);
+    } catch {
+      return list.join(', ');
+    }
+  };
+  switch (step.name) {
+    case 'settings_search':
+      if (args.modified_only) return t('settingsAssistant.step.modified');
+      return args.query ? t('settingsAssistant.step.search', { query: args.query }) : t('settingsAssistant.step.list');
+    case 'settings_describe':
+      return t('settingsAssistant.step.describe', { names: names(args.keys) });
+    case 'settings_effective':
+      return args.object_id
+        ? t('settingsAssistant.step.effectiveOf', { names: names(args.key), object: args.object_id })
+        : t('settingsAssistant.step.effective', { names: names(args.key) });
+    case 'settings_docs':
+      return t('settingsAssistant.step.docs', { query: args.query || '' });
+    case PROPOSE_TOOL:
+      return t('settingsAssistant.step.propose', { count: Array.isArray(args.changes) ? args.changes.length : 0 });
+    default:
+      return step.name;
+  }
+}
+
+// One answer: while it runs the latest lookup and then the answer as it streams; once answered
+// what was looked up (folded), the answer and the change plan, if any.
 function AssistantTurn({ turn, describe }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const running = turn.status === 'running';
   const html = useMemo(() => (turn.answer ? sanitizeHtml(marked.parse(turn.answer)) : ''), [turn.answer]);
   return (
     <div className="space-y-2">
-      {turn.steps.length > 0 && (
-        <details open={running || undefined} className="text-xs text-muted-foreground" data-testid="assistant-steps">
+      {turn.steps.length > 0 && !running && (
+        <details className="text-xs text-muted-foreground" data-testid="assistant-steps">
           <summary className="cursor-pointer select-none">{t('settingsAssistant.steps', { count: turn.steps.length })}</summary>
           <ul className="mt-1 space-y-0.5">
-            {(running ? turn.steps.slice(-3) : turn.steps).map((step, i) => (
-              <li key={i} className="truncate font-mono">
-                {step.name} {step.args}
+            {turn.steps.map((step, i) => (
+              <li key={i} className="truncate">
+                {stepText(t, step, describe, i18n.language)}
               </li>
             ))}
           </ul>
         </details>
       )}
-      {running && turn.steps.length === 0 && <p className="text-sm text-muted-foreground">{t('settingsAssistant.thinking')}</p>}
+      {running && !turn.answer && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          {turn.steps.length === 0 ? t('settingsAssistant.thinking') : stepText(t, turn.steps.at(-1), describe, i18n.language)}
+        </p>
+      )}
       {turn.status === 'error' && <p className="text-sm text-destructive">{t('settingsAssistant.failed', { message: turn.error })}</p>}
       {turn.status === 'stopped' && <p className="text-sm text-muted-foreground">{t('settingsAssistant.stopped')}</p>}
       {html && (

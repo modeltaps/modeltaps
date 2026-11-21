@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
-import { normalizeSynonyms, packTiers, scoreTiers, unpackTiers } from './commandScore';
+import { normalizeSynonyms, packTiers, rankSentence, scoreTiers, unpackTiers } from './commandScore';
 import { loadCollectionItems } from './collectionIndex';
 import SettingsAssistantDialog from './SettingsAssistantDialog';
 import { cardTitleKey, groupLabelKey } from 'views/panel/Setting/registry';
@@ -33,6 +33,20 @@ const COLLECTION_ENTRY = 'collection-item:';
 // The settings assistant entry (root only): always the first entry of the palette. Without a query it
 // opens the assistant; with one it asks the assistant that query. Its value only carries the prefix.
 const ASK_ENTRY = 'ask-ai:';
+
+// Settings related to a query written as a sentence, which no setting has every word of: listed
+// under the assistant entry, ranked here (rankSentence), so the filter passes them all. Their
+// value is this prefix and the setting entry's own value.
+const RELATED_ENTRY = 'related:';
+// Most related settings listed.
+const MAX_RELATED = 5;
+
+// A query reads as a sentence when it is long: some CJK characters, or three words or more.
+export const isSentence = (query) => {
+  const q = query.trim();
+  if (q.replace(/\s/g, '').length < 6) return false;
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(q) || q.split(/\s+/).length >= 3;
+};
 
 // Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
 // words in tiers in the keywords.
@@ -84,7 +98,7 @@ export function makeCommandFilter(synonyms = {}) {
     }
     // The @ filters only apply to settings.
     if (filters.any) return 0;
-    if (value.startsWith(ASK_ENTRY)) return 1;
+    if (value.startsWith(ASK_ENTRY) || value.startsWith(RELATED_ENTRY)) return 1;
     if (value.startsWith(PAGE_ENTRY) || value.startsWith(COLLECTION_ENTRY)) return scoreTiers(search, unpackTiers(keywords), synonyms);
     const score = scoreTiers(search, { primary: [value], secondary: keywords || [] }, synonyms);
     if (score > 0 || !LATIN.test(search)) return score;
@@ -108,10 +122,11 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const [askQuestion, setAskQuestion] = useState(null);
   // The synonyms of the current language plus the English ones: people type terms of other
   // gateways in either.
-  const filter = useMemo(() => {
+  const synonyms = useMemo(() => {
     const table = (lng) => i18n.getResource(lng, 'translation', 'command.synonyms');
-    return makeCommandFilter(normalizeSynonyms(table('en_US'), table(i18n.language)));
+    return normalizeSynonyms(table('en_US'), table(i18n.language));
   }, [i18n, i18n.language]);
+  const filter = useMemo(() => makeCommandFilter(synonyms), [synonyms]);
 
   useEffect(() => {
     if (!open) setSearch('');
@@ -279,6 +294,23 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
       (group) => group.entries[0]?.score || 0
     );
     groups.splice(0, groups.length, ...sorted.filter((group) => group.entries[0]?.score > 0));
+  }
+  // A sentence no setting has every word of: the settings that cover most of it, under the
+  // assistant entry.
+  const settingEntries = (platformGroup?.entries || []).filter((entry) => entry.value.startsWith(FIELD_ENTRY));
+  if (typing && isSentence(search) && settingEntries.length > 0 && !groups.some((group) => group.id === 'platform_settings')) {
+    const scores = rankSentence(
+      search,
+      settingEntries.map((entry) => unpackTiers(entry.keywords)),
+      synonyms
+    );
+    const related = settingEntries
+      .map((entry, i) => ({ entry, i, score: scores[i] }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || a.i - b.i)
+      .slice(0, MAX_RELATED)
+      .map(({ entry }) => ({ ...entry, key: `related-${entry.key}`, value: `${RELATED_ENTRY}${entry.value}`, keywords: undefined }));
+    if (related.length > 0) groups.unshift({ id: 'related', heading: t('command.related'), entries: related });
   }
   if (askGroup) groups.unshift(askGroup);
 
