@@ -8,6 +8,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
+	"math"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -176,7 +177,11 @@ const (
 	LogMetaUpstreamCost = "_upstream_cost"
 	LogMetaExpectedCost = "_expected_cost"
 	LogMetaCostSource   = "_cost_source"
-	LogMetaClient       = "_client"
+	// LogMetaChannelFeeRate is the channel's fee rate the logged cost includes (0.03: the cost is
+	// the channel's charge plus 3%); not written when the channel has no fee or the cost is not
+	// known. It stays in the metadata, hidden from users with the other channel fields.
+	LogMetaChannelFeeRate = "channel_fee_rate"
+	LogMetaClient         = "_client"
 	// LogMetaBilling is the breakdown v0.4.0 wrote for a request charged with the cost floor, which
 	// could charge the channel cost instead of the quote. Nothing writes it since the cost floor was
 	// removed in v0.5.0; the key stays so logs from then are still redacted and shown.
@@ -1126,7 +1131,9 @@ func GetRpmTpmStatistics(userId int) (*RpmTpmStatistics, error) {
 
 // EnrichLogByRequestId merges extra into the metadata of the consume log with the request id
 // and, when upstreamCost is positive and the log has none yet, stores it as the log's upstream
-// cost. It returns gorm.ErrRecordNotFound while the log is not written yet.
+// cost. That figure then is the request's cost as well, with the channel's fee the request was
+// logged with, as it is when the upstream reports it in the response: until then the log held an
+// estimate from the price list. It returns gorm.ErrRecordNotFound while the log is not written yet.
 func EnrichLogByRequestId(requestId string, extra map[string]any, upstreamCost float64) error {
 	if requestId == "" || (len(extra) == 0 && upstreamCost <= 0) {
 		return nil
@@ -1150,6 +1157,9 @@ func EnrichLogByRequestId(requestId string, extra map[string]any, upstreamCost f
 	}
 	if upstreamCost > 0 && log.UpstreamCost <= 0 {
 		updates["upstream_cost"] = upstreamCost
+		fee, _ := log.Metadata.Data()[LogMetaChannelFeeRate].(float64)
+		updates["cost_quota"] = int(math.Round(upstreamCost * (1 + fee) * config.QuotaPerUnit))
+		updates["cost_source"] = CostSourceUpstream
 	}
 	if len(updates) == 0 {
 		return nil

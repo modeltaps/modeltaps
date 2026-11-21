@@ -112,6 +112,8 @@ A difference of 10% or more, over at least 10 requests and $0.10, opens an **Ups
 
 The alert closes by itself once the costs match again. Gemini and Vertex AI have no bill to compare yet.
 
+For a single request, the log details show admins its channel cost, where the figure comes from (the upstream's own charge, the channel's price list, its cost ratio or the official price) and the channel fee in it. A charge the upstream reports after the request replaces the estimate. A request whose cost is not known says so, and the profit per minute on the statistics page leaves it out.
+
 ## Official price dates
 
 Some vendors announce a price that starts on a date, or an introductory price that ends on one. The built-in official prices carry these dates: on the day, the price changes by itself (unless you edited or locked it), admins get an alert under **Official price dates**, and the price lists are fetched again at once instead of at night.

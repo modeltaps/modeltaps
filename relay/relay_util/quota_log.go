@@ -356,9 +356,13 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		if usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
 			meta[model.LogMetaUpstreamCost] = usage.UpstreamCost
 		}
-		// Where the logged cost comes from; none when the cost is not known.
+		// Where the logged cost comes from, and the channel's fee it includes; none when the cost
+		// is not known.
 		if _, source := q.requestCost(usage); source != "" {
 			meta[model.LogMetaCostSource] = source
+			if q.feeRate > 0 {
+				meta[model.LogMetaChannelFeeRate] = q.feeRate
+			}
 		}
 		// The hosting provider a gateway upstream routed the request to.
 		if q.upstreamHost != "" {

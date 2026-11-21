@@ -55,3 +55,23 @@ func TestRequestCostSource(t *testing.T) {
 		})
 	}
 }
+
+// The channel's fee in a logged cost is logged with it, so the cost can be explained afterwards.
+// A cost that is not known, or a channel without a fee, logs none.
+func TestLogMetaChannelFeeRate(t *testing.T) {
+	price := model.Price{Type: model.TokensPriceType, Input: 1, Output: 2}
+	usage := &types.Usage{PromptTokens: 1000, CompletionTokens: 1000}
+
+	withFee := &Quota{price: price, costPrice: &price, costSource: model.CostSourceChannelPrice, feeRate: 0.05}
+	if got := withFee.GetLogMeta(usage)[model.LogMetaChannelFeeRate]; got != 0.05 {
+		t.Errorf("logged fee rate = %v, want 0.05", got)
+	}
+	noFee := &Quota{price: price, costPrice: &price, costSource: model.CostSourceOfficial}
+	if got, ok := noFee.GetLogMeta(usage)[model.LogMetaChannelFeeRate]; ok {
+		t.Errorf("a channel without a fee logged %v", got)
+	}
+	unknown := &Quota{price: price, feeRate: 0.05}
+	if got, ok := unknown.GetLogMeta(usage)[model.LogMetaChannelFeeRate]; ok {
+		t.Errorf("a cost that is not known logged the fee rate %v", got)
+	}
+}

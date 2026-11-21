@@ -725,6 +725,16 @@ export default function LogDetailDialog({
   // v0.5.0, so newer logs have none.
   const billing = metadata.billing && typeof metadata.billing === 'object' ? metadata.billing : null;
   const quota = item.quota || 0;
+  // What the request cost the site, for admins (the admin log list carries it): the amount, where
+  // it comes from and the channel's fee in it. No source and no amount is a cost that is not
+  // known; logs from before the source was recorded show their amount alone.
+  const channelCostQuota = Number(item.cost_quota) || 0;
+  const channelFeeRate = Number(metadata.channel_fee_rate) || 0;
+  const channelCostText = item.cost_source
+    ? `${renderQuota(channelCostQuota, 6)} · ${t(`logPage.quotaDetail.costSource_${item.cost_source}`)}`
+    : channelCostQuota > 0
+      ? renderQuota(channelCostQuota, 6)
+      : t('logPage.quotaDetail.costNotKnown');
 
   const cachedWriteTokens = Number(metadata.cached_write_tokens) || 0;
   const cachedWrite1hTokens = Number(metadata.cached_write_1h_tokens) || 0;
@@ -1051,6 +1061,16 @@ export default function LogDetailDialog({
                   )}
                   {billing?.basis === 'cost_unknown' && showNativeFinish && (
                     <p className="text-xs text-muted-foreground">{t('logPage.quotaDetail.channelCostUnknown')}</p>
+                  )}
+                  {userIsAdmin && !billing && (
+                    <KeyValueRow
+                      label={
+                        channelFeeRate > 0
+                          ? t('logPage.quotaDetail.channelCostWithFee', { rate: +(channelFeeRate * 100).toFixed(2) })
+                          : t('logPage.quotaDetail.channelCost')
+                      }
+                      value={channelCostText}
+                    />
                   )}
                 </div>
               </div>

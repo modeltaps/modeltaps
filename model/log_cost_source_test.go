@@ -79,3 +79,51 @@ func TestRpmTpmStatisticsLeavesOutUnknownCost(t *testing.T) {
 		t.Errorf("cost unknown cpm = %v, want %v", stats.CostUnknownCPM, usd(500))
 	}
 }
+
+// An upstream cost that arrives after the log is written becomes the request's cost, with the
+// fee the request was logged with: until then the log held an estimate from the price list.
+func TestEnrichLogSetsCostFromUpstream(t *testing.T) {
+	useUpstreamCostTestDB(t)
+	oldEnabled, oldBatch := config.LogConsumeEnabled, config.BatchUpdateEnabled
+	config.LogConsumeEnabled, config.BatchUpdateEnabled = true, false
+	t.Cleanup(func() { config.LogConsumeEnabled, config.BatchUpdateEnabled = oldEnabled, oldBatch })
+
+	// Estimated from the price list at 2000 quota, on a channel with a 5% fee.
+	RecordConsumeLog(context.Background(), 1, 7, 10, 5, "a", "token", 600, 2000, "", 1, false,
+		map[string]any{"request_id": "req-fee", LogMetaExpectedCost: 0.004, LogMetaCostSource: CostSourceChannelPrice, LogMetaChannelFeeRate: 0.05}, "", nil)
+	// The same on a channel without a fee.
+	RecordConsumeLog(context.Background(), 1, 7, 10, 5, "a", "token", 600, 2000, "", 1, false,
+		map[string]any{"request_id": "req-plain", LogMetaExpectedCost: 0.004, LogMetaCostSource: CostSourceChannelPrice}, "", nil)
+	// The response itself carried the cost: a later figure does not replace it.
+	RecordConsumeLog(context.Background(), 1, 7, 10, 5, "a", "token", 600, 2100, "", 1, false,
+		map[string]any{"request_id": "req-known", LogMetaUpstreamCost: 0.0042, LogMetaCostSource: CostSourceUpstream}, "", nil)
+
+	for _, id := range []string{"req-fee", "req-plain", "req-known"} {
+		if err := EnrichLogByRequestId(id, nil, 0.005); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var logs []Log
+	if err := DB.Order("id").Find(&logs).Error; err != nil || len(logs) != 3 {
+		t.Fatalf("logs = %d, %v", len(logs), err)
+	}
+	// $0.005 with the 5% fee is 2625 quota.
+	if logs[0].CostQuota != 2625 || logs[0].CostSource != CostSourceUpstream || logs[0].UpstreamCost != 0.005 {
+		t.Errorf("log with a fee: cost %d from %q, upstream %v; want 2625 from upstream", logs[0].CostQuota, logs[0].CostSource, logs[0].UpstreamCost)
+	}
+	if logs[1].CostQuota != 2500 || logs[1].CostSource != CostSourceUpstream {
+		t.Errorf("log without a fee: cost %d from %q, want 2500 from upstream", logs[1].CostQuota, logs[1].CostSource)
+	}
+	if logs[2].CostQuota != 2100 || logs[2].UpstreamCost != 0.0042 {
+		t.Errorf("a cost from the response was replaced: cost %d, upstream %v", logs[2].CostQuota, logs[2].UpstreamCost)
+	}
+
+	// The fee rate stays in the metadata for admins and is hidden from members.
+	if logs[0].Metadata.Data()[LogMetaChannelFeeRate] != 0.05 {
+		t.Errorf("fee rate in the metadata = %v", logs[0].Metadata.Data()[LogMetaChannelFeeRate])
+	}
+	logs[0].RedactForMember()
+	if _, ok := logs[0].Metadata.Data()[LogMetaChannelFeeRate]; ok {
+		t.Error("a member can read the channel's fee rate")
+	}
+}
