@@ -2779,7 +2779,14 @@
       "avgLatency": "平均延迟",
       "balance": "余额 / 用量",
       "balanceAccountTip": "上游账户里的余额",
-      "balanceKeyLimit": "key 上限",
+      "keyLimitPer": {
+        "daily": "key 上限 {{amount}}/天",
+        "weekly": "key 上限 {{amount}}/周",
+        "monthly": "key 上限 {{amount}}/月",
+        "none": "key 上限 {{amount}}"
+      },
+      "keyLimitTip": "打开上游后台，修改这把 key 的限额",
+      "manageKey": "管理 key",
       "balanceKeyLimitTip": "这把 key 的消费上限还剩多少，不是账户余额",
       "balanceUnknown": "未查询或上游不支持查询",
       "enable": "启用 {{name}}",

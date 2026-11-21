@@ -2761,7 +2761,14 @@
       "avgLatency": "平均レイテンシ",
       "balance": "残高 / 使用量",
       "balanceAccountTip": "上流アカウントの残高",
-      "balanceKeyLimit": "キー上限",
+      "keyLimitPer": {
+        "daily": "キー上限 {{amount}}/日",
+        "weekly": "キー上限 {{amount}}/週",
+        "monthly": "キー上限 {{amount}}/月",
+        "none": "キー上限 {{amount}}"
+      },
+      "keyLimitTip": "上流の管理画面を開いて、このキーの上限を変更します",
+      "manageKey": "キーを管理",
       "balanceKeyLimitTip": "このキーの利用上限の残りで、アカウント残高ではありません",
       "balanceUnknown": "未取得、または上流が対応していません",
       "enable": "{{name}} を有効化",

@@ -2895,7 +2895,14 @@
       "avgLatency": "Average latency",
       "balance": "Balance / usage",
       "balanceAccountTip": "What the upstream account holds",
-      "balanceKeyLimit": "key limit",
+      "keyLimitPer": {
+        "daily": "Key limit {{amount}}/day",
+        "weekly": "Key limit {{amount}}/week",
+        "monthly": "Key limit {{amount}}/month",
+        "none": "Key limit {{amount}}"
+      },
+      "keyLimitTip": "Open the upstream page where this key's limit is changed",
+      "manageKey": "Manage key",
       "balanceKeyLimitTip": "What this key's spend limit has left, not the account balance",
       "balanceUnknown": "Not queried yet, or the upstream does not report it",
       "enable": "Enable {{name}}",

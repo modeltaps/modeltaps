@@ -42,7 +42,7 @@ import { Dot, ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { FilterBar, FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
 import { ColumnPicker, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
-import { relayHost } from './providerDefaults';
+import { keyPageUrl, relayHost } from './providerDefaults';
 
 export const RANGES = [
   { key: '24h', seconds: 24 * 3600, bucket: 3600 },
@@ -63,24 +63,56 @@ function Muted({ children = '—', title }) {
 
 Muted.propTypes = { children: PropTypes.node, title: PropTypes.string };
 
-// Balance or subscription usage of a channel, for the table.
+// The key's spend limit where the upstream reports it ("key limit $500/day"), else "Manage key",
+// linking to the upstream page where the key is edited. Null when the type has no key page.
+function KeyLimitLink({ channel }) {
+  const { t } = useTranslation();
+  const url = keyPageUrl(channel.type);
+  if (!url) return null;
+  const s = channel.quota_snapshot;
+  const known = s && s.limit !== null && s.limit !== undefined;
+  const period = ['daily', 'weekly', 'monthly'].includes(s?.reset_interval) ? s.reset_interval : 'none';
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={t('channels.table.keyLimitTip')}
+      onClick={(e) => e.stopPropagation()}
+      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-info hover:underline"
+    >
+      {known ? t(`channels.table.keyLimitPer.${period}`, { amount: `$${Number(s.limit).toFixed(0)}` }) : t('channels.table.manageKey')}
+    </a>
+  );
+}
+
+KeyLimitLink.propTypes = { channel: PropTypes.object.isRequired };
+
+// Balance or subscription usage of a channel, for the table, over the key's limit and a link to
+// where the key is managed.
 export function BalanceText({ channel }) {
   const { t } = useTranslation();
   const windows = channel.usage_windows?.windows || [];
+  let main;
   if (windows.length) {
     const top = windows.reduce((a, b) => (b.used_percent > a.used_percent ? b : a), windows[0]);
-    return <span>{t('channels.table.usageUsed', { pct: Math.round(top.used_percent) })}</span>;
-  }
-  if (channel.balance_updated_time) {
+    main = <span>{t('channels.table.usageUsed', { pct: Math.round(top.used_percent) })}</span>;
+  } else if (channel.balance_updated_time) {
     const keyLimit = balanceSource(channel) === 'keyLimit';
-    return (
+    main = (
       <span title={t(keyLimit ? 'channels.table.balanceKeyLimitTip' : 'channels.table.balanceAccountTip')}>
         {formatBalance(channel.type, channel.balance)}
-        {keyLimit && <span className="ml-1 text-xs text-muted-foreground">{t('channels.table.balanceKeyLimit')}</span>}
       </span>
     );
+  } else {
+    main = <Muted title={t('channels.table.balanceUnknown')} />;
   }
-  return <Muted title={t('channels.table.balanceUnknown')} />;
+  return (
+    <span className="inline-flex flex-col items-end leading-tight">
+      {main}
+      <KeyLimitLink channel={channel} />
+    </span>
+  );
 }
 
 BalanceText.propTypes = { channel: PropTypes.object.isRequired };
