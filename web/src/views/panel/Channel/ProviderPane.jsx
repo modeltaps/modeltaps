@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { channelSeries, formatBalance, metricsByChannel } from './channelMetrics';
+import { balanceSource, channelSeries, formatBalance, metricsByChannel } from './channelMetrics';
 import { NO_TAG, channelDot, filterChannels, groupOptions, openIssues, selectionState, statusCounts, tagOptions } from './channelGroups';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChannelBatchBar, TagActionsMenu } from './ChannelToolbar';
@@ -71,7 +71,15 @@ export function BalanceText({ channel }) {
     const top = windows.reduce((a, b) => (b.used_percent > a.used_percent ? b : a), windows[0]);
     return <span>{t('channels.table.usageUsed', { pct: Math.round(top.used_percent) })}</span>;
   }
-  if (channel.balance_updated_time) return <span>{formatBalance(channel.type, channel.balance)}</span>;
+  if (channel.balance_updated_time) {
+    const keyLimit = balanceSource(channel) === 'keyLimit';
+    return (
+      <span title={t(keyLimit ? 'channels.table.balanceKeyLimitTip' : 'channels.table.balanceAccountTip')}>
+        {formatBalance(channel.type, channel.balance)}
+        {keyLimit && <span className="ml-1 text-xs text-muted-foreground">{t('channels.table.balanceKeyLimit')}</span>}
+      </span>
+    );
+  }
   return <Muted title={t('channels.table.balanceUnknown')} />;
 }
 
@@ -192,7 +200,7 @@ const COLUMN_WIDTHS = {
   requests: 152,
   success: 80,
   latency: 80,
-  balance: 104,
+  balance: 140,
   enabled: 64,
   actions: 52
 };

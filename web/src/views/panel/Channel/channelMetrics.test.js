@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  balanceSource,
   cacheSummary,
   channelSeries,
   metricsByChannel,
@@ -149,5 +150,15 @@ describe('modelSignal', () => {
   });
   it('leaves a healthy model alone', () => {
     expect(modelSignal({ requests: 10, successRate: 0.8 }, true)).toBe(null);
+  });
+});
+
+describe('balanceSource', () => {
+  it('is the account balance unless the key limit is what was read', () => {
+    expect(balanceSource({ balance: 397 })).toBe('account');
+    expect(balanceSource({ quota_snapshot: { limit: null, remaining: null, account_balance: 20 } })).toBe('account');
+    expect(balanceSource({ quota_snapshot: { limit: 500, remaining: 500 } })).toBe('keyLimit');
+    expect(balanceSource({ quota_snapshot: { limit: 500, remaining: 500, account_balance: 20 } })).toBe('account');
+    expect(balanceSource({ quota_snapshot: { limit: 10, remaining: 4, account_balance: 20 } })).toBe('keyLimit');
   });
 });

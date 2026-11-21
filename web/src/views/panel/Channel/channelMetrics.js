@@ -114,6 +114,17 @@ export function formatBalance(type, balance) {
   return CNY_BALANCE_TYPES.has(type) ? `¥${n.toFixed(2)}` : `$${n.toFixed(2)}`;
 }
 
+// Where a channel's balance comes from. 'keyLimit': what the key's own spend limit has left (an
+// OpenRouter key read without a management key, or one whose limit is below what the account
+// holds). 'account': what the whole upstream account or team holds, which every other balance
+// endpoint reports.
+export function balanceSource(channel) {
+  const s = channel?.quota_snapshot;
+  if (!s || s.remaining === null || s.remaining === undefined) return 'account';
+  if (s.account_balance === null || s.account_balance === undefined) return 'keyLimit';
+  return s.remaining <= s.account_balance ? 'keyLimit' : 'account';
+}
+
 // Below this success rate, with at least FAILING_MIN_REQUESTS requests, a model is flagged as
 // failing in the channel's model list.
 export const FAILING_SUCCESS_RATE = 0.8;

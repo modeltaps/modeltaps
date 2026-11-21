@@ -1630,13 +1630,14 @@ function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
                   ? snapshot.account_balance === null || snapshot.account_balance === undefined
                     ? t('channelDetail.unlimited')
                     : t('channelDetail.accountBalance', { amount: usd(snapshot.account_balance) })
-                  : `${usd(snapshot.remaining)} / ${usd(snapshot.limit)}`}
+                  : t('channelDetail.keyLimitLeft', { remaining: usd(snapshot.remaining), limit: usd(snapshot.limit) })}
                 {snapshot.limit !== null &&
                   snapshot.limit !== undefined &&
-                  snapshot.account_balance !== null &&
-                  snapshot.account_balance !== undefined && (
+                  (snapshot.account_balance !== null && snapshot.account_balance !== undefined ? (
                     <span className="ml-2">{t('channelDetail.accountBalance', { amount: usd(snapshot.account_balance) })}</span>
-                  )}
+                  ) : (
+                    <span className="ml-2 text-xs text-muted-foreground">{t('channelDetail.accountBalanceNeedsManageKey')}</span>
+                  ))}
                 <span className="ml-2 text-xs text-muted-foreground">
                   {t('channelDetail.usageLine', {
                     day: usd(snapshot.usage_daily),
@@ -1647,7 +1648,9 @@ function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
               </>
             ) : channel.balance_updated_time ? (
               <>
-                <span className="tabular-nums">{formatBalance(channel.type, channel.balance)}</span>
+                <span className="tabular-nums">
+                  {t('channelDetail.accountBalance', { amount: formatBalance(channel.type, channel.balance) })}
+                </span>
                 <span className="ml-2 text-xs text-muted-foreground">
                   {t('channelDetail.balanceUpdated', { time: timestamp2string(channel.balance_updated_time) })}
                 </span>
