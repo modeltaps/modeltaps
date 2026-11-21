@@ -45,6 +45,11 @@ export default defineConfig(({ mode }) => {
   // of silently hopping to another port.
   const devPort = Number(env.VITE_DEV_PORT) || 3010;
 
+  // File watching. Vite learns of edits from the OS (FSEvents on macOS); where that delivers
+  // nothing (a stuck fseventsd, some mounted or synced folders) edits never reach the browser.
+  // VITE_WATCH_POLL=<milliseconds> (e.g. in web/.env.local) polls instead, at some CPU cost.
+  const watchPoll = Number(env.VITE_WATCH_POLL) || 0;
+
   // Backend paths the dev server forwards: the panel API plus every relay entry point, so API
   // clients can also point at the dev server (the token test dialog and the built-in console
   // call /v1, /claude and /gemini directly; coding agents use /claude-code, /codex and
@@ -114,7 +119,8 @@ export default defineConfig(({ mode }) => {
       port: devPort,
       strictPort: true,
       allowedHosts: devAllowedHosts,
-      proxy: backendProxy
+      proxy: backendProxy,
+      ...(watchPoll > 0 ? { watch: { usePolling: true, interval: watchPoll } } : {})
     },
     preview: {
       // this ensures that the browser opens upon preview start
