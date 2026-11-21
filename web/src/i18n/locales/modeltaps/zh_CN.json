@@ -1095,7 +1095,7 @@
       "creem": "支付网关"
     },
     "advanced": "高级",
-    "placeholderAsk": "搜索，或问设置助手",
+    "placeholderAsk": "搜索，或问配置助手",
     "related": "相关设置"
   },
   "common": {
@@ -5205,7 +5205,7 @@
     "lossTip": "比本站基础售价高 {{pct}}%：成本已超过售价的实际收入，走这里的请求会亏"
   },
   "settingsAssistant": {
-    "title": "设置助手",
+    "title": "配置助手",
     "description": "问设置在哪、怎么配，要改时给出方案，你确认后才应用",
     "placeholder": "问一个关于设置的问题",
     "model": "回答用的模型",
@@ -5215,7 +5215,7 @@
     "failed": "没能回答：{{message}}",
     "noAnswer": "没有得到回答，换个问法或换个模型再试。",
     "footer": "只提方案，不会自己改设置 · 按所选模型计费到你的账户",
-    "entry": "问设置助手：{{question}}",
+    "entry": "问配置助手：{{question}}",
     "steps_other": "查了 {{count}} 次设置目录和文档",
     "empty": "可以问设置在哪、该设成多少，也可以直接让它帮你改",
     "followUp": "接着问，或者让它帮你改设置…",

@@ -1094,7 +1094,7 @@
       "creem": "支付網關"
     },
     "advanced": "進階",
-    "placeholderAsk": "搜尋，或問設定助手",
+    "placeholderAsk": "搜尋，或問配置助手",
     "related": "相關設定"
   },
   "common": {
@@ -5204,7 +5204,7 @@
     "lossTip": "比本站基礎售價高 {{pct}}%：成本已超過售價的實際收入，走這裡的請求會虧"
   },
   "settingsAssistant": {
-    "title": "設定助手",
+    "title": "配置助手",
     "description": "問設定在哪、怎麼配，要改時給出方案，你確認後才套用",
     "placeholder": "問一個關於設定的問題",
     "model": "回答用的模型",
@@ -5214,7 +5214,7 @@
     "failed": "未能回答：{{message}}",
     "noAnswer": "沒有得到回答，換個問法或換個模型再試。",
     "footer": "只提方案，不會自己改設定 · 按所選模型計費到你的帳戶",
-    "entry": "問設定助手：{{question}}",
+    "entry": "問配置助手：{{question}}",
     "steps_other": "查了 {{count}} 次設定目錄和文件",
     "empty": "可以問設定在哪、該設成多少，也可以直接讓它幫你改",
     "followUp": "繼續問，或者讓它幫你改設定…",
