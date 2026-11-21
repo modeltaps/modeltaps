@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-21
+
+### Upgrading from 0.7.0
+
+Nothing needs action.
+
+### Changed
+
+- Channel balances say where they come from. A balance read from the key's own spend limit (an
+  OpenRouter key without a management key) is tagged as the key limit in the channel list, and
+  the channel's details name the source and say a management key reads the account balance.
+
 ## [0.7.0] - 2026-11-21
 
 ### Upgrading from 0.6.0
