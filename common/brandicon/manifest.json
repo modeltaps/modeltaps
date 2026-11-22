@@ -414,7 +414,7 @@
     },
     "openrouter": {
       "mono": true,
-      "color": true,
+      "color": false,
       "scale": 1
     },
     "palm": {

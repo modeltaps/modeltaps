@@ -21,6 +21,7 @@
     "fishaudio", "topazlabs", "baseten", "reflection",
     "nebius", "qiniu", "chutes", "venice"
   ],
+  "monoOnly": ["openrouter"],
   "scale": {
     "anthropic": 1.12,
     "xai": 0.82

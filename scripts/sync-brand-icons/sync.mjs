@@ -75,7 +75,9 @@ for (const key of [...new Set(cfg.icons)].sort()) {
   if (!/^[a-z0-9]+$/.test(key)) fail(`invalid icon key ${key}`);
   const mono = files.get(`package/icons/${key}.svg`);
   if (!mono) fail(`icon ${key}.svg missing from ${cfg.package}@${cfg.version}`);
-  const color = files.get(`package/icons/${key}-color.svg`);
+  // monoOnly: brands whose package color mark is unreadable on one of the themes (e.g. a neon
+  // fill on white); they render the one-color mark, which follows the text color.
+  const color = cfg.monoOnly?.includes(key) ? undefined : files.get(`package/icons/${key}-color.svg`);
   for (const [file, data] of [[`${key}.svg`, mono], [`${key}-color.svg`, color]]) {
     if (!data) continue;
     checkSvg(file, data.toString('utf8'));
