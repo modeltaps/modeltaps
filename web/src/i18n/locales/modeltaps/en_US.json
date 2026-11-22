@@ -3003,6 +3003,7 @@
     },
     "optional": "optional",
     "columns": {
+      "drift": "Model changes",
       "requests": "Requests",
       "requestsIn": "Requests {{range}}"
     },
@@ -3075,6 +3076,7 @@
       "driftRenamed_other": "{{count}} models renamed"
     },
     "head": {
+      "drift": "Models in use that the upstream dropped or renamed (their requests fail), and models it added. Dropped models nothing is served through appear only on the channel’s models tab.",
       "order": "Lower numbers are tried first; channels with the same number share traffic",
       "share": "Weight and traffic share within the group",
       "shareNone": "Shares with no other channel",

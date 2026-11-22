@@ -15,6 +15,7 @@ import {
   Info,
   Loader2,
   MoreHorizontal,
+  Plus,
   Power,
   PowerOff,
   Trash2,
@@ -176,10 +177,75 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
 
 IssueTag.propTypes = { issue: PropTypes.object.isRequired, onAction: PropTypes.func, onDismiss: PropTypes.func, busy: PropTypes.bool };
 
+// Model drift of a row, as an icon and a count each. Served models the upstream dropped or renamed
+// (their requests fail) read in the warning color; models the upstream added are news, not a
+// problem, and read quietly. Dropped models nothing is served through are not counted: they show
+// only on the channel's models tab. New names that are renames of listed models are not new. Both
+// open the models tab on those models; the full sentence is in the tooltip.
+function DriftCell({ channel, issues, onOpen }) {
+  const { t } = useTranslation();
+  const broken = issues.filter((i) => i.kind === 'driftRenamed' || i.kind === 'driftMissing');
+  const brokenCount = broken.reduce((sum, i) => sum + (i.count || 0), 0);
+  const renamedTo = new Set(Object.values(channel.drift_impact?.renamed || {}));
+  const added = (channel.model_drift?.new_models || []).filter((m) => !renamedTo.has(m)).length;
+  if (!brokenCount && !added) return <Muted />;
+  // `lines` are the tooltip's sentences, one per line.
+  const item = (key, issue, lines, className, icon, text) => (
+    <Tooltip key={key}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={lines.join(' ')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen?.(issue);
+          }}
+          className={cn('-mx-1 inline-flex h-6 items-center gap-1 rounded px-1 text-[13px] tabular-nums hover:bg-muted', className)}
+        >
+          {icon}
+          {text}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-60 whitespace-normal text-xs">
+        {lines.map((line) => (
+          <span key={line} className="block">
+            {line}
+          </span>
+        ))}
+      </TooltipContent>
+    </Tooltip>
+  );
+  return (
+    <span className="inline-flex items-center gap-3">
+      {brokenCount > 0 &&
+        item(
+          'broken',
+          broken[0],
+          broken.map((i) => t(`channels.issue.${i.kind}`, { count: i.count })),
+          'text-warning',
+          <AlertTriangle className="size-3.5 shrink-0" />,
+          brokenCount
+        )}
+      {added > 0 &&
+        item(
+          'new',
+          { kind: 'driftNew', channel },
+          [t('channels.issue.driftNew', { count: added })],
+          'text-muted-foreground',
+          <Plus className="size-3.5 shrink-0" />,
+          added
+        )}
+    </span>
+  );
+}
+
+DriftCell.propTypes = { channel: PropTypes.object.isRequired, issues: PropTypes.array.isRequired, onOpen: PropTypes.func };
+
 // Table columns: selection, name and the row menu are fixed; the rest are in the column picker.
 export const CHANNEL_COLUMNS = [
   { id: 'select', fixed: true },
   { id: 'name', fixed: true },
+  { id: 'drift', labelKey: 'channels.columns.drift' },
   { id: 'priority', labelKey: 'channels.table.priorityWeight' },
   { id: 'requests', labelKey: 'channels.columns.requests' },
   { id: 'success', labelKey: 'channels.table.successRate' },
@@ -228,6 +294,7 @@ Sparkline.propTypes = { values: PropTypes.arrayOf(PropTypes.number).isRequired }
 const COLUMN_WIDTHS = {
   select: 60,
   order: 64,
+  drift: 96,
   priority: 112,
   requests: 152,
   success: 80,
@@ -588,6 +655,11 @@ export default function ProviderPane({
                 </th>
               )}
               <th>{t('channels.table.name')}</th>
+              {show('drift') && (
+                <th>
+                  <HeadLabel label={t('channels.columns.drift')} hint={t('channels.head.drift')} />
+                </th>
+              )}
               {show('priority') && (
                 <th className="text-right">
                   {order ? (
@@ -633,7 +705,7 @@ export default function ProviderPane({
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={10}>{emptyRow}</td>
+                <td colSpan={11}>{emptyRow}</td>
               </tr>
             )}
             {rows.map((c) => {
@@ -800,63 +872,21 @@ export default function ProviderPane({
                                 })
                               : ''
                           ].filter(Boolean);
-                          // Model drift reads on this line, in full (a narrow column wraps it onto a
-                          // line of its own): served models the upstream renamed or dropped (their
-                          // requests fail) in the warning color, models the upstream added, which are
-                          // news and not a problem, as a quiet link. All open the models tab on them.
-                          // New names that are renames of listed models are not counted as new.
-                          const own = issuesById.get(c.id) || [];
-                          const renamedTo = new Set(Object.values(c.drift_impact?.renamed || {}));
-                          const added = (c.model_drift?.new_models || []).filter((m) => !renamedTo.has(m)).length;
-                          const links = [
-                            ...['driftRenamed', 'driftMissing'].map((kind) => {
-                              const issue = own.find((i) => i.kind === kind);
-                              return (
-                                issue && {
-                                  key: kind,
-                                  issue,
-                                  warn: true,
-                                  className: 'text-warning',
-                                  text: t(`channels.issueTag.${kind}`, { count: issue.count })
-                                }
-                              );
-                            }),
-                            added > 0 && {
-                              key: 'new',
-                              issue: { kind: 'driftNew', channel: c },
-                              className: 'text-info',
-                              text: t('channels.issueTag.driftNew', { count: added })
-                            }
-                          ].filter(Boolean);
-                          if (!sub.length && !links.length) return null;
+                          if (!sub.length) return null;
                           return (
-                            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
-                              {sub.length > 0 && <span className="min-w-0 max-w-full truncate">{sub.join(' · ')}</span>}
-                              {links.map((x) => (
-                                <span key={x.key} className="inline-flex max-w-full items-baseline gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onIssueAction(x.issue);
-                                    }}
-                                    className={cn(
-                                      'inline-flex min-w-0 items-center gap-0.5 underline-offset-2 hover:underline',
-                                      x.className
-                                    )}
-                                    title={x.text}
-                                  >
-                                    {x.warn && <AlertTriangle className="size-3 shrink-0 self-center" />}
-                                    <span className="truncate">{x.text}</span>
-                                  </button>
-                                </span>
-                              ))}
+                            <span className="block min-w-0 truncate text-xs text-muted-foreground" title={sub.join(' · ')}>
+                              {sub.join(' · ')}
                             </span>
                           );
                         })()}
                       </span>
                     </span>
                   </td>
+                  {show('drift') && (
+                    <td>
+                      <DriftCell channel={c} issues={issuesById.get(c.id) || []} onOpen={onIssueAction} />
+                    </td>
+                  )}
                   {show('priority') &&
                     (order ? (
                       <td className="keep text-right" onClick={(e) => e.stopPropagation()}>
