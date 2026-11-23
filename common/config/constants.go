@@ -205,7 +205,7 @@ var SMTPReplyTo = ""
 // a JSON object keyed by template id; empty uses the defaults.
 var MailTemplates = ""
 
-// DefaultLanguage is the site default language (en_US, zh_CN, zh_HK, ja_JP): emails go out in it
+// DefaultLanguage is the site default language (en_US, zh_CN, ja_JP): emails go out in it
 // when the recipient's language is unknown, and the home page uses it when the browser's is not
 // supported. Empty means English.
 var DefaultLanguage = ""

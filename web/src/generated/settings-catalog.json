@@ -334,11 +334,7 @@
         },
         {
           "value": "zh_CN",
-          "label": "Simplified Chinese"
-        },
-        {
-          "value": "zh_HK",
-          "label": "Traditional Chinese (Hong Kong)"
+          "label": "Chinese"
         },
         {
           "value": "ja_JP",

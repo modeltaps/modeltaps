@@ -18,7 +18,7 @@ func TestAPICodesHaveConsoleTranslations(t *testing.T) {
 	if len(codes) == 0 {
 		t.Fatal("no codes found in api_error.go")
 	}
-	for _, locale := range []string{"en_US", "zh_CN", "zh_HK", "ja_JP"} {
+	for _, locale := range []string{"en_US", "zh_CN", "ja_JP"} {
 		raw, err := os.ReadFile("../web/src/i18n/locales/modeltaps/" + locale + ".json")
 		if err != nil {
 			t.Fatalf("read %s: %v", locale, err)

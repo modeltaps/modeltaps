@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { BrandLockup } from '@/components/chrome/Logo';
 import UserMenu from '@/components/chrome/UserMenu';
-import LanguageSwitcher from '@/components/auth/LanguageSwitcher';
 import Footer from '@/components/chrome/Footer';
 import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { workbench } from 'routes/paths';
@@ -46,8 +45,6 @@ export default function PublicLayout() {
           </nav>
         </div>
         <div className="flex items-center gap-0.5">
-          <LanguageSwitcher iconOnly />
-          <span aria-hidden className="mx-2 h-5 w-px bg-border" />
           {account.user ? (
             <div className="flex items-center gap-3">
               <Button asChild size="sm" className="hidden h-8 px-3 sm:inline-flex">

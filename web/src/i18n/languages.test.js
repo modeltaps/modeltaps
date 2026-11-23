@@ -30,9 +30,10 @@ describe('languages.json', () => {
   });
 
   it('maps browser tags like the server and falls back to English', () => {
-    expect(normalizeLanguage('zh-Hant-TW')).toBe('zh_HK');
+    expect(normalizeLanguage('zh-Hant-TW')).toBe('zh_CN');
+    expect(normalizeLanguage('zh_HK')).toBe('zh_CN');
     expect(normalizeLanguage('zh')).toBe('zh_CN');
     expect(normalizeLanguage('xx')).toBe('');
-    expect(fallbackChains()).toMatchObject({ zh_HK: ['zh_CN', 'en_US'], ja_JP: ['en_US'], en_US: [], default: ['en_US'] });
+    expect(fallbackChains()).toMatchObject({ zh_CN: ['en_US'], ja_JP: ['en_US'], en_US: [], default: ['en_US'] });
   });
 });

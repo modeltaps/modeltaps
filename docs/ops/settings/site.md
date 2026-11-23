@@ -224,8 +224,7 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 取值：
 
 - `en_US` 英语
-- `zh_CN` 简体中文
-- `zh_HK` 繁体中文（香港）
+- `zh_CN` 中文
 - `ja_JP` 日语
 
 相关设置：[邮件模板](./mail.md#MailTemplates)

@@ -224,8 +224,7 @@ Billing API が、ユーザーの残高ではなく呼び出した API キーの
 値：
 
 - `en_US` 英語
-- `zh_CN` 簡体字中国語
-- `zh_HK` 繁体字中国語（香港）
+- `zh_CN` 中国語
 - `ja_JP` 日本語
 
 関連する設定：[メールテンプレート](./mail.md#MailTemplates)

@@ -162,7 +162,7 @@ func TestLogoutEndSessionURLUILocales(t *testing.T) {
 		query string
 		want  string
 	}{
-		{"合法", "?ui_locales=zh-HK", "zh-HK"},
+		{"合法", "?ui_locales=ja", "ja"},
 		{"缺省", "", ""},
 		{"非法", "?ui_locales=xx", ""},
 	}

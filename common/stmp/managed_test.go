@@ -123,8 +123,8 @@ func TestPreviewUsesSamples(t *testing.T) {
 	if !strings.Contains(subject, "quota is running low") || !strings.Contains(body, "1200") {
 		t.Fatalf("preview: %q", subject)
 	}
-	if subject, _ = PreviewTemplate(TemplateQuotaExhausted, lang.TraditionalChinese, MailTemplate{}); !strings.Contains(subject, "額度已用完") {
-		t.Fatalf("preview zh_HK: %q", subject)
+	if subject, _ = PreviewTemplate(TemplateQuotaExhausted, lang.Japanese, MailTemplate{}); !strings.Contains(subject, "残高がなくなりました") {
+		t.Fatalf("preview ja_JP: %q", subject)
 	}
 	if s, _ := PreviewTemplate("nope", lang.English, MailTemplate{}); s != "" {
 		t.Fatal("unknown template rendered")

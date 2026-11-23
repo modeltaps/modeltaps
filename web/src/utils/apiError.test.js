@@ -67,13 +67,13 @@ describe('apiMessage', () => {
 
 describe('localizeApiMessage', () => {
   beforeEach(async () => {
-    await i18n.changeLanguage('zh_HK');
+    await i18n.changeLanguage('ja_JP');
   });
 
   it('rewrites message in place for a known code', () => {
     const data = { success: true, message: 'speed test succeeded', code: 'channel_test_succeeded', time: 0.4 };
     localizeApiMessage(data);
-    expect(data).toEqual({ success: true, message: '測試通過', code: 'channel_test_succeeded', time: 0.4 });
+    expect(data).toEqual({ success: true, message: 'テスト成功', code: 'channel_test_succeeded', time: 0.4 });
   });
 
   it('leaves bodies without a known code untouched', () => {
@@ -90,7 +90,7 @@ describe('apiError locale keys', () => {
     const codes = (lng) => Object.keys(resources[lng].translation.apiError || {}).sort();
     const base = codes('en_US');
     expect(base.length).toBeGreaterThan(0);
-    for (const lng of ['zh_CN', 'zh_HK', 'ja_JP']) {
+    for (const lng of ['zh_CN', 'ja_JP']) {
       expect(codes(lng)).toEqual(base);
     }
     expect(apiMessageKey({ code: base[0] })).toBe(`apiError.${base[0]}`);

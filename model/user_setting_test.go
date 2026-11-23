@@ -59,7 +59,8 @@ func TestUserSettingApplyUpdate(t *testing.T) {
 		{"仅更新 theme 保留 language", UserSetting{Theme: "light", Language: "zh_CN"}, UserSettingUpdate{Theme: strPtr("dark")}, UserSetting{Theme: "dark", Language: "zh_CN"}},
 		{"仅更新 language 保留 theme", UserSetting{Theme: "light", Language: "zh_CN"}, UserSettingUpdate{Language: strPtr("ja_JP")}, UserSetting{Theme: "light", Language: "ja_JP"}},
 		{"同时更新两个字段", UserSetting{}, UserSettingUpdate{Theme: strPtr("system"), Language: strPtr("en_US")}, UserSetting{Theme: "system", Language: "en_US"}},
-		{"全 nil 不改动", UserSetting{Theme: "dark", Language: "zh_HK"}, UserSettingUpdate{}, UserSetting{Theme: "dark", Language: "zh_HK"}},
+		{"全 nil 不改动", UserSetting{Theme: "dark", Language: "ja_JP"}, UserSettingUpdate{}, UserSetting{Theme: "dark", Language: "ja_JP"}},
+		{"已下线的 zh_HK 改存中文", UserSetting{Theme: "dark", Language: "zh_HK"}, UserSettingUpdate{Theme: strPtr("light")}, UserSetting{Theme: "light", Language: "zh_CN"}},
 		{"显式空串清除字段", UserSetting{Theme: "dark", Language: "zh_CN"}, UserSettingUpdate{Theme: strPtr("")}, UserSetting{Theme: "", Language: "zh_CN"}},
 	}
 	for _, tt := range tests {
@@ -79,7 +80,6 @@ func TestUserSettingValidate(t *testing.T) {
 		{Theme: "system"},
 		{Theme: "light"},
 		{Theme: "dark", Language: "zh_CN"},
-		{Language: "zh_HK"},
 		{Language: "en_US"},
 		{Language: "ja_JP"},
 	}

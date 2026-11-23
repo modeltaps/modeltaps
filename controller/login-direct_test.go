@@ -73,9 +73,9 @@ func TestAcceptLanguageUILocale(t *testing.T) {
 	cases := map[string]string{
 		"zh-CN,zh;q=0.9": "zh-CN",
 		"zh-Hans-CN":     "zh-CN",
-		"zh-HK":          "zh-HK",
-		"zh-TW,zh;q=0.9": "zh-HK",
-		"zh-Hant":        "zh-HK",
+		"zh-HK":          "zh-CN",
+		"zh-TW,zh;q=0.9": "zh-CN",
+		"zh-Hant":        "zh-CN",
 		"en-US,en;q=0.9": "en",
 		"en":             "en",
 		"ja-JP":          "ja",

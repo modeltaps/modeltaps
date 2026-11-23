@@ -1,14 +1,5 @@
 [
   { "code": "en_US", "name": "English", "short": "EN", "country": "US", "bcp47": "en", "match": ["en"] },
-  { "code": "zh_CN", "name": "简体中文", "short": "中", "country": "CN", "bcp47": "zh-CN", "match": ["zh", "zh-hans", "zh-cn", "zh-sg"] },
-  {
-    "code": "zh_HK",
-    "name": "繁體中文",
-    "short": "繁",
-    "country": "HK",
-    "bcp47": "zh-HK",
-    "match": ["zh-hant", "zh-hk", "zh-tw", "zh-mo"],
-    "fallback": "zh_CN"
-  },
+  { "code": "zh_CN", "name": "中文", "short": "中", "country": "CN", "bcp47": "zh-CN", "match": ["zh"] },
   { "code": "ja_JP", "name": "日本語", "short": "日", "country": "JP", "bcp47": "ja", "match": ["ja"] }
 ]

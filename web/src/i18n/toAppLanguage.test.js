@@ -6,17 +6,17 @@ describe('toAppLanguage', () => {
     expect(toAppLanguage('zh-CN')).toBe('zh_CN');
     expect(toAppLanguage('zh')).toBe('zh_CN');
     expect(toAppLanguage('zh-Hans-SG')).toBe('zh_CN');
-    expect(toAppLanguage('zh-TW')).toBe('zh_HK');
-    expect(toAppLanguage('zh-HK')).toBe('zh_HK');
-    expect(toAppLanguage('zh-Hant')).toBe('zh_HK');
+    expect(toAppLanguage('zh-TW')).toBe('zh_CN');
+    expect(toAppLanguage('zh-HK')).toBe('zh_CN');
+    expect(toAppLanguage('zh-Hant')).toBe('zh_CN');
     expect(toAppLanguage('ja')).toBe('ja_JP');
     expect(toAppLanguage('ja-JP')).toBe('ja_JP');
     expect(toAppLanguage('en-GB')).toBe('en_US');
     expect(toAppLanguage('en')).toBe('en_US');
   });
 
-  it('keeps app codes and leaves unsupported languages for the English fallback', () => {
-    expect(toAppLanguage('zh_HK')).toBe('zh_HK');
+  it('maps a saved zh_HK to Chinese and leaves unsupported languages for the English fallback', () => {
+    expect(toAppLanguage('zh_HK')).toBe('zh_CN');
     expect(toAppLanguage('xx-XX')).toBe('xx-XX');
     expect(toAppLanguage('')).toBe('');
   });

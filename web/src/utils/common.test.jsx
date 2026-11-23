@@ -19,9 +19,9 @@ describe('getOIDCEndpoint', () => {
   });
 
   it('按当前界面语言携带 ui_locales', async () => {
-    i18n.language = 'zh_HK';
+    i18n.language = 'ja_JP';
     await expect(getOIDCEndpoint('keycloak')).resolves.toBe('https://idp.example.com/auth');
-    expect(get).toHaveBeenCalledWith('/api/oauth/endpoint/keycloak?ui_locales=zh-HK');
+    expect(get).toHaveBeenCalledWith('/api/oauth/endpoint/keycloak?ui_locales=ja');
   });
 
   it('语言未知时不带 ui_locales', async () => {

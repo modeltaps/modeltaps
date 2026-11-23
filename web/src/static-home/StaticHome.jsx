@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, Globe, Moon, Sun } from 'lucide-react';
+import { Check, Globe, Moon, Sun, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { BrandLockup } from '@/components/chrome/Logo';
@@ -15,8 +15,8 @@ import { workbench } from 'routes/paths';
 // straight away. It never reads the login state: the header always offers "Console", and the panel
 // sends visitors who are not signed in through login.
 //
-// Nothing here may depend on client-side React. The language menu is a <details> element with
-// plain links, and the theme button is wired by a small inline script (see scripts/prerender-home.mjs).
+// Nothing here may depend on client-side React. The language picker is a native popover with plain
+// links, and the theme button is wired by a small inline script (see scripts/prerender-home.mjs).
 
 const escapeText = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -26,34 +26,63 @@ function docsLinkMarkup(label) {
   return `${docsStart}<a href="${docsUrl}" target="_blank" rel="noopener noreferrer" class="text-[0.8125rem] leading-none hover:text-foreground hover:underline">${escapeText(label)}</a>${docsEnd}`;
 }
 
+// The footer's language button and the dialog it opens. A native popover needs no script: the
+// button toggles it, Esc and a click outside close it, and each language is a plain link.
 function LanguageMenu({ lng }) {
   const { t } = useTranslation();
   const current = i18nList.find((item) => item.lng === lng) || i18nList[0];
+  const title = t('language.select', { defaultValue: 'Language' });
 
   return (
-    <details className="group relative">
-      <summary
-        aria-label={t('language.select', { defaultValue: 'Select language' })}
-        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-sm font-medium hover:bg-muted [&::-webkit-details-marker]:hidden"
+    <>
+      <button
+        type="button"
+        popoverTarget="language-picker"
+        aria-label={title}
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[0.8125rem] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        <Globe className="size-5" />
-        {current.shortCode}
-      </summary>
-      <div className="absolute right-0 z-50 mt-1 min-w-40 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md">
-        {i18nList.map((item) => (
-          <a
-            key={item.lng}
-            href={`/?lang=${item.lng}`}
-            hrefLang={item.lng.replace('_', '-')}
-            lang={item.lng.replace('_', '-')}
-            className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted ${item.lng === lng ? 'font-medium' : ''}`}
+        <Globe className="size-4" />
+        {current.name}
+      </button>
+      <div
+        id="language-picker"
+        popover="auto"
+        role="dialog"
+        aria-labelledby="language-picker-title"
+        className="m-auto w-80 max-w-[calc(100%-2rem)] rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      >
+        <div className="flex items-center justify-between px-5 pb-2 pt-4">
+          <h2 id="language-picker-title" className="text-base font-semibold">
+            {title}
+          </h2>
+          <button
+            type="button"
+            popoverTarget="language-picker"
+            popoverTargetAction="hide"
+            aria-label={t('common.close')}
+            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg hover:bg-muted"
           >
-            <span className="flex w-4 justify-center text-foreground">{item.lng === lng && <Check className="size-4" />}</span>
-            {item.name}
-          </a>
-        ))}
+            <X className="size-4" />
+          </button>
+        </div>
+        <ul className="flex flex-col gap-0.5 px-2 pb-3">
+          {i18nList.map((item) => (
+            <li key={item.lng}>
+              <a
+                href={`/?lang=${item.lng}`}
+                hrefLang={item.lng.replace('_', '-')}
+                lang={item.lng.replace('_', '-')}
+                aria-current={item.lng === lng ? 'true' : undefined}
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-muted ${item.lng === lng ? 'font-medium' : ''}`}
+              >
+                {item.name}
+                {item.lng === lng && <Check className="size-4" />}
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
-    </details>
+    </>
   );
 }
 
@@ -69,7 +98,6 @@ export default function StaticHome({ lng }) {
           <BrandLockup text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
         </a>
         <div className="flex items-center gap-1">
-          <LanguageMenu lng={lng} />
           <Button variant="ghost" size="icon" aria-label="Toggle theme" data-theme-toggle="">
             <Moon className="size-5 dark:hidden" />
             <Sun className="hidden size-5 dark:block" />
@@ -86,11 +114,16 @@ export default function StaticHome({ lng }) {
         </div>
       </main>
 
-      <footer className="flex items-center justify-center gap-1.5 px-4 py-5 text-muted-foreground">
-        <BrandLockup size={12} text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
-        <span className="text-[0.8125rem] leading-none">© 2026</span>
-        {/* comments cannot be rendered as React nodes; the markup is a constant plus escaped text */}
-        <span className="contents" dangerouslySetInnerHTML={{ __html: docsLinkMarkup(t('common.docs')) }} />
+      <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5 text-muted-foreground sm:px-6">
+        <div className="col-start-2 flex items-center gap-1.5">
+          <BrandLockup size={12} text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
+          <span className="text-[0.8125rem] leading-none">© 2026</span>
+          {/* comments cannot be rendered as React nodes; the markup is a constant plus escaped text */}
+          <span className="contents" dangerouslySetInnerHTML={{ __html: docsLinkMarkup(t('common.docs')) }} />
+        </div>
+        <div className="flex justify-end">
+          <LanguageMenu lng={lng} />
+        </div>
       </footer>
     </div>
   );

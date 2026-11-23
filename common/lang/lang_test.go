@@ -8,7 +8,7 @@ import (
 
 func TestNormalizeAndNegotiate(t *testing.T) {
 	for tag, want := range map[string]string{
-		"zh-Hant-TW": TraditionalChinese, "zh-HK": TraditionalChinese, "zh": SimplifiedChinese, "zh_CN": SimplifiedChinese,
+		"zh-Hant-TW": SimplifiedChinese, "zh-HK": SimplifiedChinese, "zh_HK": SimplifiedChinese, "zh": SimplifiedChinese, "zh_CN": SimplifiedChinese,
 		"ja": Japanese, "en-GB": English, "xx": "", "": "",
 	} {
 		if got := Normalize(tag); got != want {
@@ -38,14 +38,14 @@ func TestPickFallsBackToSiteDefault(t *testing.T) {
 	if got := OfRequest("ja_JP", "zh-CN"); got != Japanese {
 		t.Errorf("cookie wins: %q", got)
 	}
-	if got := Pick("", "zh-TW"); got != TraditionalChinese {
+	if got := Pick("", "zh-TW"); got != SimplifiedChinese {
 		t.Errorf("pick: %q", got)
 	}
 }
 
 func TestChainAndTags(t *testing.T) {
-	if got := Chain(TraditionalChinese); len(got) != 3 || got[0] != TraditionalChinese || got[1] != SimplifiedChinese || got[2] != English {
-		t.Errorf("Chain(zh_HK) = %v", got)
+	if got := Chain(SimplifiedChinese); len(got) != 2 || got[0] != SimplifiedChinese || got[1] != English {
+		t.Errorf("Chain(zh_CN) = %v", got)
 	}
 	if got := Chain(English); len(got) != 1 {
 		t.Errorf("Chain(en_US) = %v", got)
@@ -53,10 +53,10 @@ func TestChainAndTags(t *testing.T) {
 	if got := Chain("xx_XX"); len(got) != 1 || got[0] != English {
 		t.Errorf("Chain(unknown) = %v", got)
 	}
-	if BCP47(TraditionalChinese) != "zh-HK" || FromBCP47("ja") != Japanese || FromBCP47("xx") != "" {
+	if BCP47(SimplifiedChinese) != "zh-CN" || FromBCP47("ja") != Japanese || FromBCP47("xx") != "" {
 		t.Error("BCP47 mapping")
 	}
-	if Normalize("zh-Hans-SG") != SimplifiedChinese || Normalize("zh-Hant-MO") != TraditionalChinese {
+	if Normalize("zh-Hans-SG") != SimplifiedChinese || Normalize("zh-Hant-MO") != SimplifiedChinese {
 		t.Error("script subtags")
 	}
 }

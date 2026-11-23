@@ -21,13 +21,11 @@ const htmlLang = (lng) => lng.replace('_', '-');
 // Applies the stored or system theme before first paint (same localStorage key as hooks/useTheme).
 const THEME_INIT = `<script>(function(){try{var s=localStorage.getItem('theme');var d=s==='dark'||(s!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d)}catch(e){}})()</script>`;
 
-// The page's own behaviour: theme toggle, closing the language menu on an outside click, and
-// keeping the app's language preference in step with the page. The drip interaction is inlined
-// separately from views/public/home/dripInteraction.js.
+// The page's own behaviour: theme toggle and keeping the app's language preference in step with
+// the page. The drip interaction is inlined separately from views/public/home/dripInteraction.js.
 const PAGE_SCRIPT = `<script>(function(){
 var root=document.documentElement,key='appLanguage';
 document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.addEventListener('click',function(){var d=!root.classList.contains('dark');root.classList.toggle('dark',d);root.classList.toggle('light',!d);try{localStorage.setItem('theme',d?'dark':'light')}catch(e){}})});
-document.addEventListener('click',function(e){document.querySelectorAll('details[open]').forEach(function(m){if(!m.contains(e.target))m.removeAttribute('open')})});
 try{var q=new URLSearchParams(location.search).get('lang'),cur=root.getAttribute('data-lang');
 if(q===cur){localStorage.setItem(key,cur)}
 else if(!q&&document.cookie.indexOf(key+'=')<0){var saved=localStorage.getItem(key);if(saved&&saved!==cur){location.replace('/?lang='+encodeURIComponent(saved))}}}catch(e){}

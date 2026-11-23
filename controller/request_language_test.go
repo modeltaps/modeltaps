@@ -18,7 +18,8 @@ func TestRequestLanguage(t *testing.T) {
 		cookie, accept, want string
 	}{
 		{"", "ja,en;q=0.5", "ja_JP"}, // the browser's language
-		{"zh_HK", "ja", "zh_HK"},     // the language picked in the console wins
+		{"en_US", "ja", "en_US"},     // the language picked in the console wins
+		{"zh_HK", "ja", "zh_CN"},     // a retired choice still means Chinese
 		{"", "xx, yy", "zh_CN"},      // nothing supported: the site default
 		{"", "", "zh_CN"},
 	}

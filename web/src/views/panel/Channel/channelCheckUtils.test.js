@@ -42,7 +42,7 @@ describe('describeResult', () => {
     expect(describeResults(t, [{ name: 'challenge', code: 'challenge_mismatch', params: { expected: '7', answer: '8' } }])).toBe(
       '算术校验: 期望 7，实际回答：8'
     );
-    await i18n.changeLanguage('zh_HK');
-    expect(describeResult(t, { name: 'request_id', code: 'request_id_found', params: { count: 3 } }).message).toContain('3 個 request id');
+    await i18n.changeLanguage('ja_JP');
+    expect(describeResult(t, { name: 'request_id', code: 'request_id_found', params: { count: 3 } }).message).toContain('request id が 3 件');
   });
 });

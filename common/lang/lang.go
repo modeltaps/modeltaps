@@ -18,7 +18,7 @@ import (
 
 // Language is one of the console's languages.
 type Language struct {
-	// Code is the app's code (en_US, zh_HK): locale file names, settings, the cookie.
+	// Code is the app's code (en_US, zh_CN): locale file names, settings, the cookie.
 	Code string `json:"code"`
 	// Name is the language's own name, shown in pickers.
 	Name string `json:"name"`
@@ -35,9 +35,8 @@ const English = "en_US"
 
 // Codes of the languages the server's own tests and built-in texts refer to.
 const (
-	SimplifiedChinese  = "zh_CN"
-	TraditionalChinese = "zh_HK"
-	Japanese           = "ja_JP"
+	SimplifiedChinese = "zh_CN"
+	Japanese          = "ja_JP"
 )
 
 var (
@@ -87,8 +86,8 @@ func IsSupported(code string) bool {
 }
 
 // Normalize maps a language tag (zh-Hant-TW, ja, en-GB, zh_CN ...) to a supported code, or ""
-// when it is none of them. The longest matching entry wins, so zh-Hant-TW is Traditional Chinese
-// although zh alone is Simplified.
+// when it is none of them. The longest matching entry wins; every Chinese tag (zh-TW, the zh_HK a
+// user may have saved before) is Chinese.
 func Normalize(tag string) string {
 	tag = strings.TrimSpace(tag)
 	if IsSupported(tag) {

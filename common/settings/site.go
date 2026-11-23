@@ -158,8 +158,7 @@ func init() {
 			Key: "DefaultLanguage", Scope: ScopeSite, Group: "site", Card: "site-language", Type: TypeEnum,
 			Enum: []EnumValue{
 				{Value: "en_US", Label: "English"},
-				{Value: "zh_CN", Label: "Simplified Chinese"},
-				{Value: "zh_HK", Label: "Traditional Chinese (Hong Kong)"},
+				{Value: "zh_CN", Label: "Chinese"},
 				{Value: "ja_JP", Label: "Japanese"},
 			},
 			Label: "Default language",

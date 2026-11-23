@@ -12,7 +12,7 @@ import (
 // 所有字段均可为空：空值表示未设置，前端回退到本地（localStorage）行为。
 type UserSetting struct {
 	Theme    string `json:"theme,omitempty"`    // system / light / dark
-	Language string `json:"language,omitempty"` // zh_CN / zh_HK / en_US / ja_JP
+	Language string `json:"language,omitempty"` // zh_CN / en_US / ja_JP
 	// LogIODefault is whether the personal account's API keys keep request and response bodies
 	// (ORG-10); nil means off.
 	LogIODefault *bool `json:"log_io_default,omitempty"`
@@ -88,7 +88,7 @@ func ParseLogIOTriState(s string) (value *bool, ok bool) {
 func (s *UserSetting) APIView() map[string]any {
 	return map[string]any{
 		"theme":            s.Theme,
-		"language":         s.Language,
+		"language":         savedLanguage(s.Language),
 		"log_io_default":   LogIOTriStateString(s.LogIODefault),
 		"email_code_login": s.EmailCodeLoginAllowed(),
 		// quota_remind_threshold is null while the user follows the site default; the site values
@@ -111,8 +111,18 @@ var userSettingThemes = map[string]bool{
 	"dark":   true,
 }
 
+// savedLanguage maps a stored language that is no longer offered (zh_HK) to the one that replaced
+// it, so the account keeps a valid choice; an empty or unknown value is left as it is.
+func savedLanguage(code string) string {
+	if lng := lang.Normalize(code); lng != "" {
+		return lng
+	}
+	return code
+}
+
 // ApplyUpdate 合并部分更新:仅覆盖非 nil 字段。LogIODefault 哨兵字符串 "inherit" 解码为 nil(按关处理)。
 func (s *UserSetting) ApplyUpdate(update UserSettingUpdate) error {
+	s.Language = savedLanguage(s.Language)
 	if update.Theme != nil {
 		s.Theme = *update.Theme
 	}
