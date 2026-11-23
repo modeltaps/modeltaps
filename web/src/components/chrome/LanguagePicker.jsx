@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Globe, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
 import i18nList from 'i18n/i18nList';
 import useI18n from 'hooks/useI18n';
 import { setAppLanguage } from 'utils/userSetting';
+import Flag from './Flag';
+import LanguageOption, { languageButtonClass, languageOptionClass } from './LanguageOption';
 
 // ==============================|| CHROME — FOOTER LANGUAGE PICKER ||============================== //
 // The public pages' language choice: a quiet button at the right end of the footer showing the
@@ -29,19 +30,13 @@ export default function LanguagePicker() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-label={title}
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[0.8125rem] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <Globe className="size-4" />
+      <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={title} className={languageButtonClass}>
+        <Flag country={current.countryCode} className="w-4" />
         {current.name}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xs" aria-labelledby="language-picker-title">
-          <div className="flex items-center justify-between px-5 pb-2 pt-4">
+        <DialogContent className="max-w-sm" aria-labelledby="language-picker-title">
+          <div className="flex items-center justify-between border-b border-border py-3 pl-5 pr-3">
             <h2 id="language-picker-title" className="text-base font-semibold">
               {title}
             </h2>
@@ -49,23 +44,18 @@ export default function LanguagePicker() {
               <X className="size-4" />
             </Button>
           </div>
-          <ul className="flex flex-col gap-0.5 px-2 pb-3">
+          <ul className="flex flex-col gap-1 p-2">
             {i18nList.map((item) => {
               const active = item.lng === current.lng;
               return (
                 <li key={item.lng}>
                   <button
                     type="button"
-                    lang={item.lng.replace('_', '-')}
                     aria-current={active ? 'true' : undefined}
                     onClick={() => pick(item.lng)}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted',
-                      active && 'font-medium'
-                    )}
+                    className={languageOptionClass(active)}
                   >
-                    {item.name}
-                    {active && <Check className="size-4" />}
+                    <LanguageOption item={item} active={active} uiTag={current.bcp47} />
                   </button>
                 </li>
               );

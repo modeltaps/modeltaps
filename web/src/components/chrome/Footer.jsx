@@ -16,12 +16,12 @@ export default function Footer() {
 
   if (siteInfo.footer_html) {
     return (
-      <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5 sm:px-6">
+      <footer className="flex flex-col items-center gap-3 px-4 py-5 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-2 sm:px-6">
         <div
           className="custom-footer col-start-2 text-center text-sm text-muted-foreground"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(siteInfo.footer_html) }}
         />
-        <div className="flex justify-end">
+        <div className="flex sm:justify-end">
           <LanguagePicker />
         </div>
       </footer>
@@ -29,7 +29,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5 text-muted-foreground sm:px-6">
+    <footer className="flex flex-col items-center gap-3 px-4 py-5 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-2 text-muted-foreground sm:px-6">
       <div className="col-start-2 flex items-center gap-1.5">
         <BrandLockup size={12} text={brandWordmark(siteInfo.system_name)} wordmark={isDefaultBrand(siteInfo.system_name)} />
         <span className="text-[0.8125rem] leading-none">© 2026</span>
@@ -44,7 +44,7 @@ export default function Footer() {
           </a>
         )}
       </div>
-      <div className="flex justify-end">
+      <div className="flex sm:justify-end">
         <LanguagePicker />
       </div>
     </footer>

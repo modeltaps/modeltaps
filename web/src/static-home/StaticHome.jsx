@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, Globe, Moon, Sun, X } from 'lucide-react';
+import { Moon, Sun, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { BrandLockup } from '@/components/chrome/Logo';
+import Flag from '@/components/chrome/Flag';
+import LanguageOption, { languageButtonClass, languageOptionClass } from '@/components/chrome/LanguageOption';
 import i18nList from 'i18n/i18nList';
 import Hero from 'views/public/home/Hero';
 import { STATIC_TOKENS } from './tokens';
@@ -35,13 +37,8 @@ function LanguageMenu({ lng }) {
 
   return (
     <>
-      <button
-        type="button"
-        popoverTarget="language-picker"
-        aria-label={title}
-        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[0.8125rem] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <Globe className="size-4" />
+      <button type="button" popoverTarget="language-picker" aria-label={title} className={languageButtonClass}>
+        <Flag country={current.countryCode} className="w-4" />
         {current.name}
       </button>
       <div
@@ -49,9 +46,9 @@ function LanguageMenu({ lng }) {
         popover="auto"
         role="dialog"
         aria-labelledby="language-picker-title"
-        className="m-auto w-80 max-w-[calc(100%-2rem)] rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+        className="m-auto w-[calc(100%-2rem)] max-w-sm overflow-hidden rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
       >
-        <div className="flex items-center justify-between px-5 pb-2 pt-4">
+        <div className="flex items-center justify-between border-b border-border py-3 pl-5 pr-3">
           <h2 id="language-picker-title" className="text-base font-semibold">
             {title}
           </h2>
@@ -65,18 +62,16 @@ function LanguageMenu({ lng }) {
             <X className="size-4" />
           </button>
         </div>
-        <ul className="flex flex-col gap-0.5 px-2 pb-3">
+        <ul className="flex flex-col gap-1 p-2">
           {i18nList.map((item) => (
             <li key={item.lng}>
               <a
                 href={`/?lang=${item.lng}`}
-                hrefLang={item.lng.replace('_', '-')}
-                lang={item.lng.replace('_', '-')}
+                hrefLang={item.bcp47}
                 aria-current={item.lng === lng ? 'true' : undefined}
-                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-muted ${item.lng === lng ? 'font-medium' : ''}`}
+                className={languageOptionClass(item.lng === lng)}
               >
-                {item.name}
-                {item.lng === lng && <Check className="size-4" />}
+                <LanguageOption item={item} active={item.lng === lng} uiTag={current.bcp47} />
               </a>
             </li>
           ))}
@@ -114,14 +109,14 @@ export default function StaticHome({ lng }) {
         </div>
       </main>
 
-      <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5 text-muted-foreground sm:px-6">
+      <footer className="flex flex-col items-center gap-3 px-4 py-5 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-2 text-muted-foreground sm:px-6">
         <div className="col-start-2 flex items-center gap-1.5">
           <BrandLockup size={12} text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
           <span className="text-[0.8125rem] leading-none">© 2026</span>
           {/* comments cannot be rendered as React nodes; the markup is a constant plus escaped text */}
           <span className="contents" dangerouslySetInnerHTML={{ __html: docsLinkMarkup(t('common.docs')) }} />
         </div>
-        <div className="flex justify-end">
+        <div className="flex sm:justify-end">
           <LanguageMenu lng={lng} />
         </div>
       </footer>
