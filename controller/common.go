@@ -278,6 +278,11 @@ func IsLikelyAPIRequest(c *gin.Context) bool {
 	if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
 		return true
 	}
+	// A browser loading a page asks for HTML. Console pages such as /panel/models contain an API
+	// path fragment, and a reload of one must still get the app, not a JSON 404.
+	if strings.Contains(c.GetHeader("Accept"), "text/html") {
+		return false
+	}
 	if strings.Contains(c.GetHeader("Content-Type"), "application/json") ||
 		strings.Contains(c.GetHeader("Accept"), "application/json") {
 		return true
