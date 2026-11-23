@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDownUp, ArrowUpRight, ChevronRight, ListChecks, ListOrdered, PackagePlus, Pin, Route, Send, Server } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { highlightClassFor } from 'hooks/useHighlightTarget';
 import { settingEnumLabel } from '@/components/settings/catalog';
 import { admin } from 'routes/paths';
 import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
@@ -67,19 +68,19 @@ Step.propTypes = {
 
 // Scrolls to the setting a step names and flashes it, on every click (a ?highlight= link only
 // fires when the URL changes, so a second click on the same step would do nothing).
-const FLASH_CLASS = 'highlight-target-active';
 export function flashSetting(anchor) {
   const el = Array.from(document.querySelectorAll('[data-highlight]')).find(
     (node) => node.getAttribute('data-highlight') === anchor && !node.closest('[hidden]') && node.getClientRects().length > 0
   );
   if (!el) return false;
+  const cls = highlightClassFor(el);
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  el.classList.remove(FLASH_CLASS);
+  el.classList.remove(cls);
   // Restart the fade when the same row is flashed again.
   void el.offsetWidth;
-  el.classList.add(FLASH_CLASS);
+  el.classList.add(cls);
   clearTimeout(el.flashTimer);
-  el.flashTimer = setTimeout(() => el.classList.remove(FLASH_CLASS), 3200);
+  el.flashTimer = setTimeout(() => el.classList.remove(cls), 3200);
   return true;
 }
 

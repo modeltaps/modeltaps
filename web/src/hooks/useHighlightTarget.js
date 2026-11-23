@@ -18,6 +18,16 @@ const ROW_CLASS = 'highlight-row-active';
 const ROW_FALLBACK_MS = 3000;
 const FADE_MS = 3000; // keep in sync with the highlight-target-fade animation in tailwind.css
 const WAIT_TIMEOUT_MS = 8000;
+const FIELD_CLASS = 'highlight-field-active';
+
+// How a target is marked: a list row flashes its background, a setting row (data-setting-key,
+// often inside a bordered list that would clip a ring) gets an inset outline, anything else (a
+// card) a ring around it.
+export function highlightClassFor(el) {
+  if (el.hasAttribute('data-highlight-row')) return ROW_CLASS;
+  if (el.hasAttribute('data-setting-key')) return FIELD_CLASS;
+  return HIGHLIGHT_CLASS;
+}
 
 export default function useHighlightTarget() {
   const [searchParams] = useSearchParams();
@@ -43,7 +53,7 @@ export default function useHighlightTarget() {
 
     const activate = (el) => {
       if (cancelled) return;
-      const cls = el.hasAttribute('data-highlight-row') ? ROW_CLASS : HIGHLIGHT_CLASS;
+      const cls = highlightClassFor(el);
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       el.classList.add(cls);
       removeTimer = setTimeout(() => el.classList.remove(cls), FADE_MS + 200);

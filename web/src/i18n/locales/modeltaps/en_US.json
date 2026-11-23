@@ -5030,7 +5030,7 @@
     "down": "Move down",
     "remove": "Remove rule",
     "add": "Add rule",
-    "orderHint": "Rules are matched from the top; the first matching rule applies. A model no rule matches waits for review.",
+    "orderHint": "Rules are checked from the top: the first rule a model matches decides, and the rules below it are not checked. A model that matches none follows the default.",
     "endpoints": "Abilities (any of)",
     "families": "Families",
     "patterns": "Model names",
@@ -5092,7 +5092,8 @@
       "globHint": "Separate values with commas; * matches any characters",
       "addCondition": "Add condition",
       "removeCondition": "Remove condition",
-      "done": "Done"
+      "done": "Done",
+      "edit": "Edit rule"
     },
     "result": {
       "last": "joins after the existing supplies",

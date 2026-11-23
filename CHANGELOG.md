@@ -55,7 +55,12 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
 - The request map of the supply settings scrolls to and flashes its setting on every click, and
   its steps for channels and new upstream models open the providers page and the new upstream
   models list.
-- The settings reference texts in Chinese and Japanese use formal interface wording.
+- The settings reference texts in Chinese and Japanese use formal interface wording. Japanese
+  uses one word for a supply throughout, the one most screens already used, and keeps the word
+  for routes for the routes of a routing policy.
+- A setting a link points to gets an outline inside its row instead of a ring the list cut off.
+- The intake rules state that the first matching rule decides, each rule can be removed from its
+  row, and the rule being edited sits in a raised panel inside its highlighted row.
 - Four dialogs whose content ran to the edges get the usual padding: own policy limits, the
   billing note of the models page, the price update check and the batch supplies dialog.
 

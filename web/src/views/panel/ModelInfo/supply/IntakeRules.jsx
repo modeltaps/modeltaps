@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, Ban, ChevronDown, CircleCheck, CircleOff, Clock, Plus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ban, ChevronDown, CircleCheck, CircleOff, Clock, ListOrdered, Plus, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -285,7 +285,8 @@ export function IntakeRuleBoard({ rules, stats = null, matched = null, onChange 
   };
   const remove = (index) => {
     onChange(rules.filter((_, i) => i !== index));
-    setOpen(null);
+    if (open === index) setOpen(null);
+    else if (open !== null && open > index) setOpen(open - 1);
   };
   const addRule = () => {
     const rule = intakeFormToRule(intakeRuleToForm());
@@ -293,111 +294,135 @@ export function IntakeRuleBoard({ rules, stats = null, matched = null, onChange 
     openRule(rules.length, rule);
   };
   return (
-    <ol className="divide-y divide-border overflow-hidden rounded-[10px] border border-border" data-testid="intake-board">
-      {rows.map(({ rule, index }) => {
-        const fallback = index < 0;
-        const { when, then } = describeIntakeRule(t, rule);
-        const Icon = ACTION_ICONS[rule.action] || Clock;
-        const stat = byIndex.get(index);
-        const hit = matched === index;
-        const isOpen = editable && open === index;
-        const summary = (
-          <>
-            <span
-              className={cn(
-                'flex size-6 items-center justify-center rounded-md text-xs tabular-nums',
-                hit ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {fallback ? '…' : index + 1}
-            </span>
-            <span className="min-w-0 text-left">
-              <span className="block truncate font-medium">
-                {fallback ? t('intakeRules.board.fallback') : intakeRuleName(t, rule.name) || t('intakeRules.board.unnamed')}
+    <div className="space-y-2">
+      {/* How the list is read, stated where the rules are. */}
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <ListOrdered className="size-3.5 shrink-0" />
+        {t('intakeRules.orderHint')}
+      </p>
+      <ol className="divide-y divide-border overflow-hidden rounded-[10px] border border-border" data-testid="intake-board">
+        {rows.map(({ rule, index }) => {
+          const fallback = index < 0;
+          const { when, then } = describeIntakeRule(t, rule);
+          const Icon = ACTION_ICONS[rule.action] || Clock;
+          const stat = byIndex.get(index);
+          const hit = matched === index;
+          const isOpen = editable && open === index;
+          const summary = (
+            <>
+              <span
+                className={cn(
+                  'flex size-6 items-center justify-center rounded-md text-xs tabular-nums',
+                  hit ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {fallback ? '…' : index + 1}
               </span>
-              <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                <span className="truncate">{fallback ? t('intakeRules.board.fallbackWhen') : when}</span>
-                <span aria-hidden>→</span>
-                <span className="inline-flex items-center gap-1 text-foreground">
-                  <Icon className="size-3.5" />
-                  {then}
+              <span className="min-w-0 text-left">
+                <span className="block truncate font-medium">
+                  {fallback ? t('intakeRules.board.fallback') : intakeRuleName(t, rule.name) || t('intakeRules.board.unnamed')}
+                </span>
+                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                  <span className="truncate">{fallback ? t('intakeRules.board.fallbackWhen') : when}</span>
+                  <span aria-hidden>→</span>
+                  <span className="inline-flex items-center gap-1 text-foreground">
+                    <Icon className="size-3.5" />
+                    {then}
+                  </span>
                 </span>
               </span>
-            </span>
-            <span
-              className="flex items-center gap-2 text-right text-xs text-muted-foreground"
-              title={stat?.examples?.join('\n') || undefined}
-            >
+            </>
+          );
+          const counted = (
+            <span className="text-xs tabular-nums text-muted-foreground" title={stat?.examples?.join('\n') || undefined}>
               {stat ? t('intakeRules.board.count', { count: stat.count }) : ''}
-              {editable && !fallback && <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-180')} />}
             </span>
-          </>
-        );
-        const rowClass = cn('grid w-full grid-cols-[1.5rem_1fr_auto] items-center gap-x-3 px-3 py-2.5 text-[13px]', hit && 'bg-muted');
-        return (
-          <li key={`${index}`} data-testid="intake-board-row" aria-current={hit || undefined}>
-            {editable && !fallback ? (
-              <button
-                type="button"
-                aria-expanded={isOpen}
-                className={cn(rowClass, 'transition-colors hover:bg-muted/60')}
-                onClick={() => (isOpen ? setOpen(null) : openRule(index, rule))}
-              >
-                {summary}
-              </button>
-            ) : (
-              <div className={rowClass}>{summary}</div>
-            )}
-            {isOpen && form && (
-              <div className="space-y-4 border-t border-border bg-muted/20 px-4 py-4 sm:pl-12">
-                <RuleSentenceEditor key={index} form={form} onChange={editRule} />
-                <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={index === 0} onClick={() => move(index, -1)}>
-                    <ArrowUp className="size-3.5" />
-                    {t('intakeRules.up')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    disabled={index === rules.length - 1}
-                    onClick={() => move(index, 1)}
+          );
+          return (
+            <li key={`${index}`} data-testid="intake-board-row" aria-current={hit || undefined} className={cn(isOpen && 'bg-muted/60')}>
+              <div className={cn('flex items-center gap-2 pr-2', hit && !isOpen && 'bg-muted')}>
+                {editable && !fallback ? (
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    className="grid min-w-0 flex-1 grid-cols-[1.5rem_1fr] items-center gap-x-3 py-2.5 pl-3 text-left text-[13px]"
+                    onClick={() => (isOpen ? setOpen(null) : openRule(index, rule))}
                   >
-                    <ArrowDown className="size-3.5" />
-                    {t('intakeRules.down')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 className="size-3.5" />
-                    {t('intakeRules.remove')}
-                  </Button>
-                  <span className="flex-1" />
-                  <Button variant="outline" size="sm" className="h-7" onClick={() => setOpen(null)}>
-                    {t('intakeRules.editor.done')}
-                  </Button>
-                </div>
+                    {summary}
+                  </button>
+                ) : (
+                  <div className="grid min-w-0 flex-1 grid-cols-[1.5rem_1fr] items-center gap-x-3 py-2.5 pl-3 text-[13px]">{summary}</div>
+                )}
+                {counted}
+                {editable && !fallback && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground hover:text-destructive"
+                      aria-label={t('intakeRules.remove')}
+                      title={t('intakeRules.remove')}
+                      onClick={() => remove(index)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground"
+                      aria-label={t(isOpen ? 'intakeRules.editor.done' : 'intakeRules.editor.edit')}
+                      onClick={() => (isOpen ? setOpen(null) : openRule(index, rule))}
+                    >
+                      <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-180')} />
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
+              {isOpen && form && (
+                // The rule being edited: a raised panel inside its highlighted row, apart from the list.
+                <div className="px-3 pb-3">
+                  <div className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm">
+                    <RuleSentenceEditor key={index} form={form} onChange={editRule} />
+                    <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={index === 0} onClick={() => move(index, -1)}>
+                        <ArrowUp className="size-3.5" />
+                        {t('intakeRules.up')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        disabled={index === rules.length - 1}
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDown className="size-3.5" />
+                        {t('intakeRules.down')}
+                      </Button>
+                      <span className="flex-1" />
+                      <Button variant="outline" size="sm" className="h-7" onClick={() => setOpen(null)}>
+                        {t('intakeRules.editor.done')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+        {editable && (
+          <li>
+            <button
+              type="button"
+              onClick={addRule}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <Plus className="size-4" />
+              {t('intakeRules.add')}
+            </button>
           </li>
-        );
-      })}
-      {editable && (
-        <li>
-          <button
-            type="button"
-            onClick={addRule}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-          >
-            <Plus className="size-4" />
-            {t('intakeRules.add')}
-          </button>
-        </li>
-      )}
-    </ol>
+        )}
+      </ol>
+    </div>
   );
 }
 
