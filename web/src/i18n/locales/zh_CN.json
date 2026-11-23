@@ -2002,6 +2002,11 @@
     }
   },
   "modelpricePage": {
+    "vendor": "厂商",
+    "context": "上下文",
+    "released": "发布日期",
+    "maxOutput": "最大输出",
+    "openWeights": "开放权重",
     "model": "模型名称",
     "modelName": "模型名称",
     "type": "类型",

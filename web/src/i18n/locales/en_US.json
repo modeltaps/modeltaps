@@ -1298,6 +1298,11 @@
   },
   "model_price": "Model Price",
   "modelpricePage": {
+    "vendor": "Vendor",
+    "context": "Context",
+    "released": "Released",
+    "maxOutput": "Max output",
+    "openWeights": "Open weights",
     "RPM": "API Rate",
     "all": "All",
     "allModality": "All",

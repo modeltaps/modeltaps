@@ -2,33 +2,26 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { Search, X, LayoutGrid, List, Users, Check, Minus, Columns3, Copy, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Search, X, LayoutGrid, List, Users, Check, Copy, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import FilterDropdown from './FilterDropdown';
 
 import { cn } from '@/lib/utils';
 import { FloatingPanel } from '@/components/ui/floating';
 import BrandIcon from '@/components/brand/BrandIcon';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from '@/components/ui/sonner';
 import { FilterBar, isEntryActive, OP_NOT_IN } from '@/components/filter-bar';
 import { API } from 'utils/api';
 import { MinutePriceFormatter, showError, ValueFormatter } from 'utils/common';
 import { MODALITY_OPTIONS } from 'constants/Modality';
+import { CAPABILITY_OPTIONS } from 'constants/Capability';
 import ModelCard from './ModelCard';
 import ModelDetailModal from './ModelDetailModal';
 import { buildModelFilterFields, buildModalityOptions, buildCapabilityOptions, CONTEXT_BUCKETS, PRICE_BUCKETS } from './modelFilterFields';
 import { Switch } from '@/components/ui/switch';
-import { ListEmptyState, ListFooter, useListLayout } from '@/components/list-page';
+import { ColumnPicker, ListEmptyState, ListFooter, useColumnVisibility, useListLayout } from '@/components/list-page';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { matchesSearch } from 'utils/textSearch';
 
@@ -227,66 +220,36 @@ DisplayMenu.propTypes = {
   t: PropTypes.func
 };
 
-// 表格视图列注册表（对齐 Log 页的「列」勾选菜单）。id 用于列显隐判断。
-// The selected group's input and output prices in a column each; the billing type only shows when
-// a model is not billed per token, and the whole row opens the details.
+// Table columns for the shared column picker in the last header cell. The name always shows; the
+// vendor, the selected group's input and output prices, context and release date show by default,
+// the rest is opt-in. A per-call or per-minute price spans both price columns; the row opens the
+// details.
 const MODEL_PRICE_COLUMNS = [
-  { id: 'model', labelKey: 'modelpricePage.modelName' },
-  { id: 'provider', labelKey: 'modelpricePage.provider' },
+  { id: 'model', labelKey: 'modelpricePage.modelName', fixed: true },
+  { id: 'provider', labelKey: 'modelpricePage.vendor' },
   { id: 'input', labelKey: 'modelpricePage.input' },
-  { id: 'output', labelKey: 'modelpricePage.output' }
+  { id: 'output', labelKey: 'modelpricePage.output' },
+  { id: 'context', labelKey: 'modelpricePage.context' },
+  { id: 'released', labelKey: 'modelpricePage.released' },
+  { id: 'maxOutput', labelKey: 'modelpricePage.maxOutput', defaultHidden: true },
+  { id: 'inputModalities', labelKey: 'modelpricePage.inputModality', defaultHidden: true },
+  { id: 'outputModalities', labelKey: 'modelpricePage.outputModality', defaultHidden: true },
+  { id: 'capabilities', labelKey: 'modelpricePage.capabilities', defaultHidden: true },
+  { id: 'openWeights', labelKey: 'modelpricePage.openWeights', defaultHidden: true }
 ];
 
-const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility-v3';
+const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility-v4';
+const LEGACY_COLUMN_VISIBILITY_KEYS = ['modelprice-column-visibility-v3'];
 
-const buildDefaultColumnVisibility = () => Object.fromEntries(MODEL_PRICE_COLUMNS.map((c) => [c.id, true]));
-
-// 未知/缺失的键回落为「显示」；storage 损坏或不可用时全部默认显示。
-const loadColumnVisibility = () => {
-  const defaults = buildDefaultColumnVisibility();
-  try {
-    const saved = JSON.parse(localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY));
-    if (!saved || typeof saved !== 'object') return defaults;
-    for (const id of Object.keys(defaults)) {
-      if (typeof saved[id] === 'boolean') defaults[id] = saved[id];
-    }
-  } catch (e) {
-    /* corrupted storage -> defaults */
-  }
-  return defaults;
+// Token counts in short: 1M, 128K.
+const formatTokens = (n) => {
+  if (!n || n <= 0) return null;
+  if (n >= 1000000) return `${Number((n / 1000000).toFixed(1))}M`;
+  if (n >= 1000) return `${Math.round(n / 1000)}K`;
+  return `${n}`;
 };
 
-// 勾选行：DropdownMenuItem 点击即关闭菜单会打断连续勾选，故用普通 button；
-// 勾选块用 span（避免 button 嵌 button）。
-function ColumnToggleItem({ checked, indeterminate = false, label, onToggle }) {
-  return (
-    <button
-      type="button"
-      role="menuitemcheckbox"
-      aria-checked={indeterminate ? 'mixed' : checked}
-      onClick={onToggle}
-      className="flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted"
-    >
-      <span
-        className={cn(
-          'flex size-4 shrink-0 items-center justify-center rounded-sm border border-input',
-          (checked || indeterminate) && 'border-primary bg-primary text-primary-foreground'
-        )}
-      >
-        {indeterminate ? <Minus className="size-3.5" /> : checked ? <Check className="size-3.5" /> : null}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  );
-}
-
-ColumnToggleItem.propTypes = {
-  checked: PropTypes.bool,
-  indeterminate: PropTypes.bool,
-  label: PropTypes.node,
-  onToggle: PropTypes.func.isRequired
-};
-
+const formatReleaseDate = (ts) => (Number(ts) > 0 ? new Date(ts * 1000).toISOString().slice(0, 10) : null);
 const parseJson = (str) => {
   try {
     return JSON.parse(str || '[]');
@@ -341,26 +304,13 @@ export default function ModelPrice({ embedded = false, initialModality }) {
   }, [viewMode]);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedModelDetail, setSelectedModelDetail] = useState(null);
-  // 表格视图列显隐（localStorage 持久化）。
-  const [columnVisibility, setColumnVisibility] = useState(loadColumnVisibility);
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_VISIBILITY_STORAGE_KEY, JSON.stringify(columnVisibility));
-    } catch (e) {
-      /* storage unavailable -> keep in-memory only */
-    }
-  }, [columnVisibility]);
-  const allColumnsVisible = MODEL_PRICE_COLUMNS.every((c) => columnVisibility[c.id]);
-  const someColumnsVisible = MODEL_PRICE_COLUMNS.some((c) => columnVisibility[c.id]);
-  const toggleColumn = (id) => setColumnVisibility((v) => ({ ...v, [id]: !v[id] }));
-  const toggleAllColumns = () =>
-    setColumnVisibility((v) => {
-      const next = { ...v };
-      MODEL_PRICE_COLUMNS.forEach((c) => {
-        next[c.id] = !allColumnsVisible;
-      });
-      return next;
-    });
+  // Which table columns show, kept in localStorage.
+  const columns = useColumnVisibility({
+    storageKey: COLUMN_VISIBILITY_STORAGE_KEY,
+    legacyKeys: LEGACY_COLUMN_VISIBILITY_KEYS,
+    columns: MODEL_PRICE_COLUMNS
+  });
+  const columnVisibility = columns.visibility;
 
   const pageSizeOptions = [20, 30, 60, 100];
 
@@ -546,11 +496,14 @@ export default function ModelPrice({ embedded = false, initialModality }) {
           if (pa !== pb) return sortBy === 'price-asc' ? pa - pb : pb - pa;
           return a.model.localeCompare(b.model);
         }
-        // 'provider' (default): group by owner id, then model name within a provider.
+        // 'provider' (default): group by owner id, then model name within a provider. Models with
+        // no known vendor come last, so the first page is not a block of "Unknown".
         const ownerA = ownedby?.find((item) => item.name === a.provider);
         const ownerB = ownedby?.find((item) => item.name === b.provider);
-        const d = (ownerA?.id || 0) - (ownerB?.id || 0);
-        return d !== 0 ? d : a.model.localeCompare(b.model);
+        const idA = ownerA?.id || Infinity;
+        const idB = ownerB?.id || Infinity;
+        if (idA !== idB) return idA === Infinity ? 1 : idB === Infinity ? -1 : idA - idB;
+        return a.model.localeCompare(b.model);
       });
   }, [
     availableModels,
@@ -676,6 +629,18 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     const side = (v) => (v > 0 ? ValueFormatter(v, true, unit === 'M') : t('modelpricePage.free'));
     return { input: side(input), output: side(output) };
   };
+  // Detail cells: an em dash when the catalog has no value.
+  const orDash = (v) => v || <span className="text-muted-foreground">—</span>;
+  const modalityList = (raw) =>
+    parseJson(raw)
+      .filter((m) => MODALITY_OPTIONS[m])
+      .map((m) => t(`modelpricePage.modality.${m}`, { defaultValue: MODALITY_OPTIONS[m].text }))
+      .join(', ');
+  const capabilityList = (info) =>
+    parseJson(info?.capabilities)
+      .filter((c) => CAPABILITY_OPTIONS[c])
+      .map((c) => t(`modelpricePage.capability.${c}`, { defaultValue: CAPABILITY_OPTIONS[c].text }))
+      .join(', ');
   const groupRatio = userGroupMap[selectedGroup]?.ratio;
   const priceHeaderTitle = groupRatio != null ? `x${groupRatio}` : undefined;
   const copyButton = (name) => (
@@ -695,8 +660,8 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     <div className={cn('space-y-4', !embedded && 'p-6')}>
       <div className="space-y-3">
         {/* One toolbar row: search, the group (its price multiplier in the menu), filters, the display
-            menu (availability, sort, view, unit) and, for the table, the column picker. On phones the
-            buttons drop their labels so the row still fits. */}
+            menu (availability, sort, view, unit). The table's column picker sits in its last header cell.
+            On phones the buttons drop their labels so the row still fits. */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {!embedded && <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{t('modelpricePage.availableModels')}</h1>}
           <div className={cn('flex items-center gap-2', embedded ? 'w-full' : 'lg:ml-auto lg:justify-end')}>
@@ -753,39 +718,6 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                 t={t}
               />
             </div>
-            {/* 列显示：仅表格视图有意义，卡片视图与手机行下不渲染。选择持久化到 localStorage。 */}
-            {viewMode === 'list' && !narrow && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-9 shrink-0 gap-1.5 px-2.5 text-[0.8125rem] font-medium"
-                    aria-label={t('modelpricePage.selectColumns')}
-                  >
-                    <Columns3 className="size-4 shrink-0" />
-                    <span>{t('modelpricePage.columns')}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-h-[70vh] w-52 overflow-y-auto">
-                  <DropdownMenuLabel>{t('modelpricePage.selectColumns')}</DropdownMenuLabel>
-                  <ColumnToggleItem
-                    checked={allColumnsVisible}
-                    indeterminate={!allColumnsVisible && someColumnsVisible}
-                    label={t('modelpricePage.columnSelectAll')}
-                    onToggle={toggleAllColumns}
-                  />
-                  <DropdownMenuSeparator />
-                  {MODEL_PRICE_COLUMNS.map((c) => (
-                    <ColumnToggleItem
-                      key={c.id}
-                      checked={!!columnVisibility[c.id]}
-                      label={t(c.labelKey)}
-                      onToggle={() => toggleColumn(c.id)}
-                    />
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
         </div>
 
@@ -882,8 +814,8 @@ export default function ModelPrice({ embedded = false, initialModality }) {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    {columnVisibility.model && <TableHead>{t('modelpricePage.modelName')}</TableHead>}
-                    {columnVisibility.provider && <TableHead>{t('modelpricePage.provider')}</TableHead>}
+                    <TableHead>{t('modelpricePage.modelName')}</TableHead>
+                    {columnVisibility.provider && <TableHead>{t('modelpricePage.vendor')}</TableHead>}
                     {columnVisibility.input && (
                       <TableHead className="text-right" title={priceHeaderTitle}>
                         {`${t('modelpricePage.input')} / 1${unit}`}
@@ -894,19 +826,27 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                         {`${t('modelpricePage.output')} / 1${unit}`}
                       </TableHead>
                     )}
+                    {columnVisibility.context && <TableHead className="text-right">{t('modelpricePage.context')}</TableHead>}
+                    {columnVisibility.maxOutput && <TableHead className="text-right">{t('modelpricePage.maxOutput')}</TableHead>}
+                    {columnVisibility.released && <TableHead>{t('modelpricePage.released')}</TableHead>}
+                    {columnVisibility.inputModalities && <TableHead>{t('modelpricePage.inputModality')}</TableHead>}
+                    {columnVisibility.outputModalities && <TableHead>{t('modelpricePage.outputModality')}</TableHead>}
+                    {columnVisibility.capabilities && <TableHead>{t('modelpricePage.capabilities')}</TableHead>}
+                    {columnVisibility.openWeights && <TableHead>{t('modelpricePage.openWeights')}</TableHead>}
+                    <TableHead className="w-[1%] py-0 pl-0 pr-2 text-right">
+                      <ColumnPicker columns={columns} />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedModels.map((model) => (
                     <TableRow key={model.model} className={cn('group', ROW_OPENS)} {...rowOpenProps(() => handleViewDetail(model))}>
-                      {columnVisibility.model && (
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <span className="truncate font-medium">{model.model}</span>
-                            {copyButton(model.model)}
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate font-medium">{model.model}</span>
+                          {copyButton(model.model)}
+                        </div>
+                      </TableCell>
                       {columnVisibility.provider && (
                         <TableCell>
                           <div className="flex items-center gap-1.5">
@@ -937,6 +877,40 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                           </>
                         );
                       })()}
+                      {columnVisibility.context && (
+                        <TableCell className="whitespace-nowrap text-right tabular-nums">
+                          {orDash(formatTokens(model.modelInfo?.context_length))}
+                        </TableCell>
+                      )}
+                      {columnVisibility.maxOutput && (
+                        <TableCell className="whitespace-nowrap text-right tabular-nums">
+                          {orDash(formatTokens(model.modelInfo?.max_tokens))}
+                        </TableCell>
+                      )}
+                      {columnVisibility.released && (
+                        <TableCell className="whitespace-nowrap tabular-nums">
+                          {orDash(formatReleaseDate(model.modelInfo?.released_at))}
+                        </TableCell>
+                      )}
+                      {columnVisibility.inputModalities && (
+                        <TableCell className="whitespace-nowrap">{orDash(modalityList(model.modelInfo?.input_modalities))}</TableCell>
+                      )}
+                      {columnVisibility.outputModalities && (
+                        <TableCell className="whitespace-nowrap">{orDash(modalityList(model.modelInfo?.output_modalities))}</TableCell>
+                      )}
+                      {columnVisibility.capabilities && (
+                        <TableCell className="whitespace-nowrap">{orDash(capabilityList(model.modelInfo))}</TableCell>
+                      )}
+                      {columnVisibility.openWeights && (
+                        <TableCell>
+                          {model.modelInfo?.open_weights ? (
+                            <Check className="size-4" aria-label={t('modelpricePage.openWeights')} />
+                          ) : (
+                            orDash(null)
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell />
                     </TableRow>
                   ))}
                 </TableBody>

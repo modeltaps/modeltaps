@@ -56,7 +56,7 @@ export function buildModelFilterFields({
   const fields = [
     {
       key: 'owned_by',
-      labelKey: 'modelpricePage.channelType',
+      labelKey: 'modelpricePage.vendor',
       type: 'enum',
       supportsExclude: true,
       options: providerOptions

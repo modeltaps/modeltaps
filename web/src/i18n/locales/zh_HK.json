@@ -1298,6 +1298,11 @@
   },
   "model_price": "可用模型",
   "modelpricePage": {
+    "vendor": "廠商",
+    "context": "上下文",
+    "released": "發布日期",
+    "maxOutput": "最大輸出",
+    "openWeights": "開放權重",
     "RPM": "API速率",
     "all": "全部",
     "allModality": "全部",

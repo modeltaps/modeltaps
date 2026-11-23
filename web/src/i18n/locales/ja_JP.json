@@ -1298,6 +1298,11 @@
   },
   "model_price": "モデル価格",
   "modelpricePage": {
+    "vendor": "ベンダー",
+    "context": "コンテキスト",
+    "released": "リリース日",
+    "maxOutput": "最大出力",
+    "openWeights": "オープンウェイト",
     "RPM": "APIレート",
     "all": "すべて",
     "allModality": "すべて",

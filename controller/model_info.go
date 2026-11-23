@@ -117,6 +117,8 @@ type publicModelInfo struct {
 	Capabilities     string `json:"capabilities"`
 	Mode             string `json:"mode"`
 	Endpoints        string `json:"endpoints"`
+	OpenWeights      *bool  `json:"open_weights"`
+	ReleasedAt       int64  `json:"released_at"`
 	Source           string `json:"source"`
 	SyncedAt         int64  `json:"synced_at"`
 	CreatedAt        int64  `json:"created_at"`
@@ -163,6 +165,8 @@ func visibleModelInfos(infos []*model.ModelInfo, routable map[string]map[string]
 			Capabilities:     info.Capabilities,
 			Mode:             info.Mode,
 			Endpoints:        info.Endpoints,
+			OpenWeights:      info.OpenWeights,
+			ReleasedAt:       info.ReleasedAt,
 			Source:           info.Source,
 			SyncedAt:         info.SyncedAt,
 			CreatedAt:        info.CreatedAt,
