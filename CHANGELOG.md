@@ -26,6 +26,10 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   see it.
 - While supply routing is on, the providers page no longer offers the channels' own priority and
   weight in the batch and tag actions; the call order decides.
+- A model's Supplies tab uses the same tiers: a supply joins the tier above, gets a tier of its
+  own or moves with its whole tier, and its share of a tier is typed as a percentage. Adding a
+  supply asks which tier it goes in (a tier of its own at the end by default) instead of a
+  priority and a weight.
 - The supply allocation settings start with the routing switch and the order-by choice, say what
   does not apply while routing is off, and show the intake rules one line each until you edit them.
 

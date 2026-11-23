@@ -3239,8 +3239,6 @@
     "upstreamPrice": "上游價 $/M",
     "upstreamPriceTip": "渠道上游對這個模型的報價：每百萬 token 美元（輸入 / 輸出），來自渠道的上游價格表",
     "noPriceList": "這個渠道的上游沒有公開價格表",
-    "priority": "優先級",
-    "weight": "權重",
     "stateLabel": "狀態",
     "enabled": "啟用此線路",
     "actions": "線路操作",
@@ -3250,11 +3248,9 @@
     "deleteTitle": "刪除線路",
     "deleteConfirm": "不再把 {{model}} 傳給 {{channel}}？渠道本身不受影響。",
     "deleted": "已刪除線路",
-    "moveUp": "移到更高一檔",
     "ownNumbers": "單獨設定",
-    "ownNumbersTip": "這條線路的優先級或權重與渠道不同，渠道變更時不會跟著變",
+    "ownNumbersTip": "這條線路的檔位或佔比和渠道的不一樣，渠道改動時不會跟着變",
     "followChannel": "恢復跟隨渠道",
-    "moveDown": "移到更低一檔",
     "pauseFor": "暫停",
     "paused": "已暫停 {{time}}",
     "resume": "立即恢復",
@@ -3266,11 +3262,9 @@
     "savedRightAway": "此頁的改動會即時儲存。",
     "empty": "還沒有渠道提供這個模型",
     "emptyHint": "新增線路，指定由哪個渠道提供、傳給上游時用甚麼模型名稱。",
-    "orderHint": "優先級高的檔先試；只有上面一檔全部不可用時才用下一檔。",
+    "orderHint": "從第 1 檔往下試，上一檔都不可用才用下一檔；同一檔的線路按佔比分擔。",
     "switchOff": "按線路路由尚未開啟。這些線路已儲存，但在開啟 ModelSupplyEnabled 之前，請求仍按各渠道的模型列表路由。",
     "upstreamRequired": "請填寫傳給該渠道的模型名稱",
-    "priorityInvalid": "優先級須為整數",
-    "weightInvalid": "權重須為 0 或以上的整數",
     "minutes_other": "{{count}} 分鐘",
     "hours_other": "{{count}} 小時",
     "seconds_other": "{{count}} 秒",
@@ -3299,13 +3293,11 @@
       "done": "已處理 {{changed}} 個，略過 {{skipped}} 個"
     },
     "tier": {
-      "only": "僅一檔",
-      "first": "優先嘗試",
-      "backup_other": "後備 {{count}}",
-      "priority": "優先級 {{priority}}",
       "dearer": "更貴，同優先級更便宜的線路之後才用",
       "dearerAcross": "較貴，較便宜的線路都失敗後才用",
-      "lowSuccess": "成功率低，正常的線路都失敗後才用"
+      "lowSuccess": "成功率低，正常的線路都失敗後才用",
+      "number": "第 {{n}} 檔",
+      "backupHint": "上一檔都不可用時才用"
     },
     "state": {
       "ok": "可用",
@@ -3344,7 +3336,7 @@
       "searchChannel": "搜尋渠道",
       "noChannel": "找不到渠道",
       "channelRequired": "請選擇渠道",
-      "hint": "上游模型名按渠道自動填寫：先看模型映射，再看渠道已列出的名字，最後按該平台的寫法（如 Vertex 的 @default）。新線路預設作為備用，排在最低一檔之下。",
+      "hint": "上游模型名按渠道自動填寫：先看模型映射，再看渠道已列出的名字，最後按該平台的寫法（如 Vertex 的 @default）。預設單獨一檔排在最後，只做備用。",
       "fromLibrary": "已按該平台的寫法填寫"
     },
     "pausedPage": {
@@ -3410,7 +3402,7 @@
       "open": "去調整順序",
       "toManual": "單獨設定",
       "toPolicy": "恢復按調用順序",
-      "policyHint": "順序和權重來自供應商頁的調用順序；在這裏調整順序或權重，會把這個模型改為單獨設定。",
+      "policyHint": "順序和佔比來自供應商頁的調用順序；在這裏調整檔位或佔比，會把這個模型改為單獨設定。",
       "manualHint": "這個模型的順序不隨調用順序變化。",
       "becameManual": "這個模型已改為單獨設定",
       "nowManual": "已改為單獨設定，目前排位保持不變",
@@ -3457,7 +3449,14 @@
     "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路",
     "vsSell": "對比售價",
     "vsSellTip": "每條線路的成本相對本站基礎售價（取輸入、輸出中較高的一側；未計分組倍率）",
-    "sellLine": "本站基礎售價 {{input}} / {{output}}（入 / 出，每百萬 token，未計分組倍率）"
+    "sellLine": "本站基礎售價 {{input}} / {{output}}（入 / 出，每百萬 token，未計分組倍率）",
+    "tierShare": "檔內佔比",
+    "tierShareTip": "在同一檔裏按權重分到的請求佔比",
+    "shareNow": "現在 {{share}}%",
+    "percentInvalid": "佔比須為 1 到 99 之間的整數",
+    "tierUp": "整檔上移",
+    "tierDown": "整檔下移",
+    "place": { "label": "放在", "last": "單獨一檔，排在最後", "join": "第 {{n}} 檔，與 {{names}} 同檔" }
   },
   "settingsUi": {
     "search": {

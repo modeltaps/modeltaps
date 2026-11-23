@@ -3332,8 +3332,6 @@
     "upstreamPrice": "Upstream $/M",
     "upstreamPriceTip": "What the channel's upstream charges for this model, in USD per million tokens (input / output), from the channel's price list",
     "noPriceList": "This channel's upstream publishes no price list",
-    "priority": "Priority",
-    "weight": "Weight",
     "stateLabel": "State",
     "enabled": "Use this supply",
     "actions": "Supply actions",
@@ -3343,11 +3341,9 @@
     "deleteTitle": "Delete supply",
     "deleteConfirm": "Stop sending {{model}} to {{channel}}? The channel itself is not changed.",
     "deleted": "Supply deleted",
-    "moveUp": "Move to a higher tier",
     "ownNumbers": "Own setting",
-    "ownNumbersTip": "This supply has a priority or weight of its own and does not move when the channel changes",
+    "ownNumbersTip": "This supply has a tier or share of its own and does not move when the channel changes",
     "followChannel": "Follow the channel again",
-    "moveDown": "Move to a lower tier",
     "pauseFor": "Pause for",
     "paused": "Paused for {{time}}",
     "resume": "Resume now",
@@ -3359,11 +3355,9 @@
     "savedRightAway": "Changes on this tab are saved right away.",
     "empty": "No channel supplies this model yet",
     "emptyHint": "Add a supply to choose which channel serves it and under which upstream name.",
-    "orderHint": "Higher priority tiers are tried first; a lower tier is used only when every supply above it is unavailable.",
+    "orderHint": "Tried from tier 1 down; a tier is used only when every supply above it is unavailable. Supplies of one tier share it by percentage.",
     "switchOff": "Supply routing is off. These supplies are saved, but requests still follow each channel's model list until ModelSupplyEnabled is turned on.",
     "upstreamRequired": "Enter the model name the channel should receive",
-    "priorityInvalid": "Priority must be a whole number",
-    "weightInvalid": "Weight must be a whole number, 0 or more",
     "minutes_one": "{{count}} minute",
     "minutes_other": "{{count}} minutes",
     "hours_one": "{{count}} hour",
@@ -3395,14 +3389,11 @@
       "done": "{{changed}} changed, {{skipped}} skipped"
     },
     "tier": {
-      "only": "One tier",
-      "first": "Tried first",
-      "backup_one": "Backup {{count}}",
-      "backup_other": "Backup {{count}}",
-      "priority": "priority {{priority}}",
       "dearer": "dearer, tried after the cheaper supplies of this priority",
       "dearerAcross": "Dearer: tried once every cheaper supply fails",
-      "lowSuccess": "Low success rate, used once the supplies that serve well fail"
+      "lowSuccess": "Low success rate, used once the supplies that serve well fail",
+      "number": "Tier {{n}}",
+      "backupHint": "used when every tier above is unavailable"
     },
     "state": {
       "ok": "Available",
@@ -3441,7 +3432,7 @@
       "searchChannel": "Search channels",
       "noChannel": "No channel found",
       "channelRequired": "Choose a channel",
-      "hint": "The upstream name is filled in for the channel: its model mapping, a name the channel already lists, or how the channel's platform names the model (such as Vertex's @default). A new supply joins as a backup below the lowest tier.",
+      "hint": "The upstream name is filled in for the channel: its model mapping, a name the channel already lists, or how the channel's platform names the model (such as Vertex's @default). By default a new supply gets a tier of its own at the end, as a backup.",
       "fromLibrary": "Filled in with how this platform names the model"
     },
     "pausedPage": {
@@ -3512,7 +3503,7 @@
       "open": "Change the order",
       "toManual": "Set by hand",
       "toPolicy": "Follow the call order",
-      "policyHint": "The order and weights come from the call order on the providers page; changing them here sets this model by hand.",
+      "policyHint": "The order and shares come from the call order on the providers page; changing a tier or share here sets this model by hand.",
       "manualHint": "This model keeps its own order when the call order changes.",
       "becameManual": "This model is now set by hand",
       "nowManual": "Set by hand; the current order is kept",
@@ -3560,7 +3551,14 @@
     "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}",
     "vsSell": "vs price",
     "vsSellTip": "Each supply's cost against our base price (the dearer of input and output; before group ratios)",
-    "sellLine": "Our base price {{input}} / {{output}} per M tokens (in / out), before group ratios"
+    "sellLine": "Our base price {{input}} / {{output}} per M tokens (in / out), before group ratios",
+    "tierShare": "Share of tier",
+    "tierShareTip": "The share of the tier's requests this supply takes by weight",
+    "shareNow": "now {{share}}%",
+    "percentInvalid": "The share must be a whole number from 1 to 99",
+    "tierUp": "Move the tier up",
+    "tierDown": "Move the tier down",
+    "place": { "label": "Place", "last": "A tier of its own, last", "join": "Tier {{n}}, with {{names}}" }
   },
   "settingsUi": {
     "search": {

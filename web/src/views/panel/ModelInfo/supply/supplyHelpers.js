@@ -90,33 +90,105 @@ export function groupTiers(supplies = []) {
 
 export const effectiveWeight = (supply) => Number(supply?.weight) || 1;
 
-// Moves a supply one tier up or down. Returns the priority changes to save as
-// [{ id, priority }]; an empty list means it cannot move further.
-// - into the neighbouring tier when there is one;
-// - past the top / bottom, into a new tier of its own when it shares its tier with others;
-// - a new bottom tier below priority 0 lifts every other supply by one instead, so priorities
-//   stay at 0 or above.
-export function moveSupply(supplies = [], id, direction) {
-  const tiers = groupTiers(supplies);
-  const index = tiers.findIndex((tier) => tier.supplies.some((s) => s.id === id));
-  if (index < 0) return [];
-  const tier = tiers[index];
-  const alone = tier.supplies.length === 1;
-  if (direction === 'up') {
-    if (index > 0) return [{ id, priority: tiers[index - 1].priority }];
-    return alone ? [] : [{ id, priority: tier.priority + 1 }];
-  }
-  if (index < tiers.length - 1) return [{ id, priority: tiers[index + 1].priority }];
-  if (alone) return [];
-  if (tier.priority > 0) return [{ id, priority: tier.priority - 1 }];
-  return supplies.filter((s) => s.id !== id).map((s) => ({ id: s.id, priority: (Number(s.priority) || 0) + 1 }));
+// The supplies' tiers as the order shows them: [{ priority, ids, weights }], first tier first.
+function tierGroups(supplies) {
+  return groupTiers(supplies).map((tier) => ({
+    priority: tier.priority,
+    ids: tier.supplies.map((s) => s.id),
+    weights: Object.fromEntries(tier.supplies.map((s) => [s.id, Number(s.weight) || 1]))
+  }));
 }
 
-// Default priority for a new supply: a backup below the current lowest tier, or 0 for the first.
-export function defaultNewPriority(supplies = []) {
-  if (supplies.length === 0) return 0;
-  const lowest = Math.min(...supplies.map((s) => Number(s.priority) || 0));
-  return Math.max(0, lowest - 1);
+// Reorders a supply's tier and returns the supplies whose numbers change: [{ id, priority,
+// weight? }], empty when the step is not possible. `op` is 'join' (into the tier above, with an
+// equal share of it), 'split' (out of its tier into one of its own right below), 'up' or 'down'
+// (the whole tier swaps with its neighbour). Tiers keep their priorities where the new order
+// allows it; otherwise every tier is renumbered from the top.
+export function reorderSupplyTiers(supplies = [], id, op) {
+  const groups = tierGroups(supplies);
+  const at = groups.findIndex((g) => g.ids.includes(id));
+  if (at < 0) return [];
+  const slots = groups.map((g) => g.priority);
+  const weights = {};
+  if (op === 'join') {
+    if (at === 0) return [];
+    const target = groups[at - 1];
+    const values = Object.values(target.weights);
+    weights[id] = Math.max(1, Math.round(values.reduce((a, b) => a + b, 0) / values.length));
+    groups[at].ids = groups[at].ids.filter((x) => x !== id);
+    target.ids.push(id);
+    if (groups[at].ids.length === 0) {
+      groups.splice(at, 1);
+      slots.splice(at, 1);
+    }
+  } else if (op === 'split') {
+    if (groups[at].ids.length < 2) return [];
+    groups[at].ids = groups[at].ids.filter((x) => x !== id);
+    groups.splice(at + 1, 0, { ids: [id] });
+    slots.splice(at + 1, 0, slots[at] - 1);
+  } else if (op === 'up' || op === 'down') {
+    const to = op === 'up' ? at - 1 : at + 1;
+    if (to < 0 || to >= groups.length) return [];
+    [groups[at], groups[to]] = [groups[to], groups[at]];
+  } else {
+    return [];
+  }
+  const ordered = slots.every((p, k) => k === 0 || p < slots[k - 1]);
+  const priorities = ordered ? slots : groups.map((_, k) => groups.length - 1 - k);
+  const current = new Map(supplies.map((s) => [s.id, Number(s.priority) || 0]));
+  const changes = [];
+  groups.forEach((g, k) =>
+    g.ids.forEach((x) => {
+      const change = { id: x };
+      if (current.get(x) !== priorities[k]) change.priority = priorities[k];
+      if (weights[x] !== undefined) change.weight = weights[x];
+      if (Object.keys(change).length > 1) changes.push(change);
+    })
+  );
+  return changes;
+}
+
+// A supply's share of its tier by weight, in percent (100 when it is alone).
+export function tierShareOf(supplies = [], id) {
+  const group = tierGroups(supplies).find((g) => g.ids.includes(id));
+  if (!group) return 100;
+  const total = group.ids.reduce((sum, x) => sum + group.weights[x], 0);
+  return Math.round((group.weights[id] / total) * 100);
+}
+
+// Weights that give a supply `percent` of its tier while the others keep their split of the
+// rest: whole numbers summing to 100, at least 1 each. Returns [{ id, weight }] for the
+// supplies whose weight changes; empty for a supply alone in its tier.
+export function tierPercentWeights(supplies = [], id, percent) {
+  const group = tierGroups(supplies).find((g) => g.ids.includes(id));
+  if (!group || group.ids.length < 2) return [];
+  const others = group.ids.filter((x) => x !== id);
+  const p = Math.min(100 - others.length, Math.max(1, Math.round(Number(percent)) || 1));
+  const otherTotal = others.reduce((sum, x) => sum + group.weights[x], 0);
+  const spare = 100 - p - others.length;
+  const raw = others.map((x) => ({ x, v: (group.weights[x] / otherTotal) * spare }));
+  let left = spare - raw.reduce((sum, r) => sum + Math.floor(r.v), 0);
+  const next = { [id]: p };
+  [...raw]
+    .sort((a, b) => b.v - Math.floor(b.v) - (a.v - Math.floor(a.v)))
+    .forEach((r) => {
+      next[r.x] = 1 + Math.floor(r.v) + (left > 0 ? 1 : 0);
+      left -= 1;
+    });
+  return group.ids.filter((x) => next[x] !== group.weights[x]).map((x) => ({ id: x, weight: next[x] }));
+}
+
+// Where a new supply goes: 'last' (a tier of its own below the others) or the priority of a
+// tier it joins with an equal share. Returns { priority, weight }.
+export function newSupplyPlacement(supplies = [], place = 'last') {
+  const groups = tierGroups(supplies);
+  const target = groups.find((g) => String(g.priority) === String(place));
+  if (target) {
+    const values = Object.values(target.weights);
+    return { priority: target.priority, weight: Math.max(1, Math.round(values.reduce((a, b) => a + b, 0) / values.length)) };
+  }
+  if (groups.length === 0) return { priority: 0, weight: 1 };
+  return { priority: groups[groups.length - 1].priority - 1, weight: 1 };
 }
 
 // Pauses that block a supply: one on the whole channel, or one on this model on the channel
@@ -250,14 +322,10 @@ export function supplyUpdateBody(supply, changes = {}) {
 }
 
 // Validates the inline edit / add form. Returns { error } (an i18n key) or the parsed values.
-export function parseSupplyForm({ upstream_model, priority, weight }) {
+export function parseSupplyForm({ upstream_model }) {
   const upstream = String(upstream_model ?? '').trim();
   if (!upstream) return { error: 'modelSupply.upstreamRequired' };
-  const p = Number(priority);
-  if (String(priority ?? '').trim() === '' || !Number.isInteger(p)) return { error: 'modelSupply.priorityInvalid' };
-  const w = Number(weight);
-  if (String(weight ?? '').trim() === '' || !Number.isInteger(w) || w < 0) return { error: 'modelSupply.weightInvalid' };
-  return { upstream_model: upstream, priority: p, weight: w };
+  return { upstream_model: upstream };
 }
 
 // Deep link to a model's supplies on the model page.

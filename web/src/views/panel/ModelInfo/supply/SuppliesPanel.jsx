@@ -8,6 +8,8 @@ import {
   ArrowUp,
   ArrowUpRight,
   Link2,
+  Merge,
+  Split,
   ListOrdered,
   Loader2,
   MoreHorizontal,
@@ -53,15 +55,18 @@ import {
 import {
   PAUSE_DURATIONS,
   channelGroups,
-  defaultNewPriority,
   followsChannel,
-  moveSupply,
+  groupTiers,
+  newSupplyPlacement,
   parseSupplyForm,
   previewEntryState,
   previewOutcome,
   previewShares,
   previewSupplyList,
+  reorderSupplyTiers,
   supplyCandidates,
+  tierPercentWeights,
+  tierShareOf,
   supplyUpdateBody,
   upstreamFor
 } from './supplyHelpers';
@@ -95,16 +100,17 @@ NumberCell.propTypes = {
 };
 
 // Form to add a supply: pick a channel (the ones that already list the model first), the
-// upstream name is filled in from the channel's model mapping; priority defaults to a backup tier.
+// upstream name is filled in from the channel's model mapping; it goes in a tier of its own below
+// the others unless an existing tier is picked.
 function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
   const { t } = useTranslation();
   const { offering, others } = useMemo(() => supplyCandidates(channels, supplies, model), [channels, supplies, model]);
   const [channelId, setChannelId] = useState(() => (offering[0] ? String(offering[0].id) : ''));
   const [form, setForm] = useState(() => ({
     upstream_model: offering[0] ? upstreamFor(offering[0], model) : model,
-    priority: String(defaultNewPriority(supplies)),
-    weight: '1'
+    place: 'last'
   }));
+  const tiers = useMemo(() => groupTiers(supplies), [supplies]);
   const [saving, setSaving] = useState(false);
   const [upstreamSource, setUpstreamSource] = useState('');
 
@@ -151,7 +157,8 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
     if (parsed.error) return toast.error(t(parsed.error));
     setSaving(true);
     try {
-      const { success, message } = await createSupply({ model, channel_id: Number(channelId), ...parsed, note: '' });
+      const placement = newSupplyPlacement(supplies, form.place);
+      const { success, message } = await createSupply({ model, channel_id: Number(channelId), ...parsed, ...placement, note: '' });
       if (!success) return toast.error(message);
       toast.success(t('modelSupply.add.done'));
       onAdded();
@@ -197,30 +204,26 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        <div className="w-28 space-y-1.5">
-          <label htmlFor="supply-priority" className="text-[13px] font-medium">
-            {t('modelSupply.priority')}
+        <div className="w-72 max-w-full space-y-1.5">
+          <label htmlFor="supply-place" className="text-[13px] font-medium">
+            {t('modelSupply.place.label')}
           </label>
-          <Input
-            id="supply-priority"
-            type="number"
-            value={form.priority}
-            onChange={(e) => setForm({ ...form, priority: e.target.value })}
-            className="rounded-[10px] tabular-nums"
-          />
-        </div>
-        <div className="w-28 space-y-1.5">
-          <label htmlFor="supply-weight" className="text-[13px] font-medium">
-            {t('modelSupply.weight')}
-          </label>
-          <Input
-            id="supply-weight"
-            type="number"
-            min={0}
-            value={form.weight}
-            onChange={(e) => setForm({ ...form, weight: e.target.value })}
-            className="rounded-[10px] tabular-nums"
-          />
+          <Select value={form.place} onValueChange={(place) => setForm({ ...form, place })}>
+            <SelectTrigger id="supply-place" className="rounded-[10px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="last">{t('modelSupply.place.last')}</SelectItem>
+              {tiers.map((tier, index) => (
+                <SelectItem key={tier.priority} value={String(tier.priority)}>
+                  {t('modelSupply.place.join', {
+                    n: index + 1,
+                    names: tier.supplies.map((x) => x.channel_name || `#${x.channel_id}`).join(t('channels.order.nameSep'))
+                  })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <p className="min-w-0 flex-1 pb-2 text-xs text-muted-foreground">{t('modelSupply.add.hint')}</p>
       </div>
@@ -324,7 +327,7 @@ function SellPriceLine({ supply }) {
 
 SellPriceLine.propTypes = { supply: PropTypes.object };
 
-function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMoveDown, busy, onAction }) {
+function SupplyRow({ supply, state, share, tierShare, tierSize, next, outsideGroup, moves, busy, onAction }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(null);
   const offline = ['channel_off', 'disabled', 'pending', 'gone'].includes(state.kind);
@@ -336,7 +339,9 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
   const save = async () => {
     const parsed = parseSupplyForm(editing);
     if (parsed.error) return toast.error(t(parsed.error));
-    if (await onAction('update', supply, parsed)) setEditing(null);
+    const percent = Math.round(Number(editing.percent));
+    if (tierSize > 1 && (!Number.isFinite(percent) || percent < 1 || percent > 99)) return toast.error(t('modelSupply.percentInvalid'));
+    if (await onAction('edit', supply, { ...parsed, percent: tierSize > 1 ? percent : undefined })) setEditing(null);
   };
 
   // Its own priority or weight: a change to the channel's numbers will not move this supply.
@@ -415,18 +420,17 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
         </td>
         <td colSpan={5}>
           <div className="flex items-center gap-2">
-            <NumberCell
-              label={t('modelSupply.priority')}
-              value={editing.priority}
-              onChange={(v) => setEditing({ ...editing, priority: v })}
-              className="w-20"
-            />
-            <NumberCell
-              label={t('modelSupply.weight')}
-              value={editing.weight}
-              onChange={(v) => setEditing({ ...editing, weight: v })}
-              className="w-20"
-            />
+            {tierSize > 1 && (
+              <span className="inline-flex items-center gap-1">
+                <NumberCell
+                  label={t('modelSupply.tierShare')}
+                  value={editing.percent}
+                  onChange={(v) => setEditing({ ...editing, percent: v })}
+                  className="w-16"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+              </span>
+            )}
             <span className="flex-1" />
             <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => setEditing(null)}>
               {t('common.cancel')}
@@ -468,9 +472,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
           })}
         />
       </td>
-      <td className="whitespace-nowrap text-right tabular-nums">
-        {supply.weight || 1}
-        {share !== undefined && <span className="ml-1.5 text-xs text-muted-foreground">{share}%</span>}
+      <td className="whitespace-nowrap text-right tabular-nums" title={tierSize > 1 ? t('modelSupply.tierShareTip') : undefined}>
+        {tierSize > 1 ? `${tierShare}%` : <span className="text-muted-foreground">—</span>}
+        {/* What it takes right now, when an unavailable supply of the tier makes that differ. */}
+        {share !== undefined && tierSize > 1 && share !== tierShare && (
+          <span className="block text-xs text-muted-foreground">{t('modelSupply.shareNow', { share })}</span>
+        )}
       </td>
       <td className="overflow-hidden">
         <SupplyStateLabel state={state} />
@@ -509,21 +516,32 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
                 onClick={() =>
                   setEditing({
                     upstream_model: supply.upstream_model,
-                    priority: String(supply.priority ?? 0),
-                    weight: String(supply.weight ?? 1)
+                    percent: String(tierShare)
                   })
                 }
               >
                 <Pencil className="size-4" />
                 {t('modelSupply.edit')}
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={!canMoveUp} onClick={() => onAction('move', supply, 'up')}>
+              {moves.join ? (
+                <DropdownMenuItem onClick={() => onAction('move', supply, 'join')}>
+                  <Merge className="size-4" />
+                  {t('channels.order.share')}
+                </DropdownMenuItem>
+              ) : null}
+              {moves.split ? (
+                <DropdownMenuItem onClick={() => onAction('move', supply, 'split')}>
+                  <Split className="size-4" />
+                  {t('channels.order.unshare')}
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem disabled={!moves.up} onClick={() => onAction('move', supply, 'up')}>
                 <ArrowUp className="size-4" />
-                {t('modelSupply.moveUp')}
+                {t('modelSupply.tierUp')}
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={!canMoveDown} onClick={() => onAction('move', supply, 'down')}>
+              <DropdownMenuItem disabled={!moves.down} onClick={() => onAction('move', supply, 'down')}>
                 <ArrowDown className="size-4" />
-                {t('modelSupply.moveDown')}
+                {t('modelSupply.tierDown')}
               </DropdownMenuItem>
               {supply.pending && (
                 <DropdownMenuItem onClick={() => onAction('update', supply, { enabled: false })}>
@@ -587,10 +605,11 @@ SupplyRow.propTypes = {
   supply: PropTypes.object.isRequired,
   state: PropTypes.object.isRequired,
   share: PropTypes.number,
+  tierShare: PropTypes.number,
+  tierSize: PropTypes.number,
   next: PropTypes.bool,
   outsideGroup: PropTypes.string,
-  canMoveUp: PropTypes.bool,
-  canMoveDown: PropTypes.bool,
+  moves: PropTypes.object.isRequired,
   busy: PropTypes.bool,
   onAction: PropTypes.func.isRequired
 };
@@ -710,12 +729,28 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
         const ok = await run(supply.id, () => updateSupply(supplyUpdateBody(supply, arg)));
         return renumber ? noteManual(ok) : ok;
       }
+      case 'edit': {
+        // The upstream name of this supply, and its share of the tier (the others keep their split).
+        const { percent, ...fields } = arg;
+        const weights = percent === undefined ? [] : tierPercentWeights(supplies, supply.id, percent);
+        const byId = new Map(supplies.map((s) => [s.id, s]));
+        const own = weights.find((w) => w.id === supply.id);
+        const calls = [
+          ...(fields.upstream_model !== supply.upstream_model || own
+            ? [updateSupply(supplyUpdateBody(supply, { ...fields, ...(own ? { weight: own.weight } : {}) }))]
+            : []),
+          ...weights.filter((w) => w.id !== supply.id).map((w) => updateSupply(supplyUpdateBody(byId.get(w.id), { weight: w.weight })))
+        ];
+        if (calls.length === 0) return true;
+        const ok = await run(supply.id, () => Promise.all(calls));
+        return weights.length ? noteManual(ok) : ok;
+      }
       case 'move': {
-        const changes = moveSupply(supplies, supply.id, arg);
+        const changes = reorderSupplyTiers(supplies, supply.id, arg);
         const byId = new Map(supplies.map((s) => [s.id, s]));
         return noteManual(
           await run(supply.id, () =>
-            Promise.all(changes.map((c) => updateSupply(supplyUpdateBody(byId.get(c.id), { priority: c.priority }))))
+            Promise.all(changes.map(({ id, ...numbers }) => updateSupply(supplyUpdateBody(byId.get(id), numbers))))
           )
         );
       }
@@ -777,11 +812,7 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
     }
   };
 
-  const tierLabel = (index) => {
-    if (tiers.length === 1) return t('modelSupply.tier.only');
-    if (index === 0) return t('modelSupply.tier.first');
-    return t('modelSupply.tier.backup', { count: index });
-  };
+  const tierLabel = (index) => t('modelSupply.tier.number', { n: index + 1 });
 
   return (
     <div className="space-y-4">
@@ -877,7 +908,7 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
                   <th className="text-right" title={t('modelSupply.vsSellTip')}>
                     {t('modelSupply.vsSell')}
                   </th>
-                  <th className="text-right">{t('modelSupply.weight')}</th>
+                  <th className="text-right">{t('modelSupply.tierShare')}</th>
                   <th>{t('modelSupply.stateLabel')}</th>
                   <th>
                     <span className="sr-only">{t('modelSupply.actions')}</span>
@@ -889,8 +920,6 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
                   <tr>
                     <td colSpan={7} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                       <span className="text-foreground">{tierLabel(index)}</span>
-                      {/* On the allocation policy the numbers are computed from the call order and mean
-                        nothing on their own; a manual model shows the priority it was given. */}
                       {/* A dearer split of a priority: tried once the cheaper supplies of it fail. A tier of
                           cheaper supplies held back by their success rate says so instead. */}
                       {tier.cost_tier > 0 && tier.supplies.every((s) => s.low_success) ? (
@@ -901,19 +930,19 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
                         <span className="ml-2" data-testid="supply-tier-dearer">
                           {t(preview?.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
                         </span>
-                      ) : (
-                        allocation !== 'policy' && (
-                          <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
-                        )
-                      )}
+                      ) : index > 0 ? (
+                        <span className="ml-2">{t('modelSupply.tier.backupHint')}</span>
+                      ) : null}
                       {view && serving.priority === tier.priority && serving.costTier === (tier.cost_tier || 0) && (
                         <span> · {t('modelSupply.preview.servingTier')}</span>
                       )}
                     </td>
                   </tr>
                   {tier.supplies.map((supply) => {
-                    const up = moveSupply(supplies, supply.id, 'up').length > 0;
-                    const down = moveSupply(supplies, supply.id, 'down').length > 0;
+                    const moves = Object.fromEntries(
+                      ['join', 'split', 'up', 'down'].map((op) => [op, reorderSupplyTiers(supplies, supply.id, op).length > 0])
+                    );
+                    const tierSize = supplies.filter((x) => Number(x.priority) === Number(supply.priority)).length;
                     const outside = inGroup && !inGroup.has(supply.id);
                     return (
                       <SupplyRow
@@ -921,10 +950,11 @@ export default function SuppliesPanel({ model, catalogId, channels = [], switche
                         supply={supply}
                         state={previewEntryState(supply, pauses)}
                         share={showShares && !outside ? serving.shares[supply.id] : undefined}
+                        tierShare={tierShareOf(supplies, supply.id)}
+                        tierSize={tierSize}
                         next={Boolean(view?.first_choice) && view.first_choice === supply.id}
                         outsideGroup={outside ? group : undefined}
-                        canMoveUp={up}
-                        canMoveDown={down}
+                        moves={moves}
                         busy={busyId === supply.id}
                         onAction={onAction}
                       />

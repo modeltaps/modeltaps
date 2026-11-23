@@ -98,7 +98,7 @@ describe('SuppliesPanel', () => {
     expect(second.textContent).not.toContain(i18n.t('modelSupply.upstreamSame'));
     expect(second.textContent).toContain(i18n.t('modelSupply.state.ok'));
     expect(second.textContent).toContain(i18n.t('modelSupply.preview.next'));
-    expect(screen.getByText(i18n.t('modelSupply.tier.first'))).toBeTruthy();
+    expect(screen.getByText(i18n.t('modelSupply.tier.number', { n: 1 }))).toBeTruthy();
     expect(screen.getByTestId('request-preview').textContent).toContain(i18n.t('modelSupply.preview.first', { channel: 'backup' }));
   });
 
@@ -159,6 +159,17 @@ describe('SuppliesPanel', () => {
         note: 'n',
         join_last: false
       })
+    );
+  });
+
+  it('joins the tier above from the row menu with an equal share', async () => {
+    renderPanel();
+    await waitFor(() => expect(screen.getAllByTestId('supply-row')).toHaveLength(2));
+    const menus = screen.getAllByRole('button', { name: i18n.t('modelSupply.actions') });
+    fireEvent.click(menus[1]);
+    fireEvent.click(await screen.findByRole('menuitem', { name: i18n.t('channels.order.share') }));
+    await waitFor(() =>
+      expect(API.put).toHaveBeenCalledWith('/api/model_supply/', expect.objectContaining({ id: 2, priority: 10, weight: 1 }))
     );
   });
 

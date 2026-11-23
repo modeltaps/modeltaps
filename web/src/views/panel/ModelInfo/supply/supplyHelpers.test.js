@@ -6,12 +6,14 @@ import {
   publicModelNames,
   channelGroups,
   countSuppliesByModel,
-  defaultNewPriority,
   groupTiers,
   isPublicModelRow,
   modelSupplyPath,
-  moveSupply,
+  newSupplyPlacement,
   parseSupplyForm,
+  reorderSupplyTiers,
+  tierPercentWeights,
+  tierShareOf,
   pausesFor,
   previewEntryState,
   previewOutcome,
@@ -83,41 +85,57 @@ describe('groupTiers', () => {
   });
 });
 
-describe('moveSupply', () => {
-  const list = [supply(1, 10), supply(2, 10), supply(3, 5), supply(4, 0)];
+describe('reorderSupplyTiers', () => {
+  const list = [supply(1, 10, 3), supply(2, 10, 1), supply(3, 5), supply(4, 0)];
 
-  it('moves into the neighbouring tier', () => {
-    expect(moveSupply(list, 3, 'up')).toEqual([{ id: 3, priority: 10 }]);
-    expect(moveSupply(list, 3, 'down')).toEqual([{ id: 3, priority: 0 }]);
+  it('joins the tier above with an equal share and keeps the priorities', () => {
+    expect(reorderSupplyTiers(list, 3, 'join')).toEqual([{ id: 3, priority: 10, weight: 2 }]);
+    expect(reorderSupplyTiers(list, 1, 'join')).toEqual([]);
   });
 
-  it('opens a new top tier when the top tier is shared', () => {
-    expect(moveSupply(list, 1, 'up')).toEqual([{ id: 1, priority: 11 }]);
+  it('splits a supply into a tier of its own right below', () => {
+    expect(reorderSupplyTiers(list, 2, 'split')).toEqual([{ id: 2, priority: 9 }]);
+    expect(reorderSupplyTiers(list, 3, 'split')).toEqual([]);
+    // No room between 1 and 0: the tiers are renumbered from the top (2, 1, 0), which moves only
+    // the supply that stays above.
+    expect(reorderSupplyTiers([supply(1, 1, 2), supply(2, 1), supply(3, 0)], 2, 'split')).toEqual([{ id: 1, priority: 2 }]);
   });
 
-  it('cannot move a supply that is alone at the top or bottom', () => {
-    expect(moveSupply(list, 4, 'down')).toEqual([]);
-    expect(moveSupply([supply(1, 3), supply(2, 1)], 1, 'up')).toEqual([]);
-    expect(moveSupply(list, 99, 'up')).toEqual([]);
-  });
-
-  it('opens a new bottom tier below a positive priority', () => {
-    expect(moveSupply([supply(1, 4), supply(2, 4)], 2, 'down')).toEqual([{ id: 2, priority: 3 }]);
-  });
-
-  it('lifts the others instead of going below priority 0', () => {
-    expect(moveSupply([supply(1, 5), supply(2, 0), supply(3, 0)], 3, 'down')).toEqual([
-      { id: 1, priority: 6 },
-      { id: 2, priority: 1 }
+  it('swaps a whole tier with its neighbour', () => {
+    expect(reorderSupplyTiers(list, 3, 'up')).toEqual([
+      { id: 3, priority: 10 },
+      { id: 1, priority: 5 },
+      { id: 2, priority: 5 }
     ]);
+    expect(reorderSupplyTiers(list, 3, 'down')).toEqual([
+      { id: 4, priority: 5 },
+      { id: 3, priority: 0 }
+    ]);
+    expect(reorderSupplyTiers(list, 4, 'down')).toEqual([]);
+    expect(reorderSupplyTiers(list, 99, 'up')).toEqual([]);
   });
 });
 
-describe('defaultNewPriority', () => {
-  it('puts a new supply below the lowest tier, never below 0', () => {
-    expect(defaultNewPriority([])).toBe(0);
-    expect(defaultNewPriority([supply(1, 10), supply(2, 4)])).toBe(3);
-    expect(defaultNewPriority([supply(1, 0)])).toBe(0);
+describe('tier shares', () => {
+  const list = [supply(1, 10, 3), supply(2, 10, 1), supply(3, 5)];
+
+  it("reads a supply's share of its tier", () => {
+    expect(tierShareOf(list, 1)).toBe(75);
+    expect(tierShareOf(list, 3)).toBe(100);
+  });
+
+  it('sets a share in percent, the others keeping their split', () => {
+    expect(tierPercentWeights(list, 2, 40)).toEqual([
+      { id: 1, weight: 60 },
+      { id: 2, weight: 40 }
+    ]);
+    expect(tierPercentWeights(list, 3, 50)).toEqual([]);
+  });
+
+  it('places a new supply last or in a tier with an equal share', () => {
+    expect(newSupplyPlacement(list)).toEqual({ priority: 4, weight: 1 });
+    expect(newSupplyPlacement(list, '10')).toEqual({ priority: 10, weight: 2 });
+    expect(newSupplyPlacement([])).toEqual({ priority: 0, weight: 1 });
   });
 });
 
@@ -264,15 +282,9 @@ describe('supplyUpdateBody', () => {
 });
 
 describe('parseSupplyForm', () => {
-  it('parses valid input', () => {
-    expect(parseSupplyForm({ upstream_model: ' x ', priority: '3', weight: '0' })).toEqual({ upstream_model: 'x', priority: 3, weight: 0 });
-  });
-
-  it('rejects missing or invalid fields', () => {
-    expect(parseSupplyForm({ upstream_model: ' ', priority: '1', weight: '1' }).error).toBe('modelSupply.upstreamRequired');
-    expect(parseSupplyForm({ upstream_model: 'x', priority: '1.5', weight: '1' }).error).toBe('modelSupply.priorityInvalid');
-    expect(parseSupplyForm({ upstream_model: 'x', priority: '', weight: '1' }).error).toBe('modelSupply.priorityInvalid');
-    expect(parseSupplyForm({ upstream_model: 'x', priority: '1', weight: '-1' }).error).toBe('modelSupply.weightInvalid');
+  it('needs an upstream name', () => {
+    expect(parseSupplyForm({ upstream_model: ' x ' })).toEqual({ upstream_model: 'x' });
+    expect(parseSupplyForm({ upstream_model: ' ' }).error).toBe('modelSupply.upstreamRequired');
   });
 });
 
