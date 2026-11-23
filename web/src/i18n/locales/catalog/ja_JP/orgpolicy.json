@@ -31,7 +31,7 @@
     },
     "OrganizationDissolveQuotaRefund": {
       "label": "削除した組織の残高",
-      "description": "組織が（Owner またはサイト管理者によって）削除されたとき、残った共有残高をどう扱うかです。設定ページには項目がなく、オプション API（PUT /api/option/）でのみ設定します。owner 以外の値はすべて残高を破棄します。",
+      "description": "組織が（Owner またはサイト管理者によって）削除されたとき、残った共有残高の扱いを指定します。設定ページには項目がなく、オプション API（PUT /api/option/）でのみ設定します。owner 以外の値はすべて残高を破棄します。",
       "enum": {
         "owner": { "label": "Owner に返却", "description": "残った共有残高を Owner の個人アカウントに戻し、ログを記録します。" },
         "discard": { "label": "破棄", "description": "残った共有残高をゼロにし、誰にも返却しません。" }

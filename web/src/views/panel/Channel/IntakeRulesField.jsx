@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Field } from '@/components/objects';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import IntakeRulesEditor, { IntakeRuleList, intakeRulesJSON, parseIntakeRules } from '../ModelInfo/supply/IntakeRules';
+import { IntakeRuleBoard, intakeRulesJSON, parseIntakeRules } from '../ModelInfo/supply/IntakeRules';
 import { fetchIntakeRules } from '../ModelInfo/supply/supplyApi';
 
 // The `supply_intake_rules` part of a channel save: `{}` when unchanged (the backend then keeps
@@ -52,9 +52,9 @@ export default function IntakeRulesField({ channelId, value, onChange }) {
           </SelectContent>
         </Select>
         {own ? (
-          <IntakeRulesEditor rules={own} onChange={(next) => onChange(intakeRulesJSON(next))} />
+          <IntakeRuleBoard rules={own} onChange={(next) => onChange(intakeRulesJSON(next))} />
         ) : (
-          site && <IntakeRuleList rules={site} />
+          site && <IntakeRuleBoard rules={site} />
         )}
       </div>
     </Field>

@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片代理
 
-下載請求中所連結圖片時使用的 HTTP 或 SOCKS5 代理。網關要下載這些圖片來計算 token，並以數據形式轉給上游；不設代理時，圖床會看到本伺服器的 IP。設定了 Cloudflare Worker 時，代理只用於存取 Worker。留空則直接下載。
+下載請求中所連結圖片時使用的 HTTP 或 SOCKS5 代理。網關需下載這些圖片以計算 token，並以數據形式轉發給上游；未設定代理時，圖床可見本伺服器的 IP。設定了 Cloudflare Worker 時，代理僅用於存取 Worker。留空則直接下載。
 
 示例：
 
@@ -35,11 +35,11 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片代理
 
-由一個 Cloudflare Worker 代替本伺服器下載請求中所連結的圖片。網關把圖片位址和 Worker 密鑰發給它，再讀回圖片，圖床只能看到 Cloudflare。它優先於圖片下載代理。有些圖床拒絕 Cloudflare 存取，這些圖片會下載失敗。留空表示不用 Worker。
+由 Cloudflare Worker 代替本伺服器下載請求中所連結的圖片。網關將圖片位址和 Worker 密鑰發送給 Worker 並讀回圖片，圖床僅可見 Cloudflare。此項優先於圖片下載代理。部分圖床拒絕 Cloudflare 存取，此類圖片將下載失敗。留空表示不使用 Worker。
 
 示例：
 
-- `https://img-proxy.example.workers.dev` 請求裏連結的每張圖片都由這個 Worker 下載。
+- `https://img-proxy.example.workers.dev` 請求中連結的所有圖片均由該 Worker 下載。
 
 相關設定：[Cloudflare Worker 密鑰](./media.md#CFWorkerImageKey) · [圖片下載代理](./media.md#ChatImageRequestProxy)
 
@@ -51,7 +51,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片代理
 
-每次下載圖片時隨請求發給 Cloudflare Worker 的密鑰，供會校驗密鑰的 Worker 使用。Worker 不校驗或沒有設定 Worker 時留空。
+每次下載圖片時隨請求發送給 Cloudflare Worker 的密鑰，供校驗密鑰的 Worker 使用。Worker 不校驗密鑰或未設定 Worker 時留空。
 
 相關設定：[Cloudflare Worker 圖片代理](./media.md#CFWorkerImageUrl)
 
@@ -65,16 +65,16 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-生成的圖片存放在哪裏，讓要求返回圖片連結的請求能拿到連結。Gemini、Cloudflare Workers AI 和 Stability AI 只返回圖片數據。選擇不啟用時改為返回 base64：圖片介面給 b64_json 而不是 url，Gemini 的回覆裏直接嵌入整張圖片。修改立即在所有節點生效。
+設定生成圖片的儲存位置，使要求返回圖片連結的請求可獲取連結。Gemini、Cloudflare Workers AI 和 Stability AI 僅返回圖片數據。選擇不啟用時改為返回 base64：圖片介面返回 b64_json 而非 url，Gemini 的回覆中直接嵌入完整圖片。修改後立即在所有節點生效。
 
 取值：
 
-- `local` 本網關：暫存在本網關，連結在伺服器位址下，1 小時有效，每個連結最多下載 5 次，單次下載限速 2 MB/s。多節點部署需啟用 Redis，任一節點才能提供連結。
-- `s3` S3 相容儲存：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存。不填公開存取位址時返回 1 小時有效的簽名連結，bucket 可保持私有。網關不刪除檔案，請在儲存後台設定生命週期規則（如 1 天後刪除）。
-- `alioss` 阿里雲 OSS：返回帶簽名的連結，1 小時內有效，bucket 可以保持私有。
+- `local` 本網關：暫存在本網關，連結位於伺服器位址下，1 小時內有效，每個連結最多下載 5 次，單次下載限速 2 MB/s。多節點部署需啟用 Redis，以便任一節點均可提供連結。
+- `s3` S3 相容儲存：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存。未填寫公開存取位址時返回 1 小時內有效的簽名連結，bucket 可保持私有。網關不刪除檔案，請在儲存後台設定生命週期規則（如 1 天後刪除）。
+- `alioss` 阿里雲 OSS：返回帶簽名的連結，1 小時內有效，bucket 可保持私有。
 - `smms` SM.MS：免費圖床，圖片公開可見。
 - `imgur` Imgur：免費圖床，圖片公開可見。
-- `off` 不啟用：圖片以 base64 返回，只讀取圖片連結的用戶端拿不到圖。
+- `off` 不啟用：圖片以 base64 返回，僅讀取圖片連結的用戶端無法獲取圖片。
 
 相關設定：[轉存上游返回的圖片和影片連結](./media.md#ImageStorageRehostUpstream) · [伺服器地址](./site.md#ServerAddress)
 
@@ -88,7 +88,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-上游返回的圖片和影片連結換成本站連結，上游網域打不開時也能用。它涵蓋 DALL·E、Flux 等上游以及 Midjourney 任務返回的圖片連結，和可靈任務返回的影片連結。圖片立即下載存好；影片在第一次下載時取回並保存，單個最大 512 MB。取不到的連結原樣返回。關閉後上游連結原樣透傳。
+將上游返回的圖片和影片連結替換為本站連結，上游網域無法存取時仍可使用。適用於 DALL·E、Flux 等上游及 Midjourney 任務返回的圖片連結，以及可靈任務返回的影片連結。圖片立即下載並保存；影片在首次下載時獲取並保存，單個最大 512 MB。無法獲取的連結原樣返回。關閉後上游連結原樣透傳。
 
 相關設定：[圖片儲存](./media.md#ImageStorageProvider)
 
@@ -102,12 +102,12 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-儲存的 S3 API 位址，不含 bucket。不填公開存取位址時，連結指向 <endpoint>/<bucket>/... 並帶簽名。
+儲存的 S3 API 位址，不含 bucket。未填寫公開存取位址時，連結指向 <endpoint>/<bucket>/... 並帶簽名。
 
 示例：
 
 - `https://<account>.r2.cloudflarestorage.com` Cloudflare R2，地域為 auto。
-- `https://s3.eu-central-1.amazonaws.com` 法蘭克福的 AWS S3，從位址裏讀出地域 eu-central-1。
+- `https://s3.eu-central-1.amazonaws.com` 法蘭克福的 AWS S3，從位址中解析出地域 eu-central-1。
 
 相關設定：[S3 地域](./media.md#ImageStorageS3Region) · [S3 Bucket](./media.md#ImageStorageS3BucketName) · [S3 公開存取位址](./media.md#ImageStorageS3CDNURL)
 
@@ -121,7 +121,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-簽名使用的地域，通常留空。留空時從 AWS、Backblaze B2、Wasabi 的 endpoint 裏讀出，其他一律用 auto，這正是 Cloudflare R2 要求的。
+簽名使用的地域，通常留空。留空時從 AWS、Backblaze B2、Wasabi 的 endpoint 中解析，其他儲存一律使用 auto，即 Cloudflare R2 要求的值。
 
 示例：
 
@@ -137,7 +137,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-圖片上傳到的 bucket。除非設定了公開存取位址，它可以保持私有。
+圖片上傳的目標 bucket。未設定公開存取位址時，bucket 可保持私有。
 
 相關設定：[S3 Endpoint](./media.md#ImageStorageS3Endpoint) · [S3 公開存取位址](./media.md#ImageStorageS3CDNURL)
 
@@ -149,7 +149,7 @@ outline: deep
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-有權寫入該 bucket 的存取密鑰 ID，密鑰本身填在下一個欄位。
+有權寫入該 bucket 的存取密鑰 ID，密鑰本身在下一欄位填寫。
 
 相關設定：[S3 Access Key Secret](./media.md#ImageStorageS3AccessKeySecret)
 
@@ -173,11 +173,11 @@ S3 存取密鑰的 Secret。設定了加密密鑰時加密保存，儲存後不�
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-bucket 的公開位址，或它前面的 CDN 位址；設定後圖片返回該位址下的公開連結。留空時返回 1 小時有效的簽名連結，bucket 可保持私有。
+bucket 的公開位址，或其前置 CDN 的位址；設定後圖片返回該位址下的公開連結。留空時返回 1 小時內有效的簽名連結，bucket 可保持私有。
 
 示例：
 
-- `https://img.example.com` 圖片連結在 https://img.example.com/ 下，只要檔案還在就一直能用。
+- `https://img.example.com` 圖片連結位於 https://img.example.com/ 下，檔案存在期間持續有效。
 
 相關設定：[S3 Endpoint](./media.md#ImageStorageS3Endpoint) · [S3 Bucket](./media.md#ImageStorageS3BucketName)
 
@@ -189,12 +189,12 @@ bucket 的公開位址，或它前面的 CDN 位址；設定後圖片返回該�
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-寫入每張上傳圖片 Expires 標頭的天數，供快取和 CDN 參考。它不會刪除檔案：刪除請用儲存的生命週期規則。0 表示不寫這個標頭。
+寫入每張上傳圖片 Expires 標頭的天數，供快取和 CDN 參考。此項不刪除檔案：如需刪除，請使用儲存的生命週期規則。0 表示不寫入該標頭。
 
 示例：
 
-- `1` 今天上傳的圖片標明明天過期；檔案一直保留，直到生命週期規則刪除它。
-- `0` 不寫 Expires 標頭。
+- `1` 今天上傳的圖片標註為明天過期；檔案持續保留，直至被生命週期規則刪除。
+- `0` 不寫入 Expires 標頭。
 
 相關設定：[S3 公開存取位址](./media.md#ImageStorageS3CDNURL)
 
@@ -210,7 +210,7 @@ bucket 所在阿里雲 OSS 地域的 endpoint。
 
 示例：
 
-- `oss-cn-beijing.aliyuncs.com` 北京的 bucket，從位址裏讀出地域 cn-beijing。
+- `oss-cn-beijing.aliyuncs.com` 北京的 bucket，從位址中解析出地域 cn-beijing。
 
 相關設定：[OSS 地域](./media.md#ImageStorageOSSRegion) · [OSS Bucket](./media.md#ImageStorageOSSBucketName)
 
@@ -222,11 +222,11 @@ bucket 所在阿里雲 OSS 地域的 endpoint。
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.com 形式的 endpoint 裏讀出；其他 endpoint（內網或加速網域）必須填寫，否則上傳失敗。
+bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.com 形式的 endpoint 中解析；其他 endpoint（內網或加速網域）必須填寫，否則上傳失敗。
 
 示例：
 
-- `cn-hangzhou` 按杭州簽名，適用於讀不出地域的 endpoint。
+- `cn-hangzhou` 按杭州簽名，適用於無法解析出地域的 endpoint。
 
 相關設定：[OSS Endpoint](./media.md#ImageStorageOSSEndpoint)
 
@@ -238,7 +238,7 @@ bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-圖片上傳到的 OSS bucket；連結帶簽名，所以它可以保持私有。
+圖片上傳的目標 OSS bucket；連結帶簽名，因此 bucket 可保持私有。
 
 相關設定：[OSS Endpoint](./media.md#ImageStorageOSSEndpoint)
 
@@ -250,7 +250,7 @@ bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-有權寫入該 bucket 的 RAM 用戶的 AccessKey ID，Secret 填在下一個欄位。
+有權寫入該 bucket 的 RAM 用戶的 AccessKey ID，Secret 在下一欄位填寫。
 
 相關設定：[OSS AccessKey Secret](./media.md#ImageStorageOSSAccessKeySecret)
 
@@ -274,7 +274,7 @@ bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-你在這個免費圖床上帳戶的 API Token，用於上傳。那裏的圖片公開可見。
+該免費圖床帳戶的 API Token，用於上傳圖片。上傳的圖片公開可見。
 
 相關設定：[圖片儲存](./media.md#ImageStorageProvider)
 
@@ -286,7 +286,7 @@ bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.
 
 位置：平台設定 › 媒體與儲存 › 圖片儲存
 
-在 Imgur 註冊的應用程式的 Client ID，用於匿名上傳。那裏的圖片公開可見。
+在 Imgur 註冊的應用程式的 Client ID，用於匿名上傳。上傳的圖片公開可見。
 
 相關設定：[圖片儲存](./media.md#ImageStorageProvider)
 
@@ -300,4 +300,4 @@ bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.
 
 位置：平台設定 › 媒體與儲存 › Midjourney 回調
 
-把 Midjourney 任務帶的回調位址（notifyHook）轉給上游，任務有變化時由上游呼叫它。回調來自上游而不是本站，內容是上游眼中的任務，上游也會知道呼叫方的位址。關閉後去掉該位址，呼叫方輪詢任務狀態。
+將 Midjourney 任務攜帶的回調位址（notifyHook）轉發給上游，任務狀態變化時由上游呼叫該位址。回調來自上游而非本站，內容為上游記錄的任務資訊，上游亦將獲知呼叫方的位址。關閉後移除該位址，由呼叫方輪詢任務狀態。

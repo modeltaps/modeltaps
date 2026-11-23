@@ -4930,16 +4930,16 @@
       "rest": "其餘待確認"
     },
     "name": "規則名稱",
-    "namePlaceholder": "為規則命名",
+    "namePlaceholder": "輸入規則名稱",
     "up": "上移",
     "down": "下移",
     "remove": "刪除規則",
     "add": "新增規則",
-    "orderHint": "由上至下逐條比對，首條符合的規則決定；全不符合的模型待確認。",
+    "orderHint": "按從上到下的順序匹配，以第一條匹配的規則為準；未匹配任何規則的模型待確認。",
     "endpoints": "能力（任一）",
     "families": "系列",
     "patterns": "模型名稱",
-    "supplied": "已有其他渠道提供",
+    "supplied": "已由其他渠道提供",
     "action": "處理",
     "placement": "排位",
     "tri": {
@@ -4950,25 +4950,25 @@
     "actions": {
       "enable": "啟用",
       "pending": "待確認",
-      "disable": "加入但停用",
+      "disable": "加入並停用",
       "skip": "不加入"
     },
     "placements": {
-      "auto": "已有線路就排最後",
+      "auto": "已有線路時排在最後",
       "policy": "正常排位",
-      "last": "總是排最後"
+      "last": "始終排在最後"
     },
     "when": {
       "endpoints": "能力 {{list}}",
       "families": "系列 {{list}}",
       "patterns": "名稱 {{list}}",
       "vendors": "廠商 #{{list}}",
-      "supplied": "已有其他渠道提供",
-      "unsupplied": "尚未有渠道提供",
+      "supplied": "已由其他渠道提供",
+      "unsupplied": "尚無渠道提供",
       "any": "任何模型"
     },
-    "defaultNote": "目前為內置規則，修改後會儲存為你自己的一份。",
-    "customNote": "你自己的規則取代了內置規則。",
+    "defaultNote": "目前使用內置規則；修改後將儲存為自訂規則。",
+    "customNote": "目前使用自訂規則，已取代內置規則。",
     "showBuiltIn": "內置規則",
     "useBuiltIn": "還原內置規則",
     "channel": {
@@ -4977,7 +4977,26 @@
       "site": "使用全站規則",
       "custom": "本渠道自訂"
     },
-    "board": { "fallback": "預設規則", "fallbackWhen": "未匹配以上規則", "unnamed": "未命名規則", "count": "{{count}} 個模型" }
+    "board": { "fallback": "預設規則", "fallbackWhen": "未匹配以上規則", "unnamed": "未命名規則", "count": "{{count}} 個模型" },
+    "editor": {
+      "when": "當模型滿足以下全部條件時",
+      "whenAny": "條件：任何模型",
+      "then": "則",
+      "endpoints": "能力包含任一",
+      "families": "系列匹配",
+      "patterns": "模型名匹配",
+      "supplied": "已由其他渠道提供",
+      "familiesPlaceholder": "例如 claude-*, gpt-5*",
+      "patternsPlaceholder": "例如 *-preview*, *-exp*",
+      "globHint": "多個值以逗號分隔，* 匹配任意字元",
+      "addCondition": "新增條件",
+      "removeCondition": "移除條件",
+      "done": "完成"
+    },
+    "result": {
+      "last": "排在已有線路之後",
+      "normal": "按調用順序排位"
+    }
   },
   "systemLogs": {
     "levelLabel": "級別",

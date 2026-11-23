@@ -4900,16 +4900,16 @@
       "rest": "その他は確認待ち"
     },
     "name": "ルール名",
-    "namePlaceholder": "ルールの名前",
+    "namePlaceholder": "ルール名を入力",
     "up": "上へ",
     "down": "下へ",
     "remove": "ルールを削除",
     "add": "ルールを追加",
-    "orderHint": "上から順に試し、最初に一致したルールで決まります。どれにも一致しないモデルは確認待ちになります。",
+    "orderHint": "上から順に照合し、最初に一致したルールを適用します。どのルールにも一致しないモデルは確認待ちになります。",
     "endpoints": "機能（いずれか）",
     "families": "シリーズ",
     "patterns": "モデル名",
-    "supplied": "他のチャネルが供給中",
+    "supplied": "他のチャネルが提供済み",
     "action": "処理",
     "placement": "順位",
     "tri": {
@@ -4920,11 +4920,11 @@
     "actions": {
       "enable": "有効にする",
       "pending": "確認待ち",
-      "disable": "無効のまま追加",
+      "disable": "追加して無効化",
       "skip": "追加しない"
     },
     "placements": {
-      "auto": "他に供給があれば最後",
+      "auto": "既存の供給がある場合は最後",
       "policy": "通常の順位",
       "last": "常に最後"
     },
@@ -4933,12 +4933,12 @@
       "families": "シリーズ {{list}}",
       "patterns": "名前 {{list}}",
       "vendors": "ベンダー #{{list}}",
-      "supplied": "他が供給中",
-      "unsupplied": "まだ供給なし",
+      "supplied": "他のチャネルが提供済み",
+      "unsupplied": "まだどのチャネルも提供していない",
       "any": "すべてのモデル"
     },
-    "defaultNote": "現在は組み込みルールです。編集すると独自のコピーとして保存されます。",
-    "customNote": "独自のルールが組み込みルールに代わります。",
+    "defaultNote": "組み込みルールを使用しています。編集するとカスタムルールとして保存されます。",
+    "customNote": "カスタムルールが組み込みルールに代わって適用されています。",
     "showBuiltIn": "組み込みルール",
     "useBuiltIn": "組み込みルールに戻す",
     "channel": {
@@ -4952,6 +4952,25 @@
       "fallbackWhen": "上のルールに一致しない",
       "unnamed": "名前のないルール",
       "count": "{{count}} 件のモデル"
+    },
+    "editor": {
+      "when": "モデルが次の条件をすべて満たす場合",
+      "whenAny": "条件：すべてのモデル",
+      "then": "処理",
+      "endpoints": "いずれかの機能を持つ",
+      "families": "シリーズが一致",
+      "patterns": "モデル名が一致",
+      "supplied": "他のチャネルが提供済み",
+      "familiesPlaceholder": "例：claude-*, gpt-5*",
+      "patternsPlaceholder": "例：*-preview*, *-exp*",
+      "globHint": "複数の値はカンマで区切り、* は任意の文字に一致します",
+      "addCondition": "条件を追加",
+      "removeCondition": "条件を削除",
+      "done": "完了"
+    },
+    "result": {
+      "last": "既存の供給の後ろに追加",
+      "normal": "呼び出し順序に従って配置"
     }
   },
   "systemLogs": {

@@ -2,69 +2,69 @@
   "settingsCatalog": {
     "SMTPProvider": {
       "label": "發信服務預設",
-      "description": "在用的發信服務是按哪個預設建立的，例如 resend、ses、gmail 或 custom。它只決定控制台表單的樣子；發信只讀伺服器、連接埠和用戶名。和所有 SMTP 設定一樣，它跟隨在用的發信服務變化。",
+      "description": "目前發信服務所基於的預設，例如 resend、ses、gmail 或 custom。該值僅決定控制台表單的樣式；發信時僅讀取伺服器、連接埠和用戶名。與所有 SMTP 設定一樣，該值隨目前使用的發信服務變化。",
       "keywords": ["郵件服務商", "發信服務商", "SMTP 預設"]
     },
     "SMTPServer": {
       "label": "SMTP 伺服器",
-      "description": "所有郵件經由的 SMTP 伺服器主機名稱。它跟隨在用的發信服務：在「發信服務」卡片裏新增、編輯或切換服務。為空表示站點發不了郵件，登入驗證碼、重設密碼和餘額提醒都會停。部署設定了 smtp.url（SMTP_URL）時以它為準，控制台唯讀。",
-      "examples": ["郵件經由 Resend 發出。"],
+      "description": "所有郵件經由的 SMTP 伺服器主機名稱。該值隨目前使用的發信服務變化：可在「發信服務」卡片中新增、編輯或切換服務。為空表示站點無法發送郵件，登入驗證碼、重設密碼和餘額提醒均將停止。部署設定了 smtp.url（SMTP_URL）時以其為準，控制台中為唯讀。",
+      "examples": ["郵件經由 Resend 發送。"],
       "keywords": ["SMTP 主機", "郵件伺服器", "發信伺服器", "外發郵件"]
     },
     "SMTPPort": {
       "label": "SMTP 連接埠",
-      "description": "SMTP 伺服器的連接埠：SSL/TLS 一般是 465，STARTTLS 一般是 587。加密方式為自動時由連接埠決定加密方式，587 連接埠用 LOGIN 而不是 PLAIN 登入。它跟隨在用的發信服務。",
+      "description": "SMTP 伺服器的連接埠：SSL/TLS 通常為 465，STARTTLS 通常為 587。加密方式為自動時由連接埠決定加密方式，587 連接埠使用 LOGIN 而非 PLAIN 登入。該值隨目前使用的發信服務變化。",
       "examples": [
-        "自動模式下，連線從第一個位元組起就是 TLS。",
-        "自動模式下，連線必須用 STARTTLS 升級，並用 LOGIN 登入。",
-        "自動模式下仍要求 STARTTLS；沒有 TLS 的中繼請選「STARTTLS（可選）」。"
+        "自動模式下，連線從第一個位元組起即使用 TLS。",
+        "自動模式下，連線須透過 STARTTLS 升級，並使用 LOGIN 登入。",
+        "自動模式下仍要求 STARTTLS；不支援 TLS 的中繼請選擇「STARTTLS（可選）」。"
       ],
       "keywords": ["連接埠", "465", "587"]
     },
     "SMTPAccount": {
       "label": "SMTP 用戶名",
-      "description": "發信服務登入 SMTP 伺服器用的用戶名；郵箱類服務就是郵箱地址。沒有設定寄件地址時，郵件從它發出。它跟隨在用的發信服務。",
+      "description": "發信服務登入 SMTP 伺服器所用的用戶名；郵箱類服務即為郵箱地址。未設定寄件地址時，郵件從該地址發出。該值隨目前使用的發信服務變化。",
       "keywords": ["SMTP 用戶", "登入名", "帳戶", "郵箱"]
     },
     "SMTPFrom": {
       "label": "寄件地址",
-      "description": "所有郵件的寄件地址。必須是該服務允許你發信的地址：在它那裏驗證過的網域下的地址，或者郵箱本身。它跟隨在用的發信服務。",
-      "examples": ["用戶收到來自 noreply@example.com 的郵件；example.com 需要在該服務裏驗證過。"],
+      "description": "所有郵件的寄件地址。須為該服務允許發信的地址：在該服務中驗證過的網域下的地址，或郵箱本身。該值隨目前使用的發信服務變化。",
+      "examples": ["用戶收到來自 noreply@example.com 的郵件；example.com 須已在該服務中完成驗證。"],
       "keywords": ["寄件人", "寄件地址", "noreply", "From"]
     },
     "SMTPFromName": {
       "label": "寄件人名稱",
-      "description": "顯示在寄件地址前面的名稱。留空只顯示地址。它跟隨在用的發信服務。",
+      "description": "顯示在寄件地址前的名稱。留空時僅顯示地址。該值隨目前使用的發信服務變化。",
       "examples": ["郵件顯示為來自 Example AI <noreply@example.com>。"],
       "keywords": ["寄件人名稱", "顯示名稱", "寄件人"]
     },
     "SMTPReplyTo": {
       "label": "回覆地址",
-      "description": "用戶回覆本站郵件時發往的地址，代替寄件地址。留空則回覆到寄件地址。它跟隨在用的發信服務。",
-      "examples": ["用戶回覆登入驗證碼郵件時，寫給 support@example.com。"],
+      "description": "用戶回覆本站郵件時的收件地址，用於代替寄件地址。留空時回覆至寄件地址。該值隨目前使用的發信服務變化。",
+      "examples": ["用戶回覆登入驗證碼郵件時，回覆發送至 support@example.com。"],
       "keywords": ["回覆地址", "Reply-To", "客服郵箱"]
     },
     "SMTPToken": {
       "label": "SMTP 密碼",
-      "description": "發信服務登入用的密碼、應用程式密碼或 API Key。儲存後不再顯示；設定了 ENCRYPTION_KEY 時在數據庫裏加密儲存。它跟隨在用的發信服務。",
+      "description": "發信服務登入所用的密碼、應用程式密碼或 API Key。儲存後不再顯示；設定了 ENCRYPTION_KEY 時在數據庫中加密儲存。該值隨目前使用的發信服務變化。",
       "keywords": ["SMTP 密碼", "API Key", "應用程式密碼", "授權碼", "憑證"]
     },
     "SMTPTLSMode": {
       "label": "加密方式",
-      "description": "連線 SMTP 伺服器時怎樣加密。自動按連接埠選擇，幾乎適合所有服務。它跟隨在用的發信服務。",
+      "description": "連線 SMTP 伺服器時使用的加密方式。自動模式按連接埠選擇，適用於絕大多數服務。該值隨目前使用的發信服務變化。",
       "enum": {
         "auto": { "label": "自動（按連接埠推斷）", "description": "465 連接埠用 SSL/TLS，其他連接埠強制 STARTTLS。" },
-        "ssl": { "label": "SSL/TLS", "description": "從第一個位元組起就是 TLS，一般用 465 連接埠。" },
-        "starttls": { "label": "STARTTLS（強制）", "description": "連上後升級到 TLS；伺服器不支援就發送失敗。" },
-        "starttls_opportunistic": { "label": "STARTTLS（可選）", "description": "伺服器支援就升級，否則以明文發送。" },
-        "none": { "label": "不加密", "description": "明文發送，只用於可信內網的中繼或開發環境。" }
+        "ssl": { "label": "SSL/TLS", "description": "從第一個位元組起即使用 TLS，通常使用 465 連接埠。" },
+        "starttls": { "label": "STARTTLS（強制）", "description": "連線後升級至 TLS；伺服器不支援時發送失敗。" },
+        "starttls_opportunistic": { "label": "STARTTLS（可選）", "description": "伺服器支援時升級，否則以明文發送。" },
+        "none": { "label": "不加密", "description": "以明文發送，僅用於可信內網的中繼或開發環境。" }
       },
       "keywords": ["TLS", "SSL", "STARTTLS", "加密", "安全連線"]
     },
     "MailTemplates": {
       "label": "郵件範本",
-      "description": "用戶收到的郵件（驗證碼、重設密碼、餘額不足、額度用完）的自訂標題和正文，按控制台語言分別設定。以 JSON {\"<範本>\": {\"<語言>\": {\"subject\", \"body\"}}} 儲存；沒寫的範本或語言、留空的標題或正文，都用該語言的內置文字。變數寫成雙花括號包住的名稱，在正文裏會做 HTML 轉義；帶 Logo 的統一頁首和頁尾由伺服器加上。儲存時會拒絕未知的範本或語言。",
-      "examples": ["英文驗證碼郵件換成新標題、保留內置正文；其他郵件都用內置文字。"],
+      "description": "用戶收到的郵件（驗證碼、重設密碼、餘額不足、額度用盡）的自訂標題和正文，按控制台語言分別設定。以 JSON {\"<範本>\": {\"<語言>\": {\"subject\", \"body\"}}} 儲存；未填寫的範本或語言，以及留空的標題或正文，均使用該語言的內置文字。變數寫作以雙花括號包圍的名稱，在正文中進行 HTML 轉義；帶 Logo 的統一頁首和頁尾由伺服器加上。儲存時將拒絕未知的範本或語言。",
+      "examples": ["英文驗證碼郵件使用新標題並保留內置正文；其他郵件均使用內置文字。"],
       "keywords": ["郵件範本", "郵件內容", "驗證碼郵件", "重設密碼郵件", "餘額提醒"]
     }
   }

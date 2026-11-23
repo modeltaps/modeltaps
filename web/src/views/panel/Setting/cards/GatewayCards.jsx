@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, ListChecks, Pencil, Pin, Plus, Route, Search, Waypoints, X } from 'lucide-react';
+import { ChevronRight, ListChecks, Pin, Plus, Route, Search, Waypoints, X } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ModelCombobox } from '@/components/ui/model-combobox';
 import { NumberField } from '@/components/ui/number-field';
 import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
 
@@ -20,12 +21,7 @@ import { Segmented } from '@/components/objects';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
-import IntakeRulesEditor, {
-  IntakeRuleBoard,
-  describeIntakeRule,
-  intakeRulesJSON,
-  parseIntakeRules
-} from 'views/panel/ModelInfo/supply/IntakeRules';
+import { IntakeRuleBoard, intakeRuleName, intakeRulesJSON, parseIntakeRules } from 'views/panel/ModelInfo/supply/IntakeRules';
 import { fetchIntakeRules, previewIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/supply/supplyApi';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
@@ -383,9 +379,8 @@ export function SupplyIntakeRulesCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const [defaults, setDefaults] = useState(null);
-  // Bumped to reload the editor after "use the built-in rules".
+  // Bumped to close the open rule after "use the built-in rules".
   const [version, setVersion] = useState(0);
-  const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [preview, setPreview] = useState(null);
   useEffect(() => {
@@ -400,13 +395,12 @@ export function SupplyIntakeRulesCard({ ctx }) {
   const saved = parseIntakeRules(inputs.SupplyIntakeRules);
   const custom = saved !== null;
   const rules = saved || defaults;
-  const dirty = (inputs.SupplyIntakeRules || '') !== (ctx.origin?.SupplyIntakeRules || '');
   const rulesKey = rules ? JSON.stringify(rules) : '';
   useEffect(() => {
     if (!rulesKey) return undefined;
     let alive = true;
     const timer = setTimeout(() => {
-      previewIntakeRules({ rules: JSON.parse(rulesKey), name: name.trim() })
+      previewIntakeRules({ rules: JSON.parse(rulesKey), name: name.trim(), list: true })
         .then((res) => alive && setPreview(res.success ? res.data : null))
         .catch(() => alive && setPreview(null));
     }, 250);
@@ -415,26 +409,43 @@ export function SupplyIntakeRulesCard({ ctx }) {
       clearTimeout(timer);
     };
   }, [rulesKey, name]);
-  if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" title={<CardTitle icon={ListChecks} id="supply-intake-rules" />} />;
+  const title = <CardTitle icon={ListChecks} id="supply-intake-rules" />;
+  if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" title={title} />;
   const result = name.trim() && preview?.model;
+  // What happens to this model: the action, and where its supply joins (after the model's other
+  // supplies, or where the call order puts it).
   const sentence = result
-    ? describeIntakeRule(t, {
-        action: result.action,
-        placement: result.action === 'skip' ? undefined : result.join_last ? 'last' : 'policy'
-      }).then
+    ? [
+        t(`intakeRules.actions.${result.action}`),
+        result.action === 'skip' ? null : t(result.join_last ? 'intakeRules.result.last' : 'intakeRules.result.normal')
+      ]
+        .filter(Boolean)
+        .join(' · ')
     : '';
+  // The catalog's models for the picker, under the rule that decides each one.
+  const ruleLabel = (index) =>
+    index < 0
+      ? t('intakeRules.board.fallback')
+      : `${index + 1}. ${intakeRuleName(t, rules[index]?.name) || t('intakeRules.board.unnamed')}`;
+  const groups = [...rules.map((_, i) => i), -1]
+    .map((index) => ({
+      label: ruleLabel(index),
+      options: (preview?.models || []).filter((m) => m.rule === index).map((m) => m.model)
+    }))
+    .filter((g) => g.options.length > 0);
   return (
-    <OptionCard ctx={ctx} id="supply-intake-rules" title={<CardTitle icon={ListChecks} id="supply-intake-rules" />}>
+    <OptionCard ctx={ctx} id="supply-intake-rules" title={title}>
       <div className="space-y-3">
         <div className="space-y-1.5">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+            <ModelCombobox
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={setName}
+              groups={groups}
+              allowCreate={false}
               placeholder={cardText(t, 'supply-intake-rules', 'tryPlaceholder')}
-              aria-label={cardText(t, 'supply-intake-rules', 'tryLabel')}
-              className="pl-9 font-mono"
+              inputClassName="pl-9 font-mono"
             />
           </div>
           {result && (
@@ -449,14 +460,14 @@ export function SupplyIntakeRulesCard({ ctx }) {
             </p>
           )}
         </div>
-        <IntakeRuleBoard rules={rules} stats={preview} matched={result ? result.rule : null} />
+        <IntakeRuleBoard
+          key={version}
+          rules={rules}
+          stats={preview}
+          matched={result ? result.rule : null}
+          onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
+        />
         <div className="flex flex-wrap items-center gap-2">
-          {!(editing || dirty) && (
-            <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" />
-              {cardText(t, 'supply-intake-rules', 'edit')}
-            </Button>
-          )}
           <span className="text-xs text-muted-foreground">
             {preview ? t('settingsUi.platform.cards.supply-intake-rules.countNote', { count: preview.total }) : ''}
           </span>
@@ -467,7 +478,6 @@ export function SupplyIntakeRulesCard({ ctx }) {
               type="button"
               variant="ghost"
               size="sm"
-              className="rounded-[10px]"
               onClick={() => {
                 setField('SupplyIntakeRules', '');
                 setVersion((v) => v + 1);
@@ -477,13 +487,6 @@ export function SupplyIntakeRulesCard({ ctx }) {
             </Button>
           )}
         </div>
-        {(editing || dirty) && (
-          <IntakeRulesEditor
-            key={`${version}-${custom}`}
-            rules={rules}
-            onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
-          />
-        )}
       </div>
     </OptionCard>
   );

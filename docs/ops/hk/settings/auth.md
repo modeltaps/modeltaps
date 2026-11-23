@@ -18,12 +18,12 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 賬號體系
 
-本站自己管理帳戶，還是交給外部身份提供方。選外部身份提供方後，本站的密碼、電郵驗證碼、通行密鑰與社交登入開關對普通用戶不再生效，只有 root 保留 /login/admin 應急登入。切到外部前需要先啟用一個標記為「本站身份」的身份提供方；兩個方向儲存前都會再確認一次。
+本站自行管理帳戶，或交由外部身份提供方管理。選擇外部身份提供方後，本站的密碼、電郵驗證碼、通行密鑰與社交登入開關對普通用戶不再生效，僅 root 保留 /login/admin 應急登入。切換到外部身份提供方前，需先啟用一個標記為「本站身份」的身份提供方；兩個方向的切換在儲存前均需再次確認。
 
 取值：
 
-- `builtin` 內置帳戶：本站自己管理用戶、密碼、電郵驗證碼與通行密鑰，可搭配 GitHub、微信等第三方登入，不依賴任何外部服務。
-- `external` 外部身份提供方：由支援 OIDC 的服務統一管理登入、註冊、手機號、兩步驗證與第三方登入。本站不再顯示自己的登入框，/login 直接跳到提供方。
+- `builtin` 內置帳戶：由本站管理用戶、密碼、電郵驗證碼與通行密鑰，可搭配 GitHub、微信等第三方登入，不依賴任何外部服務。
+- `external` 外部身份提供方：由支援 OIDC 的服務統一管理登入、註冊、手機號、兩步驗證與第三方登入。本站不再顯示自身的登入框，/login 直接跳轉至提供方。
 
 相關設定：[管理員應急登入](./auth.md#AdminLoginEnabled) · [密碼登入](./auth.md#PasswordLoginEnabled) · [新用戶註冊](./auth.md#RegisterEnabled)
 
@@ -37,7 +37,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-用戶可以用用戶名或電郵加密碼登入。關閉後普通用戶只能用電郵驗證碼、通行密鑰或社交帳戶登入；root 仍可用密碼進後台。只在內置帳戶下生效。
+允許用戶使用用戶名或電郵加密碼登入。關閉後，普通用戶僅可使用電郵驗證碼、通行密鑰或社交帳戶登入；root 仍可使用密碼登入後台。僅在內置帳戶模式下生效。
 
 相關設定：[密碼註冊](./auth.md#PasswordRegisterEnabled) · [電郵驗證碼登入](./auth.md#EmailCodeLoginEnabled) · [通行密鑰](./auth.md#PasskeyLoginEnabled) · [帳戶體系](./auth.md#AccountSystem)
 
@@ -49,7 +49,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-用戶可以用發到已驗證電郵的驗證碼登入，不必輸入密碼。需要可用的發信服務，沒有時登入頁不顯示這個入口。只在內置帳戶下生效。
+允許用戶使用發送至已驗證電郵的驗證碼登入，無需輸入密碼。需設定可用的發信服務，未設定時登入頁不顯示此入口。僅在內置帳戶模式下生效。
 
 相關設定：[密碼登入](./auth.md#PasswordLoginEnabled) · [通行密鑰](./auth.md#PasskeyLoginEnabled)
 
@@ -61,7 +61,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-用戶可以在帳戶安全頁新增通行密鑰（指紋、面容或硬件密鑰）並用它登入。關閉後既不能新增也不能使用。外部身份提供方下只有 root 能用，作為應急登入。
+允許用戶在帳戶安全頁新增通行密鑰（指紋、面容或硬件密鑰）並用於登入。關閉後無法新增或使用通行密鑰。使用外部身份提供方時僅 root 可使用，作為應急登入方式。
 
 相關設定：[密碼登入](./auth.md#PasswordLoginEnabled) · [管理員應急登入](./auth.md#AdminLoginEnabled)
 
@@ -73,7 +73,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-是否允許建立新帳戶。關閉後誰都不能註冊：密碼註冊、首次社交登入或身份提供方登入都不建帳戶，組織也不能代建成員帳戶。已有用戶照常登入。
+是否允許建立新帳戶。關閉後所有註冊途徑均不可用：密碼註冊、首次社交登入或身份提供方登入均不建立帳戶，組織也無法代建成員帳戶。已有用戶仍可正常登入。
 
 相關設定：[密碼註冊](./auth.md#PasswordRegisterEnabled) · [註冊需要邀請碼](./auth.md#InviteCodeRegisterEnabled) · [註冊時驗證電郵](./auth.md#EmailVerificationEnabled)
 
@@ -85,7 +85,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-新用戶可以用用戶名和密碼註冊。關閉後新帳戶只能來自社交登入，組織也不能代建成員帳戶。需要先開啟「新用戶註冊」，只在內置帳戶下生效。
+允許新用戶使用用戶名和密碼註冊。關閉後，新帳戶僅能透過社交登入建立，組織也無法代建成員帳戶。需先開啟「新用戶註冊」，僅在內置帳戶模式下生效。
 
 相關設定：[新用戶註冊](./auth.md#RegisterEnabled) · [註冊時驗證電郵](./auth.md#EmailVerificationEnabled) · [註冊需要邀請碼](./auth.md#InviteCodeRegisterEnabled) · [密碼登入](./auth.md#PasswordLoginEnabled)
 
@@ -97,7 +97,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-密碼註冊要填電郵和發到該電郵的驗證碼，帳戶會記下這個已驗證的電郵。需要可用的發信服務。社交登入註冊不受影響。開啟電郵域名限制時，驗證碼只發往允許的域名。
+密碼註冊時需填寫電郵及發送至該電郵的驗證碼，帳戶將記錄該已驗證電郵。需設定可用的發信服務。社交登入註冊不受影響。開啟電郵域名限制時，驗證碼僅發送至允許的域名。
 
 相關設定：[密碼註冊](./auth.md#PasswordRegisterEnabled) · [電郵域名限制](./auth.md#EmailDomainRestrictionEnabled) · [允許的電郵域名](./auth.md#EmailDomainWhitelist)
 
@@ -109,7 +109,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-新用戶必須填寫有效的邀請碼，密碼註冊和首次社交登入都一樣。邀請碼在「邀請碼」頁管理。已有用戶和組織代建的成員帳戶不需要。
+新用戶須填寫有效的邀請碼，密碼註冊和首次社交登入均適用。邀請碼在「邀請碼」頁管理。已有用戶和組織代建的成員帳戶無需邀請碼。
 
 相關設定：[新用戶註冊](./auth.md#RegisterEnabled) · [密碼註冊](./auth.md#PasswordRegisterEnabled)
 
@@ -121,7 +121,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 登入方式
 
-用 Cloudflare Turnstile 確認登入、註冊、找回密碼和發送驗證碼電郵的是真人。儲存 Turnstile Site Key 之前無法開啟，還需要 Secret Key。通過一次後，同一會話預設 10 分鐘內不再驗證。
+使用 Cloudflare Turnstile 確認登入、註冊、找回密碼和發送驗證碼電郵的操作者為真人。儲存 Turnstile Site Key 前無法開啟，另需設定 Secret Key。驗證通過後，同一會話預設 10 分鐘內不再驗證。
 
 相關設定：[Turnstile Site Key](./auth.md#TurnstileSiteKey) · [Turnstile Secret Key](./auth.md#TurnstileSecretKey)
 
@@ -135,7 +135,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › 管理員應急登入
 
-保留 /login/admin，身份提供方故障時 root 可以用密碼或通行密鑰登入。只有 root 能通過，帳戶鎖定、限流與人機驗證照常生效。只在外部身份提供方下存在。關閉後，提供方故障期間無人能進後台。
+保留 /login/admin 入口，身份提供方故障時 root 可使用密碼或通行密鑰登入。僅 root 可透過此入口登入，帳戶鎖定、限流與人機驗證仍然生效。僅在外部身份提供方模式下存在。關閉後，提供方故障期間無法登入後台。
 
 相關設定：[帳戶體系](./auth.md#AccountSystem) · [通行密鑰](./auth.md#PasskeyLoginEnabled)
 
@@ -149,9 +149,9 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › GitHub 登入
 
-用戶可以用 GitHub 帳戶登入和註冊。儲存 GitHub Client ID 之前無法開啟。只在內置帳戶下生效。
+允許用戶使用 GitHub 帳戶登入和註冊。儲存 GitHub Client ID 前無法開啟。僅在內置帳戶模式下生效。
 
-相關設定：[GitHub Client ID](./auth.md#GitHubClientId) · [GitHub Client Secret](./auth.md#GitHubClientSecret) · [只按 ID 匹配 GitHub 帳戶](./auth.md#GitHubOldIdCloseEnabled)
+相關設定：[GitHub Client ID](./auth.md#GitHubClientId) · [GitHub Client Secret](./auth.md#GitHubClientSecret) · [僅按 ID 匹配 GitHub 帳戶](./auth.md#GitHubOldIdCloseEnabled)
 
 <a id="GitHubClientId"></a>
 
@@ -161,7 +161,7 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › GitHub 登入
 
-你在 GitHub 註冊的 OAuth App 的 Client ID。註冊時 Homepage URL 填本站地址，Authorization callback URL 填 <伺服器地址>/oauth/github。
+在 GitHub 註冊的 OAuth App 的 Client ID。註冊時 Homepage URL 填寫本站地址，Authorization callback URL 填寫 <伺服器地址>/oauth/github。
 
 相關設定：[GitHub 登入](./auth.md#GitHubOAuthEnabled) · [GitHub Client Secret](./auth.md#GitHubClientSecret)
 
@@ -173,19 +173,19 @@ outline: deep
 
 位置：平台設定 › 登入與註冊 › GitHub 登入
 
-同一個 GitHub OAuth App 的 Client Secret。儲存後不再顯示；留空儲存會保留已存的值。
+同一 GitHub OAuth App 的 Client Secret。儲存後不再顯示；留空儲存將保留已儲存的值。
 
 相關設定：[GitHub 登入](./auth.md#GitHubOAuthEnabled) · [GitHub Client ID](./auth.md#GitHubClientId)
 
 <a id="GitHubOldIdCloseEnabled"></a>
 
-### 只按 ID 匹配 GitHub 帳戶
+### 僅按 ID 匹配 GitHub 帳戶
 
 設定名 `GitHubOldIdCloseEnabled` · 類型 bool · 預設值 `false` · 很少需要改
 
 位置：平台設定 › 登入與註冊 › GitHub 登入
 
-GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字帳戶 ID。關閉時，還沒存 ID 的舊帳戶會按用戶名匹配一次，之後記下 ID。用戶名可能被改掉後讓別人註冊走，所以舊帳戶都登入過一次後建議開啟。
+GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，僅按 GitHub 的數字帳戶 ID 匹配。關閉時，尚未儲存 ID 的舊帳戶將按用戶名匹配一次，之後記錄其 ID。由於用戶名可能被修改後由他人註冊，建議在舊帳戶均登入過一次後開啟。
 
 相關設定：[GitHub 登入](./auth.md#GitHubOAuthEnabled)
 
@@ -199,7 +199,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 微信登入
 
-用戶可以通過你的微信公眾號登入和註冊。他們關注公眾號拿到驗證碼，再在登入頁輸入。需要一台微信登入伺服器，儲存它的地址之前無法開啟。只在內置帳戶下生效。
+允許用戶透過本站的微信公眾號登入和註冊。用戶關注公眾號取得驗證碼後，在登入頁輸入。需部署微信登入伺服器，儲存其地址前無法開啟。僅在內置帳戶模式下生效。
 
 相關設定：[微信登入伺服器地址](./auth.md#WeChatServerAddress) · [微信登入伺服器憑證](./auth.md#WeChatServerToken) · [公眾號二維碼](./auth.md#WeChatAccountQRCodeImageURL)
 
@@ -211,7 +211,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 微信登入
 
-你的公眾號背後那台微信登入伺服器的地址。本站向它查詢驗證碼屬於哪個微信用戶。
+公眾號所對接的微信登入伺服器的地址。本站透過該伺服器查詢驗證碼所屬的微信用戶。
 
 示例：
 
@@ -227,7 +227,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 微信登入
 
-本站每次查詢時發給微信登入伺服器的存取憑證，與那台伺服器上設定的一致。儲存後不再顯示；留空儲存會保留已存的值。
+本站每次查詢時發送給微信登入伺服器的存取憑證，須與該伺服器上的設定一致。儲存後不再顯示；留空儲存將保留已儲存的值。
 
 相關設定：[微信登入伺服器地址](./auth.md#WeChatServerAddress)
 
@@ -239,11 +239,11 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 微信登入
 
-微信公眾號二維碼圖片的連結。微信登入彈窗會顯示它，用戶掃碼關注後拿到驗證碼。
+微信公眾號二維碼圖片的連結。微信登入彈窗將顯示該圖片，用戶掃碼關注後取得驗證碼。
 
 示例：
 
-- `https://example.com/wechat-qr.png` 登入彈窗顯示這張圖片供用戶掃碼。
+- `https://example.com/wechat-qr.png` 登入彈窗顯示此圖片供用戶掃碼。
 
 相關設定：[微信登入](./auth.md#WeChatAuthEnabled)
 
@@ -257,7 +257,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 飛書登入
 
-用戶可以用飛書帳戶登入和註冊。使用你在本卡片填寫 App ID 和 App Secret 的那個應用。只在內置帳戶下生效。
+允許用戶使用飛書帳戶登入和註冊。使用本卡片中所填 App ID 和 App Secret 對應的應用程式。僅在內置帳戶模式下生效。
 
 相關設定：[飛書 App ID](./auth.md#LarkClientId) · [飛書 App Secret](./auth.md#LarkClientSecret)
 
@@ -269,7 +269,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 飛書登入
 
-用戶登入所用的飛書應用程式的 App ID。在飛書開放平台建立網頁應用程式，把重新導向地址設為 <伺服器地址>/oauth/lark。
+用戶登入所用飛書應用程式的 App ID。在飛書開放平台建立網頁應用程式，並將重新導向地址設定為 <伺服器地址>/oauth/lark。
 
 相關設定：[飛書登入](./auth.md#LarkAuthEnabled) · [飛書 App Secret](./auth.md#LarkClientSecret)
 
@@ -281,7 +281,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 飛書登入
 
-同一個飛書應用程式的 App Secret。儲存後不再顯示；留空表示保留已儲存的值。
+同一飛書應用程式的 App Secret。儲存後不再顯示；留空表示保留已儲存的值。
 
 相關設定：[飛書登入](./auth.md#LarkAuthEnabled) · [飛書 App ID](./auth.md#LarkClientId)
 
@@ -295,7 +295,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-用戶可以用 LINUX DO 帳戶登入和註冊。儲存 Client ID 和 Client Secret 之前無法開啟。只在內置帳戶下生效。
+允許用戶使用 LINUX DO 帳戶登入和註冊。儲存 Client ID 和 Client Secret 前無法開啟。僅在內置帳戶模式下生效。
 
 相關設定：[LINUX DO Client ID](./auth.md#LinuxDoClientId) · [LINUX DO Client Secret](./auth.md#LinuxDoClientSecret) · [最低信任等級](./auth.md#LinuxDoOAuthTrustLevelEnabled)
 
@@ -307,7 +307,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-你在 LINUX DO 註冊的 OAuth 應用的 Client ID，回調地址填 <伺服器地址>/oauth/linuxdo。
+在 LINUX DO 註冊的 OAuth 應用的 Client ID，回調地址填寫 <伺服器地址>/oauth/linuxdo。
 
 相關設定：[LINUX DO 登入](./auth.md#LinuxDoOAuthEnabled) · [LINUX DO Client Secret](./auth.md#LinuxDoClientSecret)
 
@@ -319,7 +319,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-同一個 LINUX DO OAuth 應用的 Client Secret。儲存後不再顯示；留空儲存會保留已存的值。
+同一 LINUX DO OAuth 應用的 Client Secret。儲存後不再顯示；留空儲存將保留已儲存的值。
 
 相關設定：[LINUX DO 登入](./auth.md#LinuxDoOAuthEnabled) · [LINUX DO Client ID](./auth.md#LinuxDoClientId)
 
@@ -331,7 +331,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-信任等級低於最低等級的 LINUX DO 帳戶不能註冊，也不能綁定。已有用戶是否也檢查，由「同時檢查已有用戶」決定。需要先開啟 LINUX DO 登入。
+信任等級低於最低等級的 LINUX DO 帳戶無法註冊或綁定。是否同時檢查已有用戶，由「同時檢查已有用戶」決定。需先開啟 LINUX DO 登入。
 
 相關設定：[LINUX DO 最低信任等級](./auth.md#LinuxDoOAuthLowestTrustLevel) · [同時檢查已有用戶](./auth.md#LinuxDoOAuthDynamicTrustLevel) · [LINUX DO 登入](./auth.md#LinuxDoOAuthEnabled)
 
@@ -343,13 +343,13 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-允許進入的最低 LINUX DO 信任等級，1 到 4：1 基礎用戶、2 會員、3 活躍用戶、4 領導者。只在開啟最低信任等級時生效。
+允許存取的最低 LINUX DO 信任等級，取值 1 到 4：1 基礎用戶、2 會員、3 活躍用戶、4 領導者。僅在開啟最低信任等級時生效。
 
 示例：
 
-- `1` 基礎用戶及以上都能進入，只拒絕剛註冊的 0 級帳戶。
-- `2` 會員（2 級）及以上能進入，基礎用戶（1 級）被拒。
-- `3` 只有活躍用戶（3 級）和領導者（4 級）能進入。
+- `1` 基礎用戶及以上均可存取，僅拒絕新註冊的 0 級帳戶。
+- `2` 會員（2 級）及以上可存取，基礎用戶（1 級）將被拒絕。
+- `3` 僅活躍用戶（3 級）和領導者（4 級）可存取。
 
 相關設定：[最低信任等級](./auth.md#LinuxDoOAuthTrustLevelEnabled) · [同時檢查已有用戶](./auth.md#LinuxDoOAuthDynamicTrustLevel)
 
@@ -361,7 +361,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › LINUX DO 登入
 
-每次 LINUX DO 登入都檢查最低信任等級，已有用戶也一樣。等級已經不夠的已有用戶會被拒絕登入。關閉時只檢查新註冊。需要先開啟最低信任等級。
+每次 LINUX DO 登入均檢查最低信任等級，已有用戶同樣適用。等級已不符合要求的已有用戶將被拒絕登入。關閉時僅檢查新註冊用戶。需先開啟最低信任等級。
 
 相關設定：[最低信任等級](./auth.md#LinuxDoOAuthTrustLevelEnabled) · [LINUX DO 最低信任等級](./auth.md#LinuxDoOAuthLowestTrustLevel)
 
@@ -375,7 +375,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 人機驗證
 
-你在 Cloudflare Turnstile 後台建立的組件的 Site Key。登入和註冊頁用它載入人機驗證。選 Invisible 類型對用戶打擾最少。
+在 Cloudflare Turnstile 後台建立的組件的 Site Key，登入和註冊頁使用它載入人機驗證。選擇 Invisible 類型對用戶的干擾最小。
 
 相關設定：[Turnstile Secret Key](./auth.md#TurnstileSecretKey) · [人機驗證](./auth.md#TurnstileCheckEnabled)
 
@@ -387,7 +387,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 人機驗證
 
-同一個 Turnstile 組件的 Secret Key，伺服器用它向 Cloudflare 核對每次驗證。儲存後不再顯示；留空儲存會保留已存的值。
+同一 Turnstile 組件的 Secret Key，伺服器使用它向 Cloudflare 核驗每次驗證結果。儲存後不再顯示；留空儲存將保留已儲存的值。
 
 相關設定：[Turnstile Site Key](./auth.md#TurnstileSiteKey) · [人機驗證](./auth.md#TurnstileCheckEnabled)
 
@@ -401,7 +401,7 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 郵箱網域限制
 
-註冊驗證碼只發往允許域名的電郵，擋住臨時電郵。組織也不能用其他電郵代建成員帳戶。只有開啟註冊電郵驗證時才攔得住密碼註冊；域名列表為空時無法開啟。
+註冊驗證碼僅發送至允許域名的電郵，用於攔截臨時電郵。組織也無法使用其他電郵代建成員帳戶。僅在開啟註冊電郵驗證時可攔截密碼註冊；域名列表為空時無法開啟。
 
 相關設定：[允許的電郵域名](./auth.md#EmailDomainWhitelist) · [註冊時驗證電郵](./auth.md#EmailVerificationEnabled)
 
@@ -413,11 +413,11 @@ GitHub 登入不再按 GitHub 用戶名匹配舊帳戶，只按 GitHub 的數字
 
 位置：平台設定 › 登入與註冊 › 郵箱網域限制
 
-開啟限制時允許的電郵域名，每行一個（儲存時用逗號分隔）。域名精確匹配：example.com 不包括 mail.example.com。
+開啟限制時允許的電郵域名，每行一個（儲存時以逗號分隔）。域名精確匹配：example.com 不包括 mail.example.com。
 
 示例：
 
-- `gmail.com,outlook.com` alice@gmail.com 和 bob@outlook.com 能收到驗證碼；carol@tempmail.dev 被拒。
-- `example.com` 只有 alice@example.com 這樣的公司電郵能註冊；alice@mail.example.com 不行。
+- `gmail.com,outlook.com` alice@gmail.com 和 bob@outlook.com 可收到驗證碼；carol@tempmail.dev 將被拒絕。
+- `example.com` 僅 alice@example.com 等公司電郵可註冊；alice@mail.example.com 不可註冊。
 
 相關設定：[電郵域名限制](./auth.md#EmailDomainRestrictionEnabled)

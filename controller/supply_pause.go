@@ -351,11 +351,13 @@ func rejectInvalidIntakeRules(c *gin.Context, raw *string) bool {
 
 // PreviewIntakeRules shows what intake rules would do before they are saved: how many catalog
 // models each rule decides (with a few names) and, with name, the outcome for that model.
-// Body: {"rules": [...] or null for the rules in effect, "name": "..."}.
+// Body: {"rules": [...] or null for the rules in effect, "name": "...", "list": true to get every
+// catalog model with its rule}.
 func PreviewIntakeRules(c *gin.Context) {
 	var req struct {
 		Rules json.RawMessage `json:"rules"`
 		Name  string          `json:"name"`
+		List  bool            `json:"list"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "invalid body", nil)
@@ -370,7 +372,7 @@ func PreviewIntakeRules(c *gin.Context) {
 		}
 		rules = parsed
 	}
-	preview, err := model.PreviewIntakeRules(rules, req.Name)
+	preview, err := model.PreviewIntakeRules(rules, req.Name, req.List)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return

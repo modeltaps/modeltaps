@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片代理
 
-下载请求中所链接图片时使用的 HTTP 或 SOCKS5 代理。网关要下载这些图片来计算 token，并以数据形式转给上游；不设代理时，图床会看到本服务器的 IP。设置了 Cloudflare Worker 时，代理只用于访问 Worker。留空则直接下载。
+下载请求中所链接图片时使用的 HTTP 或 SOCKS5 代理。网关需下载这些图片以计算 token，并以数据形式转发给上游；未设置代理时，图床可见本服务器的 IP。设置了 Cloudflare Worker 时，代理仅用于访问 Worker。留空则直接下载。
 
 示例：
 
@@ -35,11 +35,11 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片代理
 
-由一个 Cloudflare Worker 代替本服务器下载请求中所链接的图片。网关把图片地址和 Worker 密钥发给它，再读回图片，图床只能看到 Cloudflare。它优先于图片下载代理。有些图床拒绝 Cloudflare 访问，这些图片会下载失败。留空表示不用 Worker。
+由 Cloudflare Worker 代替本服务器下载请求中所链接的图片。网关将图片地址和 Worker 密钥发送给 Worker 并读回图片，图床仅可见 Cloudflare。此项优先于图片下载代理。部分图床拒绝 Cloudflare 访问，此类图片将下载失败。留空表示不使用 Worker。
 
 示例：
 
-- `https://img-proxy.example.workers.dev` 请求里链接的每张图片都由这个 Worker 下载。
+- `https://img-proxy.example.workers.dev` 请求中链接的所有图片均由该 Worker 下载。
 
 相关设置：[Cloudflare Worker 密钥](./media.md#CFWorkerImageKey) · [图片下载代理](./media.md#ChatImageRequestProxy)
 
@@ -51,7 +51,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片代理
 
-每次下载图片时随请求发给 Cloudflare Worker 的密钥，供会校验密钥的 Worker 使用。Worker 不校验或没有设置 Worker 时留空。
+每次下载图片时随请求发送给 Cloudflare Worker 的密钥，供校验密钥的 Worker 使用。Worker 不校验密钥或未设置 Worker 时留空。
 
 相关设置：[Cloudflare Worker 图片代理](./media.md#CFWorkerImageUrl)
 
@@ -65,16 +65,16 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-生成的图片存放在哪里，让要求返回图片链接的请求能拿到链接。Gemini、Cloudflare Workers AI 和 Stability AI 只返回图片数据。选择不启用时改为返回 base64：图片接口给 b64_json 而不是 url，Gemini 的回复里直接嵌入整张图片。修改立即在所有节点生效。
+设置生成图片的存储位置，使要求返回图片链接的请求可获取链接。Gemini、Cloudflare Workers AI 和 Stability AI 仅返回图片数据。选择不启用时改为返回 base64：图片接口返回 b64_json 而非 url，Gemini 的回复中直接嵌入完整图片。修改后立即在所有节点生效。
 
 取值：
 
-- `local` 本网关：暂存在本网关，链接在服务器地址下，1 小时有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。多节点部署需启用 Redis，任一节点才能提供链接。
-- `s3` S3 兼容存储：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储。不填公开访问地址时返回 1 小时有效的签名链接，bucket 可保持私有。网关不删除文件，请在存储后台配置生命周期规则（如 1 天后删除）。
-- `alioss` 阿里云 OSS：返回带签名的链接，1 小时内有效，bucket 可以保持私有。
+- `local` 本网关：暂存在本网关，链接位于服务器地址下，1 小时内有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。多节点部署需启用 Redis，以便任一节点均可提供链接。
+- `s3` S3 兼容存储：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储。未填写公开访问地址时返回 1 小时内有效的签名链接，bucket 可保持私有。网关不删除文件，请在存储后台配置生命周期规则（如 1 天后删除）。
+- `alioss` 阿里云 OSS：返回带签名的链接，1 小时内有效，bucket 可保持私有。
 - `smms` SM.MS：免费图床，图片公开可见。
 - `imgur` Imgur：免费图床，图片公开可见。
-- `off` 不启用：图片以 base64 返回，只读取图片链接的客户端拿不到图。
+- `off` 不启用：图片以 base64 返回，仅读取图片链接的客户端无法获取图片。
 
 相关设置：[转存上游返回的图片和视频链接](./media.md#ImageStorageRehostUpstream) · [服务器地址](./site.md#ServerAddress)
 
@@ -88,7 +88,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-上游返回的图片和视频链接换成本站链接，上游域名打不开时也能用。它覆盖 DALL·E、Flux 等上游以及 Midjourney 任务返回的图片链接，和可灵任务返回的视频链接。图片立即下载存好；视频在第一次下载时取回并保存，单个最大 512 MB。取不到的链接原样返回。关闭后上游链接原样透传。
+将上游返回的图片和视频链接替换为本站链接，上游域名无法访问时仍可使用。适用于 DALL·E、Flux 等上游及 Midjourney 任务返回的图片链接，以及可灵任务返回的视频链接。图片立即下载并保存；视频在首次下载时获取并保存，单个最大 512 MB。无法获取的链接原样返回。关闭后上游链接原样透传。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -102,12 +102,12 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-存储的 S3 API 地址，不含 bucket。不填公开访问地址时，链接指向 <endpoint>/<bucket>/... 并带签名。
+存储的 S3 API 地址，不含 bucket。未填写公开访问地址时，链接指向 <endpoint>/<bucket>/... 并带签名。
 
 示例：
 
 - `https://<account>.r2.cloudflarestorage.com` Cloudflare R2，地域为 auto。
-- `https://s3.eu-central-1.amazonaws.com` 法兰克福的 AWS S3，从地址里读出地域 eu-central-1。
+- `https://s3.eu-central-1.amazonaws.com` 法兰克福的 AWS S3，从地址中解析出地域 eu-central-1。
 
 相关设置：[S3 地域](./media.md#ImageStorageS3Region) · [S3 Bucket](./media.md#ImageStorageS3BucketName) · [S3 公开访问地址](./media.md#ImageStorageS3CDNURL)
 
@@ -121,7 +121,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-签名使用的地域，通常留空。留空时从 AWS、Backblaze B2、Wasabi 的 endpoint 里读出，其他一律用 auto，这正是 Cloudflare R2 要求的。
+签名使用的地域，通常留空。留空时从 AWS、Backblaze B2、Wasabi 的 endpoint 中解析，其他存储一律使用 auto，即 Cloudflare R2 要求的值。
 
 示例：
 
@@ -137,7 +137,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-图片上传到的 bucket。除非设置了公开访问地址，它可以保持私有。
+图片上传的目标 bucket。未设置公开访问地址时，bucket 可保持私有。
 
 相关设置：[S3 Endpoint](./media.md#ImageStorageS3Endpoint) · [S3 公开访问地址](./media.md#ImageStorageS3CDNURL)
 
@@ -149,7 +149,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-有权写入该 bucket 的访问密钥 ID，密钥本身填在下一个字段。
+有权写入该 bucket 的访问密钥 ID，密钥本身在下一字段填写。
 
 相关设置：[S3 Access Key Secret](./media.md#ImageStorageS3AccessKeySecret)
 
@@ -173,11 +173,11 @@ S3 访问密钥的 Secret。设置了加密密钥时加密保存，保存后不�
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-bucket 的公开地址，或它前面的 CDN 地址；设置后图片返回该地址下的公开链接。留空时返回 1 小时有效的签名链接，bucket 可保持私有。
+bucket 的公开地址，或其前置 CDN 的地址；设置后图片返回该地址下的公开链接。留空时返回 1 小时内有效的签名链接，bucket 可保持私有。
 
 示例：
 
-- `https://img.example.com` 图片链接在 https://img.example.com/ 下，只要文件还在就一直能用。
+- `https://img.example.com` 图片链接位于 https://img.example.com/ 下，文件存在期间持续有效。
 
 相关设置：[S3 Endpoint](./media.md#ImageStorageS3Endpoint) · [S3 Bucket](./media.md#ImageStorageS3BucketName)
 
@@ -189,12 +189,12 @@ bucket 的公开地址，或它前面的 CDN 地址；设置后图片返回该�
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-写入每张上传图片 Expires 头的天数，供缓存和 CDN 参考。它不会删除文件：删除请用存储的生命周期规则。0 表示不写这个头。
+写入每张上传图片 Expires 头的天数，供缓存和 CDN 参考。此项不删除文件：如需删除，请使用存储的生命周期规则。0 表示不写入该头。
 
 示例：
 
-- `1` 今天上传的图片标明明天过期；文件一直保留，直到生命周期规则删除它。
-- `0` 不写 Expires 头。
+- `1` 今天上传的图片标注为明天过期；文件持续保留，直至被生命周期规则删除。
+- `0` 不写入 Expires 头。
 
 相关设置：[S3 公开访问地址](./media.md#ImageStorageS3CDNURL)
 
@@ -210,7 +210,7 @@ bucket 所在阿里云 OSS 地域的 endpoint。
 
 示例：
 
-- `oss-cn-beijing.aliyuncs.com` 北京的 bucket，从地址里读出地域 cn-beijing。
+- `oss-cn-beijing.aliyuncs.com` 北京的 bucket，从地址中解析出地域 cn-beijing。
 
 相关设置：[OSS 地域](./media.md#ImageStorageOSSRegion) · [OSS Bucket](./media.md#ImageStorageOSSBucketName)
 
@@ -222,11 +222,11 @@ bucket 所在阿里云 OSS 地域的 endpoint。
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.com 形式的 endpoint 里读出；其他 endpoint（内网或加速域名）必须填写，否则上传失败。
+bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.com 形式的 endpoint 中解析；其他 endpoint（内网或加速域名）必须填写，否则上传失败。
 
 示例：
 
-- `cn-hangzhou` 按杭州签名，适用于读不出地域的 endpoint。
+- `cn-hangzhou` 按杭州签名，适用于无法解析出地域的 endpoint。
 
 相关设置：[OSS Endpoint](./media.md#ImageStorageOSSEndpoint)
 
@@ -238,7 +238,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-图片上传到的 OSS bucket；链接带签名，所以它可以保持私有。
+图片上传的目标 OSS bucket；链接带签名，因此 bucket 可保持私有。
 
 相关设置：[OSS Endpoint](./media.md#ImageStorageOSSEndpoint)
 
@@ -250,7 +250,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-有权写入该 bucket 的 RAM 用户的 AccessKey ID，Secret 填在下一个字段。
+有权写入该 bucket 的 RAM 用户的 AccessKey ID，Secret 在下一字段填写。
 
 相关设置：[OSS AccessKey Secret](./media.md#ImageStorageOSSAccessKeySecret)
 
@@ -274,7 +274,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-你在这个免费图床上账号的 API Token，用于上传。那里的图片公开可见。
+该免费图床账号的 API Token，用于上传图片。上传的图片公开可见。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -286,7 +286,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-在 Imgur 注册的应用的 Client ID，用于匿名上传。那里的图片公开可见。
+在 Imgur 注册的应用的 Client ID，用于匿名上传。上传的图片公开可见。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -300,4 +300,4 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › Midjourney 回调
 
-把 Midjourney 任务带的回调地址（notifyHook）转给上游，任务有变化时由上游调用它。回调来自上游而不是本站，内容是上游眼中的任务，上游也会知道调用方的地址。关闭后去掉该地址，调用方轮询任务状态。
+将 Midjourney 任务携带的回调地址（notifyHook）转发给上游，任务状态变化时由上游调用该地址。回调来自上游而非本站，内容为上游记录的任务信息，上游也将获知调用方的地址。关闭后移除该地址，由调用方轮询任务状态。

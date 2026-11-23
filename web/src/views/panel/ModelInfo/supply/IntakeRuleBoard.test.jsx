@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
 import { IntakeRuleBoard } from './IntakeRules';
@@ -30,5 +30,17 @@ describe('IntakeRuleBoard', () => {
     expect(rows[2].textContent).toContain(i18n.t('intakeRules.board.fallback'));
     expect(rows[1].getAttribute('aria-current')).toBe('true');
     expect(rows[0].getAttribute('aria-current')).toBeNull();
+  });
+
+  it('opens a rule in place, edits it as a sentence and adds new rules at the end', () => {
+    const onChange = vi.fn();
+    render(createElement(IntakeRuleBoard, { rules: RULES, onChange }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(i18n.t('intakeRules.defaultNames.previews')) }));
+    expect(screen.getByText(i18n.t('intakeRules.editor.when'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('intakeRules.editor.removeCondition') }));
+    expect(onChange).toHaveBeenLastCalledWith([{ name: 'Previews wait for review', action: 'pending' }, RULES[1]]);
+    expect(screen.getByText(i18n.t('intakeRules.editor.whenAny'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('intakeRules.add') }));
+    expect(onChange.mock.calls.at(-1)[0]).toHaveLength(3);
   });
 });

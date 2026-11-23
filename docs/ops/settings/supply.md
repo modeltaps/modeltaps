@@ -27,8 +27,8 @@ outline: deep
 
 示例：
 
-- `priority` gpt-5.1 的 Requesty（成本 ×1.05）和官方 API（×1.00）同一优先级、权重 3 和 1，分别承接约 75% 和 25% 的请求。
-- `cost` 成本 ×0.80 的中转在成功率保持 95% 时承接 gpt-5.1 的请求，优先级更高的 Requesty 兜底；成功率掉下去后 Requesty 接回。
+- `priority` gpt-5.1 的 Requesty（成本 ×1.05）与官方 API（×1.00）优先级相同、权重分别为 3 和 1，分别承接约 75% 和 25% 的请求。
+- `cost` 成本 ×0.80 的中转在成功率保持 95% 时承接 gpt-5.1 的请求，优先级更高的 Requesty 作为备用；成功率下降后由 Requesty 重新承接。
 
 相关设置：[最低节省](./supply.md#SupplyCostMinSavingPercent) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent) · [渠道费率](./objects.md#channel-fee_rate) · [优先级](./objects.md#channel-priority)
 
@@ -42,12 +42,12 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 线路路由与排序依据
 
-成本优先时，一条线路要比另一条便宜多少（按较贵那条的百分比）才排到它前面。差距在此以内算同价，按优先级和权重分担，免得便宜一点点的线路拿走一个模型的全部流量。0 表示便宜超过 0.1% 就往前排。
+成本优先时，一条线路需比另一条便宜多少（按较贵线路的百分比计）才排在其前面。差距在此范围内视为同价，按优先级和权重分担，避免略便宜的线路承接某个模型的全部流量。0 表示便宜超过 0.1% 即排在前面。
 
 示例：
 
-- `5` OpenRouter（费率 5.5%）和 Requesty（费率 5%）算同价；成本 ×0.90 的中转排在两者前面。
-- `0` Requesty（×1.05）排在 OpenRouter（×1.055）前面。
+- `5` OpenRouter（费率 5.5%）与 Requesty（费率 5%）视为同价；成本 ×0.90 的中转排在两者之前。
+- `0` Requesty（×1.05）排在 OpenRouter（×1.055）之前。
 
 相关设置：[排序依据](./supply.md#SupplyCostOrder) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent)
 
@@ -61,12 +61,12 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 线路路由与排序依据
 
-成本优先时，线路在本小时和上一小时里要达到的成功率，才会因为便宜被往前排。低于它的便宜线路按成本未知处理，排在运行正常的线路后面，成功率恢复后再回到前面。这段时间里请求不到 20 次的线路不做判断。0 表示不检查。它同时是 Vercel AI Gateway 模型的托管商进入托管商顺序所需的近一天可用率，不论成本与优先级怎么设。
+成本优先时，线路在本小时和上一小时内需达到的成功率；达到后才会因成本较低而提前调用。低于此值的低成本线路按成本未知处理，排在运行正常的线路之后，成功率恢复后再回到前面。该时段内请求少于 20 次的线路不做判断。0 表示不检查。此值同时是 Vercel AI Gateway 模型的托管商进入托管商顺序所需的近一天可用率，与成本和优先级设置无关。
 
 示例：
 
-- `95` 最近 100 次失败了 12 次的折扣转售商不再优先承接请求，由下一条正常的线路接手。
-- `0` 最便宜的线路总是排第一，不管失败多少次；只有暂停规则能把它拿掉。
+- `95` 最近 100 次请求中失败 12 次的折扣转售商不再优先承接请求，由下一条正常线路承接。
+- `0` 最便宜的线路始终排在第一位，无论失败多少次；仅暂停规则可将其移出。
 
 相关设置：[排序依据](./supply.md#SupplyCostOrder) · [最低节省](./supply.md#SupplyCostMinSavingPercent) · [自定义暂停规则](./gateway.md#PauseRules)
 
@@ -80,14 +80,14 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 线路路由与排序依据
 
-请求按每个公开模型的线路分配，而不是按渠道的模型列表和模型映射。打开时会先把渠道的模型和模型映射迁移成线路（只补还没有的），渠道原来提供的模型都照常可用。打开后请求按公开模型计费，只列出已发布的模型，供应商页可以排渠道的调用顺序，请求去哪由调用顺序、排序依据、新模型接入规则和暂停规则决定。新装实例默认打开。关回去会立刻回到渠道的模型列表，线路保留。
+请求按每个公开模型的线路分配，而非按渠道的模型列表和模型映射分配。开启时先将渠道的模型和模型映射迁移为线路（仅补充尚不存在的线路），渠道原有的模型均保持可用。开启后请求按公开模型计费，仅列出已发布的模型，可在供应商页设置渠道的调用顺序，请求的去向由调用顺序、排序依据、上新规则和暂停规则决定。新安装的实例默认开启。关闭后立即恢复按渠道的模型列表路由，线路保留。
 
 示例：
 
-- `false` 请求按各渠道的模型和模型映射路由；线路相关页面只预览打开后会怎样。
-- `true` claude-sonnet-4-5 的请求发往这个公开模型的线路，按优先级和成本排序。
+- `false` 请求按各渠道的模型和模型映射路由；线路相关页面仅预览开启后的效果。
+- `true` claude-sonnet-4-5 的请求发往该公开模型的线路，按优先级和成本排序。
 
-相关设置：[排序依据](./supply.md#SupplyCostOrder) · [上游新模型接入规则](./supply.md#SupplyIntakeRules) · [自定义暂停规则](./gateway.md#PauseRules)
+相关设置：[排序依据](./supply.md#SupplyCostOrder) · [上新规则](./supply.md#SupplyIntakeRules) · [自定义暂停规则](./gateway.md#PauseRules)
 
 指南：[use/supply_routing.md](../use/supply_routing.md)
 
@@ -95,18 +95,18 @@ outline: deep
 
 <a id="SupplyIntakeRules"></a>
 
-### 上游新模型接入规则
+### 上新规则
 
 设置名 `SupplyIntakeRules` · 类型 json · 默认值 `空`
 
 位置：平台设置 › 线路分配 › 上游新模型的上新规则
 
-渠道的上游开始提供新模型时怎么处理，只针对会自动加入上游新模型的渠道。它是一个 JSON 数组，从上往下匹配，第一条所有条件都满足的规则说了算；没有规则命中的模型等待审核。条件有：endpoints（能力，如 chat、responses、images，满足任一即可）、vendors（厂商 id）、families 和 patterns（通配符，如 claude-* 或 *-preview*）、supplied（是否已有其他渠道提供）。action 为 enable（立即承接请求）、pending（先关着，等管理员确认）、disable（加入但关闭）或 skip（不加入）。placement 为 auto（已有其他渠道提供时排最后）、policy（按分配策略的位置）或 last（总在最后）。留空使用内置规则；保存的规则整体替换内置规则，单个渠道也可以用自己的规则。
+设置渠道上游开始提供新模型时的处理方式，仅适用于自动加入上游新模型的渠道。格式为 JSON 数组，自上而下匹配，首条满足全部条件的规则生效；未命中任何规则的模型等待审核。条件包括：endpoints（能力，如 chat、responses、images，满足任一即可）、vendors（厂商 id）、families 和 patterns（通配符，如 claude-* 或 *-preview*）、supplied（是否已有其他渠道提供）。action 为 enable（立即承接请求）、pending（暂不启用，等待管理员确认）、disable（加入但关闭）或 skip（不加入）。placement 为 auto（已有其他渠道提供时排在最后）、policy（按分配策略的位置）或 last（始终排在最后）。留空使用内置规则；已保存的规则整体替换内置规则，单个渠道也可使用自身的规则。
 
 示例：
 
-- `[{"name":"Previews wait","patterns":["*-preview*","*-exp*"],"action":"pending"},{"name":"Chat joins","endpoints":["chat","responses"],"action":"enable","placement":"auto"},{"name":"Rest waits","action":"pending"}]` 内置规则：gpt-5-preview 等待审核，新的对话模型立即承接请求（排在已提供它的渠道后面），图片模型等待审核。
-- `[{"name":"Claude joins","families":["claude-*"],"action":"enable","placement":"last"},{"name":"Rest skipped","action":"skip"}]` 新的 Claude 模型立即承接请求，排在该模型其他线路之后；其他新模型不加入，留在「新上游模型」列表里。
+- `[{"name":"Previews wait","patterns":["*-preview*","*-exp*"],"action":"pending"},{"name":"Chat joins","endpoints":["chat","responses"],"action":"enable","placement":"auto"},{"name":"Rest waits","action":"pending"}]` 内置规则：gpt-5-preview 等待审核，新的对话模型立即承接请求（排在已提供该模型的渠道之后），图片模型等待审核。
+- `[{"name":"Claude joins","families":["claude-*"],"action":"enable","placement":"last"},{"name":"Rest skipped","action":"skip"}]` 新的 Claude 模型立即承接请求，排在该模型其他线路之后；其他新模型不加入，保留在「新上游模型」列表中。
 
 相关设置：[按线路路由](./supply.md#ModelSupplyEnabled) · [排序依据](./supply.md#SupplyCostOrder)
 
@@ -120,9 +120,9 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 会话亲和
 
-同一客户端会话的请求发往最初服务它的渠道，让上游提示缓存持续命中。会话按以下方式识别：metadata.user_id 里的 Claude Code 会话、Codex 的 session_id 等会话请求头、OpenAI 的 prompt_cache_key，都没有时按相同的系统提示词与首条用户消息。Claude Code、Gemini CLI、Codex 账号渠道始终保持粘性，不受此开关影响。关闭后每个请求各自选路。
+同一客户端会话的请求发往最初为其服务的渠道，使上游提示缓存持续命中。会话按以下方式识别：metadata.user_id 中的 Claude Code 会话、Codex 的 session_id 等会话请求头、OpenAI 的 prompt_cache_key；均不存在时，按相同的系统提示词与首条用户消息识别。Claude Code、Gemini CLI、Codex 账号渠道始终保持会话亲和，不受此开关影响。关闭后每个请求独立选择路由。
 
-相关设置：[失败时不切换会话渠道](./supply.md#SessionAffinityStrict) · [会话保持时长（秒）](./supply.md#SessionAffinityTTLSeconds) · [自动加提示缓存标记](./gateway.md#ClaudePromptCachingEnabled)
+相关设置：[失败时不切换会话渠道](./supply.md#SessionAffinityStrict) · [会话保持时长（秒）](./supply.md#SessionAffinityTTLSeconds) · [自动添加提示缓存标记](./gateway.md#ClaudePromptCachingEnabled)
 
 <a id="SessionAffinityStrict"></a>
 
@@ -132,7 +132,7 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 会话亲和
 
-会话绑定的渠道失败时，调用方直接收到错误，不换其他渠道重试。该渠道也不会因此暂停这个模型（整个渠道级别的暂停照常）。换渠道会丢掉上游提示缓存和 Codex 存在上游的对话状态。表明渠道已无法服务的错误（密钥被拒、余额为零）仍会让会话换渠道。不开启则优先保证可用性。
+会话绑定的渠道失败时，调用方直接收到错误，不换用其他渠道重试。该渠道也不会因此暂停该模型（渠道级别的暂停仍正常执行）。切换渠道会丢失上游提示缓存及 Codex 保存在上游的对话状态。表明渠道已无法服务的错误（密钥被拒、余额为零）仍会使会话切换渠道。不开启时优先保证可用性。
 
 相关设置：[同一会话固定到一个渠道](./supply.md#SessionAffinityEnabled) · [重试次数](./gateway.md#RetryTimes)
 
@@ -144,12 +144,12 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 会话亲和
 
-会话最后一次请求之后保持绑定的时长，每个请求都重新计时。账号渠道（Claude Code、Gemini CLI、Codex）始终保持 1 小时。0 也按 1 小时。
+会话最后一次请求后保持绑定的时长，每个请求均重新计时。账号渠道（Claude Code、Gemini CLI、Codex）始终保持 1 小时。0 同样按 1 小时处理。
 
 示例：
 
-- `3600` 停了 50 分钟的编码会话回来仍用同一个渠道；停了 70 分钟则可能换到别的渠道。
-- `300` 与上游 5 分钟的提示缓存一致：超过这个时间缓存已失效，会话可以自由换渠道。
+- `3600` 暂停 50 分钟的编码会话恢复后仍使用同一渠道；暂停 70 分钟后可能切换至其他渠道。
+- `300` 与上游 5 分钟的提示缓存保持一致：超过该时长缓存已失效，会话可自由切换渠道。
 
 相关设置：[同一会话固定到一个渠道](./supply.md#SessionAffinityEnabled)
 
@@ -163,7 +163,7 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 路由策略
 
-自动路由策略为选模型而做的调用，按决策模型的价格向调用方计费。每个会话计一次，单独记一条日志。关闭后决策照常进行，但费用由站点承担，也不写消费日志。
+自动路由策略为选择模型而发起的调用，按决策模型的价格向调用方计费。每个会话计费一次，并单独记录一条日志。关闭后决策仍正常进行，但费用由站点承担，且不写入消费日志。
 
 相关设置：[允许自建路由策略](./supply.md#UserRoutingPolicyEnabled)
 
@@ -175,7 +175,7 @@ outline: deep
 
 位置：平台设置 › 线路分配 › 路由策略
 
-用户和组织可以建自己的路由策略，用 policy/<名字> 调用。用户在工作台「路由策略」里建个人策略，组织 Owner / Admin 建组织策略；自建策略在自己的 API Key 上覆盖同名的平台策略。关闭后自建策略保留但不再生效，只有平台策略能解析。
+允许用户和组织创建自己的路由策略，通过 policy/<名字> 调用。用户在工作台「路由策略」中创建个人策略，组织 Owner / Admin 创建组织策略；自建策略在其所属的 API Key 上覆盖同名的平台策略。关闭后自建策略保留但不再生效，仅解析平台策略。
 
 相关设置：[每个用户的策略上限](./supply.md#PersonalRoutingPolicyMaxCount) · [每个组织的策略上限](./supply.md#OrganizationRoutingPolicyMaxCount)
 
@@ -189,12 +189,12 @@ outline: deep
 
 位置：路由策略 › 自建策略上限
 
-一个用户最多能建多少条个人路由策略。调低上限时已有的策略保留，只拒绝新建。0 表示不限。
+单个用户可创建的个人路由策略数量上限。调低上限时已有策略保留，仅拒绝新建。0 表示不限。
 
 示例：
 
 - `20` 已有 20 条策略的用户新建第 21 条时报错。
-- `0` 用户想建多少条都可以。
+- `0` 用户可创建的策略数量不受限制。
 
 相关设置：[允许自建路由策略](./supply.md#UserRoutingPolicyEnabled) · [每个组织的策略上限](./supply.md#OrganizationRoutingPolicyMaxCount)
 
@@ -206,11 +206,11 @@ outline: deep
 
 位置：路由策略 › 自建策略上限
 
-一个组织最多能建多少条路由策略。调低上限时已有的策略保留，只拒绝新建。0 表示不限。
+单个组织可创建的路由策略数量上限。调低上限时已有策略保留，仅拒绝新建。0 表示不限。
 
 示例：
 
 - `20` 已有 20 条策略的组织新建第 21 条时报错。
-- `5` 让组织策略少到可以逐条人工审核。
+- `5` 将组织策略数量控制在可逐条人工审核的范围内。
 
 相关设置：[允许自建路由策略](./supply.md#UserRoutingPolicyEnabled) · [每个用户的策略上限](./supply.md#PersonalRoutingPolicyMaxCount)

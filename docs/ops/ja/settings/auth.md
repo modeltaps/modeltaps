@@ -61,7 +61,7 @@ outline: deep
 
 場所：プラットフォーム設定 › ログインと登録 › ログイン方法
 
-ユーザーはセキュリティページでパスキー（指紋・顔・ハードウェアキー）を追加し、それでログインできます。無効にすると追加も利用もできません。外部 ID プロバイダーでは root だけが緊急ログイン用に使えます。
+ユーザーはセキュリティページでパスキー（指紋・顔・ハードウェアキー）を追加し、ログインに使用できます。無効にすると追加も利用もできません。外部 ID プロバイダーでは root だけが緊急ログイン用に使用できます。
 
 関連する設定：[パスワードログイン](./auth.md#PasswordLoginEnabled) · [管理者の緊急ログイン](./auth.md#AdminLoginEnabled)
 
@@ -73,9 +73,9 @@ outline: deep
 
 場所：プラットフォーム設定 › ログインと登録 › ログイン方法
 
-新しいアカウントを作成できるかどうかです。無効にすると誰も登録できません。パスワード登録も、初回のソーシャルログインや ID プロバイダーでのログインもアカウントを作らず、組織もメンバーアカウントを代理作成できません。既存ユーザーは通常どおりログインできます。
+新しいアカウントの作成を許可するかどうかを設定します。無効にすると誰も登録できません。パスワード登録、初回のソーシャルログイン、ID プロバイダーでのログインのいずれでもアカウントは作成されず、組織もメンバーアカウントを代理作成できません。既存ユーザーは通常どおりログインできます。
 
-関連する設定：[パスワード登録](./auth.md#PasswordRegisterEnabled) · [登録に招待コードが必要](./auth.md#InviteCodeRegisterEnabled) · [登録時のメール認証](./auth.md#EmailVerificationEnabled)
+関連する設定：[パスワード登録](./auth.md#PasswordRegisterEnabled) · [登録時の招待コード必須](./auth.md#InviteCodeRegisterEnabled) · [登録時のメール認証](./auth.md#EmailVerificationEnabled)
 
 <a id="PasswordRegisterEnabled"></a>
 
@@ -87,7 +87,7 @@ outline: deep
 
 新規ユーザーがユーザー名とパスワードで登録できます。無効にすると新しいアカウントはソーシャルログインからのみ作られ、組織もメンバーアカウントを代理作成できません。「新規ユーザー登録」が有効である必要があり、内蔵アカウントでのみ有効です。
 
-関連する設定：[新規ユーザー登録](./auth.md#RegisterEnabled) · [登録時のメール認証](./auth.md#EmailVerificationEnabled) · [登録に招待コードが必要](./auth.md#InviteCodeRegisterEnabled) · [パスワードログイン](./auth.md#PasswordLoginEnabled)
+関連する設定：[新規ユーザー登録](./auth.md#RegisterEnabled) · [登録時のメール認証](./auth.md#EmailVerificationEnabled) · [登録時の招待コード必須](./auth.md#InviteCodeRegisterEnabled) · [パスワードログイン](./auth.md#PasswordLoginEnabled)
 
 <a id="EmailVerificationEnabled"></a>
 
@@ -103,7 +103,7 @@ outline: deep
 
 <a id="InviteCodeRegisterEnabled"></a>
 
-### 登録に招待コードが必要
+### 登録時の招待コード必須
 
 キー `InviteCodeRegisterEnabled` · 型 bool · 既定値 `false`
 
@@ -151,7 +151,7 @@ Cloudflare Turnstile で、ログイン・登録・パスワード再設定・�
 
 GitHub アカウントでログイン・登録できます。GitHub Client ID を保存するまで有効にできません。内蔵アカウントでのみ有効です。
 
-関連する設定：[GitHub Client ID](./auth.md#GitHubClientId) · [GitHub Client Secret](./auth.md#GitHubClientSecret) · [GitHub アカウントを ID のみで照合](./auth.md#GitHubOldIdCloseEnabled)
+関連する設定：[GitHub Client ID](./auth.md#GitHubClientId) · [GitHub Client Secret](./auth.md#GitHubClientSecret) · [GitHub アカウントの ID のみによる照合](./auth.md#GitHubOldIdCloseEnabled)
 
 <a id="GitHubClientId"></a>
 
@@ -179,7 +179,7 @@ GitHub で登録した OAuth App の Client ID です。登録時は Homepage UR
 
 <a id="GitHubOldIdCloseEnabled"></a>
 
-### GitHub アカウントを ID のみで照合
+### GitHub アカウントの ID のみによる照合
 
 キー `GitHubOldIdCloseEnabled` · 型 bool · 既定値 `false` · ほとんど変更しない
 
@@ -211,7 +211,7 @@ WeChat 公式アカウント経由でログイン・登録できます。ユー�
 
 場所：プラットフォーム設定 › ログインと登録 › WeChat ログイン
 
-公式アカウントの裏で動く WeChat ログインサーバーのアドレスです。サイトはコードがどの WeChat ユーザーのものかをこのサーバーに問い合わせます。
+公式アカウントの背後で稼働する WeChat ログインサーバーのアドレスです。サイトはコードがどの WeChat ユーザーのものかをこのサーバーに問い合わせます。
 
 例：
 
@@ -269,7 +269,7 @@ Lark（Feishu）アカウントでログイン・登録できます。このカ�
 
 場所：プラットフォーム設定 › ログインと登録 › Lark ログイン
 
-ユーザーがサインインに使う Lark（Feishu）アプリの App ID。Lark オープンプラットフォームで Web アプリを作成し、リダイレクト URL を <サーバーアドレス>/oauth/lark に設定します。
+ユーザーがサインインに使う Lark（Feishu）アプリの App ID です。Lark オープンプラットフォームで Web アプリを作成し、リダイレクト URL に <サーバーアドレス>/oauth/lark を設定します。
 
 関連する設定：[Lark ログイン](./auth.md#LarkAuthEnabled) · [Lark App Secret](./auth.md#LarkClientSecret)
 
@@ -281,7 +281,7 @@ Lark（Feishu）アカウントでログイン・登録できます。このカ�
 
 場所：プラットフォーム設定 › ログインと登録 › Lark ログイン
 
-同じ Lark アプリの App Secret。保存後は表示されません。空欄のままにすると保存済みの値を維持します。
+同じ Lark アプリの App Secret です。保存後は表示されません。空欄のまま保存すると保存済みの値が維持されます。
 
 関連する設定：[Lark ログイン](./auth.md#LarkAuthEnabled) · [Lark App ID](./auth.md#LarkClientId)
 
@@ -347,7 +347,7 @@ LINUX DO で登録した OAuth アプリの Client ID です。コールバッ�
 
 例：
 
-- `1` ベーシックユーザー以上はすべて受け入れ、作ったばかりのレベル 0 のアカウントだけを拒否します。
+- `1` ベーシックユーザー以上はすべて受け入れ、作成直後のレベル 0 のアカウントだけを拒否します。
 - `2` メンバー（レベル 2）以上を受け入れ、ベーシックユーザー（レベル 1）は拒否します。
 - `3` レギュラー（レベル 3）とリーダー（レベル 4）だけを受け入れます。
 
@@ -375,7 +375,7 @@ LINUX DO でログインするたびに、既存ユーザーも含めて最低�
 
 場所：プラットフォーム設定 › ログインと登録 › ボット対策
 
-Cloudflare Turnstile のダッシュボードで作成したウィジェットのサイトキーです。ログインページと登録ページはこれで検証を読み込みます。Invisible タイプがユーザーの手間を最も減らせます。
+Cloudflare Turnstile のダッシュボードで作成したウィジェットのサイトキーです。ログインページと登録ページはこれで検証を読み込みます。Invisible タイプを選ぶと、ユーザーの操作負担を最も少なくできます。
 
 関連する設定：[Turnstile シークレットキー](./auth.md#TurnstileSecretKey) · [ボット検証](./auth.md#TurnstileCheckEnabled)
 
@@ -401,7 +401,7 @@ Cloudflare Turnstile のダッシュボードで作成したウィジェット�
 
 場所：プラットフォーム設定 › ログインと登録 › メールドメインの制限
 
-登録用の確認コードを許可ドメインのメールアドレスにだけ送り、使い捨てメールを防ぎます。組織もほかのアドレスでメンバーアカウントを代理作成できません。パスワード登録を止められるのは登録時のメール認証が有効なときだけで、ドメインリストが空のままでは有効にできません。
+登録用の確認コードを許可ドメインのメールアドレスにだけ送り、使い捨てメールを防ぎます。組織もほかのアドレスでメンバーアカウントを代理作成できません。パスワード登録を制限できるのは登録時のメール認証が有効な場合のみで、ドメインリストが空のままでは有効にできません。
 
 関連する設定：[許可するメールドメイン](./auth.md#EmailDomainWhitelist) · [登録時のメール認証](./auth.md#EmailVerificationEnabled)
 

@@ -18,13 +18,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-请求失败后最多再换几个渠道试，之后才把错误返回给调用方。限流、上游 5xx、密钥被拒、余额用尽会重试；无效请求（大部分 400）、408 超时、网关自己的错误和指定了渠道的请求不重试。重试次数不超过承接该模型的渠道数，过了重试时限也会停止。0 表示第一次失败就返回。
+请求失败后最多再尝试的渠道数，用尽后将错误返回给调用方。限流、上游 5xx、密钥被拒、余额用尽时重试；无效请求（大部分 400）、408 超时、网关自身错误及指定了渠道的请求不重试。重试次数不超过承接该模型的渠道数，超过重试时限时也停止重试。0 表示首次失败即返回。
 
 示例：
 
-- `2` 一个由 5 个渠道承接的模型，请求最多试 3 个渠道（第一次加 2 次重试）。
-- `5` 只有 2 个渠道承接这个模型时，两个都试过就失败：没有没试过的渠道就不再重试。
-- `0` 不重试：第一次失败直接返回给调用方。
+- `2` 由 5 个渠道承接的模型，请求最多尝试 3 个渠道（首次请求加 2 次重试）。
+- `5` 仅 2 个渠道承接该模型时，两个渠道均失败后即返回失败：没有未尝试的渠道时不再重试。
+- `0` 不重试：首次失败即返回给调用方。
 
 相关设置：[重试时限（秒）](./gateway.md#RetryTimeOut) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [失败时不切换会话渠道](./supply.md#SessionAffinityStrict)
 
@@ -36,13 +36,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-渠道对某个模型返回 429 限流后，这个渠道暂停承接该模型多久。冷却期间该模型的新请求发往其他渠道，这个渠道的其他模型不受影响。上游给出了限流重置时间时，以上游时间为准。这是内置 rate_limit 规则的暂停时长，自定义规则用自己的秒数。0 表示只在当次请求里跳过该渠道。
+渠道对某个模型返回 429 限流后，该渠道暂停承接该模型的时长。冷却期间该模型的新请求发往其他渠道，该渠道的其他模型不受影响。上游提供限流重置时间时，以上游时间为准。此值是内置 rate_limit 规则的暂停时长，自定义规则使用各自的秒数。0 表示仅在当次请求中跳过该渠道。
 
 示例：
 
-- `5` gpt-4o 遇到 429 后，这个渠道 5 秒内不再承接 gpt-4o 请求，其他模型照常。
-- `60` 按分钟限流的渠道歇完这一分钟，而不是继续收 429。
-- `0` 不冷却：下一个请求可能又落到同一个渠道，再次撞上限流。
+- `5` gpt-4o 遇到 429 后，该渠道 5 秒内不再承接 gpt-4o 请求，其他模型正常服务。
+- `60` 按分钟限流的渠道在当前分钟结束后再承接请求，避免持续收到 429。
+- `0` 不冷却：下一个请求可能再次发往同一渠道并再次触发限流。
 
 相关设置：[按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [自定义暂停规则](./gateway.md#PauseRules)
 
@@ -54,12 +54,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-从请求到达算起超过这么多秒，就不再发起新的重试。每次重试前检查，不会打断正在进行的那次尝试，长时间生成照样能完成。因时限停止重试时，调用方收到 503「上游繁忙」。0 表示完全不重试。
+自请求到达起超过此秒数后，不再发起新的重试。每次重试前检查，不中断正在进行的尝试，长时间生成仍可完成。因时限停止重试时，调用方收到 503「上游繁忙」。0 表示完全不重试。
 
 示例：
 
-- `10` 第一个渠道 12 秒后才失败，就不再重试；3 秒就失败的，只要 10 秒没用完还会重试。
-- `120` 适合长推理请求：一个渠道一分钟后失败，仍有时间换一个再试。
+- `10` 第一个渠道 12 秒后失败时不再重试；3 秒内失败时，10 秒时限未用完则继续重试。
+- `120` 适用于长推理请求：一个渠道一分钟后失败，仍有时间换用其他渠道重试。
 
 相关设置：[重试次数](./gateway.md#RetryTimes)
 
@@ -71,13 +71,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-为其他 HTTP 状态码设置冷却秒数，写成「状态码: 秒数」的 JSON 对象。和限流冷却一样，只让该渠道暂停承接这一个模型。内置 per_status 规则排在额度、凭证、限流、模型不存在几条规则之后，所以这里写 429 不会生效，而列出的 5xx 状态码不再等一分钟内失败三次才暂停。设为 0 的状态码从不冷却。状态码须在 100-599 之间，秒数为不小于 0 的整数；留空表示不加。
+为其他 HTTP 状态码设置冷却秒数，格式为「状态码: 秒数」的 JSON 对象。与限流冷却相同，仅暂停该渠道承接对应模型。内置 per_status 规则排在额度、凭证、限流、模型不存在等规则之后，因此此处设置 429 不生效；列出的 5xx 状态码无需等待一分钟内失败三次即暂停。设为 0 的状态码从不冷却。状态码须在 100-599 之间，秒数为不小于 0 的整数；留空表示不添加。
 
 示例：
 
-- `{"503": 120}` 渠道对某模型返回 503 后，从第一次 503 起 2 分钟内不再承接该模型。
-- `{"502": 60, "504": 300}` 502 让该渠道的这个模型冷却 1 分钟，504 冷却 5 分钟。
-- `{"500": 0}` 500 从不让渠道暂停或冷却：请求换渠道继续，下一个请求仍可能用到它。
+- `{"503": 120}` 渠道对某模型返回 503 后，自首次 503 起 2 分钟内不再承接该模型。
+- `{"502": 60, "504": 300}` 502 使该渠道的对应模型冷却 1 分钟，504 冷却 5 分钟。
+- `{"500": 0}` 500 从不使渠道暂停或冷却：请求换用其他渠道继续，下一个请求仍可能使用该渠道。
 
 相关设置：[限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [自定义暂停规则](./gateway.md#PauseRules)
 
@@ -89,13 +89,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-上游说某个模型不存在后，这个渠道暂停承接该模型多久。本页没有对应的输入框，要通过选项 API（PUT /api/option/）修改。它针对「model not found」「does not exist」「no endpoints found」这类错误，同一请求里出现过 429 时不算。这是内置 model_not_found 规则的暂停时长，该规则还会通知管理员；自定义规则用自己的秒数。0 表示从不因此暂停。
+上游返回某个模型不存在后，该渠道暂停承接该模型的时长。本页无对应输入框，需通过选项 API（PUT /api/option/）修改。适用于「model not found」「does not exist」「no endpoints found」等错误，同一请求中出现过 429 时不计入。此值是内置 model_not_found 规则的暂停时长，该规则同时通知管理员；自定义规则使用各自的秒数。0 表示从不因此暂停。
 
 示例：
 
-- `21600` 失去 gpt-4.5 权限的渠道 6 小时内不再承接 gpt-4.5 请求，之后再试。
-- `600` 上游只是短暂下架的模型，10 分钟后恢复。
-- `0` 渠道一直留在轮换里，持续让该模型的请求失败，直到把模型从渠道上去掉。
+- `21600` 失去 gpt-4.5 权限的渠道 6 小时内不再承接 gpt-4.5 请求，之后再次尝试。
+- `600` 上游短暂下架的模型在 10 分钟后恢复。
+- `0` 渠道持续留在轮换中，该模型的请求持续失败，直至从渠道中移除该模型。
 
 相关设置：[自定义暂停规则](./gateway.md#PauseRules) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds)
 
@@ -109,13 +109,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 线路暂停规则
 
-一组 JSON 暂停规则，整体替换内置规则；留空使用内置规则。规则按顺序匹配，第一条命中的生效，渠道自己的规则先于这里。命中条件是 status_codes、keywords（错误信息里的子串，以「re:」开头为正则）、error_types、error_codes 任一满足，再加上 unusable、model_not_found、rate_limit_reset、per_status_config 这些标志；times 与 window_seconds 让规则先计数再触发。action 为 pause（按 seconds 暂停整个渠道，或默认只暂停该模型）或 retry（不暂停，直接换下一条线路）。probe 表示恢复前先发一次测试请求，失败则暂停时长加倍；notify 会通知管理员。不足一分钟的暂停只保存在内存里。保存的规则带着自己的秒数，限流冷却和模型不存在暂停的设置不再作用于它们。
+一组 JSON 暂停规则，整体替换内置规则；留空使用内置规则。规则按顺序匹配，首条命中的规则生效，渠道自身的规则优先于此处。命中条件为 status_codes、keywords（错误信息中的子串，以「re:」开头表示正则）、error_types、error_codes 任一满足，并结合 unusable、model_not_found、rate_limit_reset、per_status_config 等标志；times 与 window_seconds 使规则先计数再触发。action 为 pause（按 seconds 暂停整个渠道，或默认仅暂停该模型）或 retry（不暂停，直接换用下一条线路）。probe 表示恢复前先发送一次测试请求，失败则暂停时长加倍；notify 用于通知管理员。不足一分钟的暂停仅保存在内存中。已保存的规则使用各自的秒数，限流冷却和模型不存在暂停的设置不再作用于这些规则。
 
 示例：
 
-- `[{"name":"quota","status_codes":[402],"keywords":["credit balance is too low"],"action":"pause","seconds":1800,"scope":"channel","probe":true,"notify":true,"category":"quota"}]` 402 或余额不足的报错让整个渠道暂停 30 分钟并通知管理员；恢复前先发测试请求，余额刷新发现有钱时提前结束暂停。
-- `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同一渠道上同一模型一分钟内两次 529，就在该渠道上暂停这个模型 5 分钟；恢复前的测试失败时，下一次暂停 10 分钟。
-- `[]` 没有规则：什么都不会被暂停，失败的渠道只在当次请求里被跳过。
+- `[{"name":"quota","status_codes":[402],"keywords":["credit balance is too low"],"action":"pause","seconds":1800,"scope":"channel","probe":true,"notify":true,"category":"quota"}]` 402 或余额不足的错误使整个渠道暂停 30 分钟并通知管理员；恢复前先发送测试请求，余额刷新显示有可用余额时提前结束暂停。
+- `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同一渠道上同一模型一分钟内两次返回 529 时，在该渠道上暂停该模型 5 分钟；恢复前的测试失败时，下一次暂停 10 分钟。
+- `[]` 无规则：不暂停任何渠道，失败的渠道仅在当次请求中被跳过。
 
 相关设置：[限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [模型不存在暂停（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [禁用关键词](./gateway.md#DisableChannelKeywords)
 
@@ -129,7 +129,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-上游表明渠道已无法服务时（例如密钥被拒、余额用尽）禁用该渠道。额度耗尽、账号被停用、错误里含禁用关键词也算。只对渠道测试生效：线上请求遇到这类错误时，由暂停规则暂停渠道。被禁用的渠道只能靠开启自动恢复后测试通过，或手动启用。
+上游表明渠道已无法服务时（例如密钥被拒、余额用尽）禁用该渠道。额度耗尽、账号被停用、错误中含禁用关键词同样适用。仅对渠道测试生效：线上请求遇到此类错误时，由暂停规则暂停渠道。被禁用的渠道仅能在开启自动恢复且测试通过后，或经手动启用后恢复。
 
 相关设置：[测试通过后重新启用](./gateway.md#AutomaticEnableChannelEnabled) · [禁用关键词](./gateway.md#DisableChannelKeywords) · [自定义暂停规则](./gateway.md#PauseRules) · [定时渠道测试](./gateway.md#ChannelTestMode)
 
@@ -141,7 +141,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-被自动禁用的渠道，渠道测试通过后重新启用。这里的测试指全部渠道测试（定时的或手动发起的），并且要在最长响应时间内返回。管理员手动禁用的渠道不会自动启用。关闭后，所有被禁用的渠道都等管理员处理。
+被自动禁用的渠道在渠道测试通过后重新启用。此处的测试指全部渠道测试（定时或手动发起），且须在最长响应时间内返回。管理员手动禁用的渠道不会自动启用。关闭后，所有被禁用的渠道均需管理员处理。
 
 相关设置：[自动禁用无法服务的渠道](./gateway.md#AutomaticDisableChannelEnabled) · [定时渠道测试](./gateway.md#ChannelTestMode) · [最长响应时间（秒）](./gateway.md#ChannelDisableThreshold)
 
@@ -153,13 +153,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-渠道测试慢于这么多秒，已启用的渠道会被禁用，已禁用的保持禁用。它作用于全部渠道测试（「全部渠道」模式的定时测试，或在渠道页手动发起），与是否开启自动禁用无关；线上请求从不按它计时。0 表示不限制。
+渠道测试耗时超过此秒数时，已启用的渠道将被禁用，已禁用的渠道保持禁用。适用于全部渠道测试（「全部渠道」模式的定时测试，或在渠道页手动发起），与是否开启自动禁用无关；线上请求不受此限制。0 表示不限制。
 
 示例：
 
-- `5` 测试请求 7.3 秒才返回的渠道被禁用；2 秒返回的照常服务。
-- `30` 放过较慢的推理模型，只禁用卡死的渠道。
-- `0` 测试只因出错禁用渠道，从不因为慢。
+- `5` 测试请求 7.3 秒后返回的渠道被禁用；2 秒内返回的渠道正常服务。
+- `30` 允许较慢的推理模型通过，仅禁用无响应的渠道。
+- `0` 测试仅因出错禁用渠道，不因响应慢禁用。
 
 相关设置：[定时渠道测试](./gateway.md#ChannelTestMode) · [测试通过后重新启用](./gateway.md#AutomaticEnableChannelEnabled)
 
@@ -171,12 +171,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-一行一条错误信息，上游错误里含有其中一条时，视为渠道已无法服务。匹配区分大小写，请照抄上游原文；关键词优先于内置的豁免规则。命中后请求换渠道，内置的 credential 规则暂停整个渠道（1 小时，恢复前先测试）；渠道测试命中时，开启自动禁用则禁用该渠道。留空则只剩内置的状态码和已知报错判断。
+每行一条错误信息，上游错误中包含其中任一条时，视为渠道已无法服务。匹配区分大小写，请按上游原文填写；关键词优先于内置的豁免规则。命中后请求换用其他渠道，内置的 credential 规则暂停整个渠道（1 小时，恢复前先测试）；渠道测试命中时，若开启自动禁用则禁用该渠道。留空时仅使用内置的状态码和已知错误判断。
 
 示例：
 
-- `Your account is currently blocked` 上游错误含这句话时，整个渠道暂停一小时，而不是一个接一个地让请求失败。
-- `Your credit balance is too low` 内置的 quota 规则也会命中它，且排在前面：渠道暂停 30 分钟，余额刷新发现有钱时提前恢复。
+- `Your account is currently blocked` 上游错误包含该语句时，整个渠道暂停一小时，避免请求逐一失败。
+- `Your credit balance is too low` 内置的 quota 规则同样会命中该语句且优先执行：渠道暂停 30 分钟，余额刷新显示有可用余额时提前恢复。
 
 相关设置：[自动禁用无法服务的渠道](./gateway.md#AutomaticDisableChannelEnabled) · [自定义暂停规则](./gateway.md#PauseRules)
 
@@ -188,13 +188,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-网关每隔一个测试间隔自动测试哪些渠道。每次测试是向渠道测试模型发的一个小请求，由上游计费。设置了环境变量 CHANNEL_TEST_FREQUENCY 时以它为准：每隔这么多分钟测试全部渠道。
+设置网关每个测试间隔自动测试的渠道范围。每次测试向渠道测试模型发送一个小请求，费用由上游计费。设置了环境变量 CHANNEL_TEST_FREQUENCY 时以其为准：每隔该分钟数测试全部渠道。
 
 取值：
 
-- `recovery` 仅被自动禁用的渠道：只测试被自动禁用的渠道，开启自动恢复时重新启用通过的；正常渠道不花钱。
-- `all` 全部渠道：测试所有未手动禁用的渠道：太慢的禁用，开启自动禁用时出错的也禁用，被自动禁用且通过的恢复。
-- `off` 关闭：不做定时测试：被禁用的渠道一直关着，直到管理员测试或启用。
+- `recovery` 仅被自动禁用的渠道：仅测试被自动禁用的渠道，开启自动恢复时重新启用测试通过的渠道；正常渠道不产生费用。
+- `all` 全部渠道：测试所有未手动禁用的渠道：响应过慢的渠道被禁用，开启自动禁用时出错的渠道也被禁用，被自动禁用且测试通过的渠道恢复启用。
+- `off` 关闭：不进行定时测试：被禁用的渠道保持禁用，直至管理员测试或启用。
 
 相关设置：[测试间隔（分钟）](./gateway.md#ChannelTestIntervalMinutes) · [测试通过后重新启用](./gateway.md#AutomaticEnableChannelEnabled) · [最长响应时间（秒）](./gateway.md#ChannelDisableThreshold)
 
@@ -206,12 +206,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-两次定时渠道测试之间的分钟数，至少 1。新间隔从下一轮起生效，无需重启。间隔越短，渠道恢复越快，但测试请求也越多。
+两次定时渠道测试之间的分钟数，最小为 1。新间隔自下一轮起生效，无需重启。间隔越短，渠道恢复越快，测试请求也越多。
 
 示例：
 
-- `10` 上游已恢复的被自动禁用渠道，大约 10 分钟内回来。
-- `60` 「全部渠道」模式下有 20 个渠道时，每天 480 个测试请求。
+- `10` 上游已恢复的被自动禁用渠道，约 10 分钟内恢复启用。
+- `60` 「全部渠道」模式下有 20 个渠道时，每天产生 480 个测试请求。
 
 相关设置：[定时渠道测试](./gateway.md#ChannelTestMode)
 
@@ -223,12 +223,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-每隔多久检查一次 Codex、Claude Code、Gemini CLI、Antigravity 渠道的 OAuth 凭证。在下次检查之前（再加 15 分钟）就会过期的凭证会提前刷新，空闲或被自动禁用的渠道也一样，免得安静一夜后第一个请求失败；手动禁用的渠道跳过。某个渠道开始刷新失败时发一条「渠道凭证问题」通知。0 关闭后台刷新。
+检查 Codex、Claude Code、Gemini CLI、Antigravity 渠道 OAuth 凭证的间隔。将在下次检查前（另加 15 分钟）过期的凭证会提前刷新，空闲或被自动禁用的渠道同样适用，避免长时间空闲后的首个请求失败；手动禁用的渠道跳过。某个渠道开始刷新失败时，发送一条「渠道凭证问题」通知。0 表示关闭后台刷新。
 
 示例：
 
 - `30` 每 30 分钟在后台续期 45 分钟内到期的令牌。
-- `0` 不做后台刷新：渠道空闲时令牌可能过期。
+- `0` 不进行后台刷新：渠道空闲时令牌可能过期。
 
 ## 错误处理
 
@@ -240,7 +240,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 错误处理
 
-调用方收到通用错误，而不是上游原文，原文里可能有供应商名或密钥片段。400 以外的上游错误变成 503 加统一文案（429 仍是 429，让客户端退避），渠道密钥被拒给固定文案，模型不存在给 404。400 错误原样返回，因为它说的是请求本身的问题。只在排查时短暂关闭，看看上游到底说了什么。
+调用方收到通用错误而非上游原文，上游原文中可能包含供应商名称或密钥片段。400 以外的上游错误转为 503 及统一错误文案（429 仍为 429，以便客户端退避），渠道密钥被拒时返回固定文案，模型不存在时返回 404。400 错误原样返回，因为它反映的是请求本身的问题。建议仅在排查问题时短暂关闭，以查看上游原始错误。
 
 相关设置：[统一错误文案](./gateway.md#ChannelFailErrorMessage)
 
@@ -252,7 +252,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 错误处理
 
-隐藏上游错误时，上游失败后调用方收到的文案。文案后会附上 request id，方便调用方报给你。留空使用「Upstream for the current group is at capacity, please try again later」。显示上游错误时不起作用。
+隐藏上游错误时，上游失败后调用方收到的文案。文案后附带 request id，便于调用方向管理员反馈。留空使用「Upstream for the current group is at capacity, please try again later」。显示上游错误时此项不生效。
 
 示例：
 
@@ -270,7 +270,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 模型名匹配
 
-调用方发来的模型名不论大小写都能匹配渠道和价格。开启后 GPT-4o 能找到 gpt-4o 的渠道和价格，通配符价格也一样。关闭时名称必须完全一致，大小写不同的名称找不到渠道。
+调用方提交的模型名称不区分大小写地匹配渠道和价格。开启后 GPT-4o 可匹配 gpt-4o 的渠道和价格，通配符价格同样适用。关闭时名称须完全一致，大小写不同的名称无法匹配到渠道。
 
 相关设置：[响应返回请求的模型名](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -282,12 +282,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 模型名匹配
 
-每个响应的 model 字段都是调用方请求的名字，而不是映射后的上游模型。有些客户端会检查回复里的模型是不是自己请求的那个。关闭时，只有自己开启了此项的渠道和线路才这样做。
+每个响应的 model 字段均为调用方请求的名称，而非映射后的上游模型。部分客户端会校验回复中的模型是否与请求的模型一致。关闭时，仅自身开启了此项的渠道和线路执行此操作。
 
 示例：
 
-- `true` 请求 my-chat、映射到 gpt-4o-2024-08-06 时，响应里是 "model": "my-chat"。
-- `false` 同一请求的响应里是 "model": "gpt-4o-2024-08-06"，除非它的渠道或线路改了名。
+- `true` 请求 my-chat 并映射到 gpt-4o-2024-08-06 时，响应中为 "model": "my-chat"。
+- `false` 同一请求的响应中为 "model": "gpt-4o-2024-08-06"，除非其渠道或线路设置了改名。
 
 相关设置：[模型名称不区分大小写](./gateway.md#ModelNameCaseInsensitiveEnabled) · [上游响应透传](./gateway.md#FingerprintPassThroughEnabled)
 
@@ -301,9 +301,9 @@ outline: deep
 
 位置：平台设置 › 网关 › 原生协议
 
-调用方除了 OpenAI 格式，还能用 Anthropic Messages 格式（/claude/v1/messages 和编码代理端点）。Claude Code 和 Anthropic SDK 需要它。关闭后这些端点返回 403，llms.txt 里也不再列出。
+除 OpenAI 格式外，调用方还可使用 Anthropic Messages 格式（/claude/v1/messages 及编码代理端点）。Claude Code 和 Anthropic SDK 需要此功能。关闭后这些端点返回 403，llms.txt 中也不再列出。
 
-相关设置：[Gemini API](./gateway.md#GeminiAPIEnabled) · [自动加提示缓存标记](./gateway.md#ClaudePromptCachingEnabled)
+相关设置：[Gemini API](./gateway.md#GeminiAPIEnabled) · [自动添加提示缓存标记](./gateway.md#ClaudePromptCachingEnabled)
 
 <a id="GeminiAPIEnabled"></a>
 
@@ -313,24 +313,24 @@ outline: deep
 
 位置：平台设置 › 网关 › 原生协议
 
-调用方除了 OpenAI 格式，还能用 Google Gemini 格式（/gemini/v1beta 下的端点，含 Live API）。Gemini CLI 和 Google SDK 需要它。关闭后这些端点返回 403。
+除 OpenAI 格式外，调用方还可使用 Google Gemini 格式（/gemini/v1beta 下的端点，含 Live API）。Gemini CLI 和 Google SDK 需要此功能。关闭后这些端点返回 403。
 
 相关设置：[Claude Messages API](./gateway.md#ClaudeAPIEnabled) · [显示 Gemini 思考过程](./gateway.md#GeminiOpenThink)
 
 <a id="ClaudePromptCachingEnabled"></a>
 
-### 自动加提示缓存标记
+### 自动添加提示缓存标记
 
 设置名 `ClaudePromptCachingEnabled` · 类型 bool · 默认值 `true`
 
 位置：平台设置 › 网关 › 原生协议
 
-给 Anthropic 模型的请求加上 cache_control 标记，让上游缓存提示词。之后的请求按缓存价读取。它覆盖任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，只作用于提示缓存设为「继承」的渠道；设为开或关的渠道自己决定，TTL 和标记哪些消息也由渠道决定。已自带 cache_control 的请求不改动。API Key 的提示缓存设置或 X-Modeltaps-Prompt-Cache 请求头会替自己的请求决定。默认开启。
+为发往 Anthropic 模型的请求添加 cache_control 标记，使上游缓存提示词，后续请求按缓存价读取。适用于任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，仅作用于提示缓存设为「继承」的渠道；设为开启或关闭的渠道由渠道自行决定，TTL 及标记的消息范围也由渠道决定。已自带 cache_control 的请求不做修改。API Key 的提示缓存设置或 X-Modeltaps-Prompt-Cache 请求头可决定其自身请求的行为。默认开启。
 
 示例：
 
-- `true` 不发缓存标记的客户端，长系统提示词也会在上游缓存 5 分钟。
-- `false` 只有自己打标记的客户端，以及设为开启的渠道，才用到缓存。
+- `true` 对于不发送缓存标记的客户端，较长的系统提示词同样在上游缓存 5 分钟。
+- `false` 仅自行添加标记的客户端及设为开启的渠道使用缓存。
 
 相关设置：[同一会话固定到一个渠道](./supply.md#SessionAffinityEnabled) · [Claude Messages API](./gateway.md#ClaudeAPIEnabled)
 
@@ -342,7 +342,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 原生协议
 
-尽量保持上游响应的原样。Claude 和 Bedrock 的非流式响应按原始字节透传，流式响应保留 model 字段，anthropic-ratelimit-*、x-ratelimit-*、x-amzn-* 等上游响应头传给调用方。关闭后，响应像其他渠道一样重新组装。
+尽可能保持上游响应的原样。Claude 和 Bedrock 的非流式响应按原始字节透传，流式响应保留 model 字段，anthropic-ratelimit-*、x-ratelimit-*、x-amzn-* 等上游响应头传递给调用方。关闭后，响应与其他渠道一样重新组装。
 
 相关设置：[响应返回请求的模型名](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -354,13 +354,13 @@ outline: deep
 
 位置：平台设置 › 网关 › 原生协议
 
-请求要求思考但没给预算时，Claude 可用于思考的 max_tokens 比例。它作用于发往 Claude 的 OpenAI 格式请求。budget_tokens = max_tokens × 此值，且不低于 1024。指定了 effort 的请求按 low、medium、high 分别用 0.2、0.5、0.8。
+请求要求思考但未指定预算时，Claude 可用于思考的 max_tokens 比例。适用于发往 Claude 的 OpenAI 格式请求。budget_tokens = max_tokens × 此值，且不低于 1024。指定了 effort 的请求按 low、medium、high 分别使用 0.2、0.5、0.8。
 
 示例：
 
-- `0.8` max_tokens 为 10000 时，Claude 最多思考 8000 token，剩 2000 用于回答。
-- `0.5` max_tokens 为 4096 时，思考预算是 2048 token。
-- `0.1` max_tokens 为 8192 时，819 太小，预算提高到 1024。
+- `0.8` max_tokens 为 10000 时，Claude 最多用 8000 token 思考，剩余 2000 用于回答。
+- `0.5` max_tokens 为 4096 时，思考预算为 2048 token。
+- `0.1` max_tokens 为 8192 时，819 低于下限，预算提高至 1024。
 
 相关设置：[默认 max_tokens](./gateway.md#ClaudeDefaultMaxTokens)
 
@@ -372,12 +372,12 @@ outline: deep
 
 位置：平台设置 › 网关 › 原生协议
 
-OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_tokens。Claude 必须有这个值，所以这里是「模型名: token 数」的 JSON 对象，"default" 用于其他所有模型。设了 max_tokens 或 max_completion_tokens 的请求用自己的值。留空等于 {"default": 8192}；没有 "default" 时未列出的模型没有上限，会被 Claude 拒绝；不是合法 JSON 的内容会被忽略。
+OpenAI 格式或 Responses 请求未设置输出上限时，发往 Claude 的 max_tokens。Claude 要求必须提供此值，因此此处为「模型名: token 数」的 JSON 对象，"default" 用于其他所有模型。已设置 max_tokens 或 max_completion_tokens 的请求使用自身的值。留空等同于 {"default": 8192}；无 "default" 时，未列出的模型没有上限，将被 Claude 拒绝；无效的 JSON 内容将被忽略。
 
 示例：
 
-- `{"default": 8192}` 所有没设上限的 Claude 请求最多输出 8192 token。
-- `{"default": 8192, "claude-sonnet-4-5": 64000}` 没设上限的 claude-sonnet-4-5 请求最多输出 64000 token，其他模型 8192。
+- `{"default": 8192}` 所有未设置上限的 Claude 请求最多输出 8192 token。
+- `{"default": 8192, "claude-sonnet-4-5": 64000}` 未设置上限的 claude-sonnet-4-5 请求最多输出 64000 token，其他模型为 8192。
 
 相关设置：[默认思考预算](./gateway.md#ClaudeBudgetTokensPercentage)
 
@@ -389,11 +389,11 @@ OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_t
 
 位置：平台设置 › 网关 › 原生协议
 
-响应里带思考摘要的 Gemini 模型，写成「模型名: true」的 JSON 对象。只对能思考的模型生效；未列出的模型不返回思考内容，除非请求自己要求。留空表示不列任何模型，不是合法 JSON 的内容会被忽略。
+设置在响应中附带思考摘要的 Gemini 模型，格式为「模型名: true」的 JSON 对象。仅对支持思考的模型生效；未列出的模型不返回思考内容，除非请求自身要求。留空表示不列出任何模型，无效的 JSON 内容将被忽略。
 
 示例：
 
-- `{"gemini-2.5-pro": true}` gemini-2.5-pro 的回复在答案前带上推理过程；gemini-2.5-flash 不带。
+- `{"gemini-2.5-pro": true}` gemini-2.5-pro 的回复在答案前附带推理过程；gemini-2.5-flash 不附带。
 
 相关设置：[Gemini API](./gateway.md#GeminiAPIEnabled)
 
@@ -407,12 +407,12 @@ OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_t
 
 位置：平台设置 › 网关 › 提示词限制
 
-发往 AWS Bedrock 渠道、输入 token 超过此值的请求，在到达上游前就被拒绝。调用方收到 400「prompt is too long」，Claude Code 会像对待 Anthropic 官方报错一样处理；否则 Bedrock 会一直挂到超时。模型目录里有上下文长度时以它为准；其他渠道类型不检查。0 关闭此检查。
+发往 AWS Bedrock 渠道且输入 token 超过此值的请求，在到达上游前即被拒绝。调用方收到 400「prompt is too long」，Claude Code 将按 Anthropic 官方错误处理；否则 Bedrock 将持续挂起直至超时。模型目录中有上下文长度时以其为准；其他渠道类型不检查。0 表示关闭此检查。
 
 示例：
 
-- `1000000` 发往目录里没有上下文长度的 Bedrock 模型、120 万 token 的提示词立即收到 400。
-- `200000` 对上下文长度未知的 Bedrock 模型，超过 200000 token 的提示词被拒绝。
+- `1000000` 发往目录中无上下文长度的 Bedrock 模型、120 万 token 的提示词立即收到 400。
+- `200000` 对于上下文长度未知的 Bedrock 模型，超过 200000 token 的提示词被拒绝。
 
 ## 上游新模型的上新规则
 
@@ -424,7 +424,7 @@ OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_t
 
 位置：平台设置 › 网关 › 上游新模型的上新规则
 
-每天模型库同步之后运行收录规则，新发布的模型不用人手就能加入目录。在「模型」页的「收录规则」页签里设置。关闭后模型库照常同步，但不会自动加入或下架任何模型。
+每日模型库同步后运行收录规则，新发布的模型无需人工操作即可加入目录。在「模型」页的「收录规则」页签中设置。关闭后模型库仍正常同步，但不会自动加入或下架任何模型。
 
 相关设置：[执行收录规则](./gateway.md#ModelLibraryRulesApply) · [收录规则](./gateway.md#ModelLibraryRules)
 
@@ -436,12 +436,12 @@ OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_t
 
 位置：平台设置 › 网关 › 上游新模型的上新规则
 
-让收录规则真正改动目录：打开时规则会加入和下架模型，并通知管理员做了什么。关闭是演练：规则不改动任何东西，只通知管理员将会做什么。在「模型」页的「收录规则」页签里设置。
+使收录规则实际修改目录：开启时，规则将加入和下架模型，并通知管理员所执行的操作。关闭时为演练模式：规则不修改任何内容，仅通知管理员将要执行的操作。在「模型」页的「收录规则」页签中设置。
 
 示例：
 
 - `false` 新发布的 Claude 模型被报告为「将会启用」，目录保持不变。
-- `true` 同一个模型以启用状态加入目录，并通知管理员已加入。
+- `true` 同一模型以启用状态加入目录，并通知管理员已加入。
 
 相关设置：[运行收录规则](./gateway.md#ModelLibraryRulesEnabled) · [收录规则](./gateway.md#ModelLibraryRules)
 
@@ -453,12 +453,12 @@ OpenAI 格式或 Responses 请求没设输出上限时，发给 Claude 的 max_t
 
 位置：平台设置 › 网关 › 上游新模型的上新规则
 
-决定哪些模型库里的模型加入目录、哪些目录模型下架的规则，以 JSON 列表保存，在「模型」页的「收录规则」页签里编辑。规则按顺序尝试，第一条所有条件都满足的规则做决定：启用、以停用状态加入、不收录或下架。条件包括厂商、模型 ID 通配、发布时间、是否有渠道能提供、是否已弃用、是否开放权重和接口类型。每个模型只决定一次，所以你删掉的模型不会被加回来。留空使用内置规则；空列表什么都不做。
+决定模型库中哪些模型加入目录、哪些目录模型下架的规则，以 JSON 列表保存，在「模型」页的「收录规则」页签中编辑。规则按顺序匹配，由第一条满足全部条件的规则作出决定：启用、以停用状态加入、不收录或下架。条件包括厂商、模型 ID 通配、发布时间、是否有渠道可提供、是否已弃用、是否开放权重和接口类型。每个模型仅决定一次，因此管理员删除的模型不会被重新加入。留空时使用内置规则；空列表表示不执行任何操作。
 
 示例：
 
 - `[{"name":"Retire deprecated models","deprecated":true,"action":"retire"}]` 已弃用的目录模型不再列出但仍可调用；不会加入任何模型。
-- `[{"name":"New Anthropic models","labs":["anthropic"],"released_within_days":60,"supplied":true,"action":"publish"}]` 最近 60 天发布、且有渠道提供的 Anthropic 模型以启用状态加入目录。
+- `[{"name":"New Anthropic models","labs":["anthropic"],"released_within_days":60,"supplied":true,"action":"publish"}]` 最近 60 天内发布且有渠道提供的 Anthropic 模型以启用状态加入目录。
 - `` 内置规则：下架已弃用的模型，预览版以停用状态加入，启用主要厂商的新模型，其他有渠道提供的模型以停用状态加入。
 
-相关设置：[运行收录规则](./gateway.md#ModelLibraryRulesEnabled) · [执行收录规则](./gateway.md#ModelLibraryRulesApply) · [上游新模型接入规则](./supply.md#SupplyIntakeRules)
+相关设置：[运行收录规则](./gateway.md#ModelLibraryRulesEnabled) · [执行收录规则](./gateway.md#ModelLibraryRulesApply) · [上新规则](./supply.md#SupplyIntakeRules)

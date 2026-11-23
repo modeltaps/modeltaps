@@ -18,13 +18,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 重試
 
-請求失敗後最多再換幾個渠道試，之後才把錯誤返回給呼叫方。限流、上游 5xx、密鑰被拒、餘額用盡會重試；無效請求（大部分 400）、408 逾時、網關自己的錯誤和指定了渠道的請求不重試。重試次數不超過承接該模型的渠道數，過了重試時限也會停止。0 表示第一次失敗就返回。
+請求失敗後最多再嘗試的渠道數，用盡後將錯誤返回給呼叫方。限流、上游 5xx、密鑰被拒、餘額用盡時重試；無效請求（大部分 400）、408 逾時、網關自身錯誤及指定了渠道的請求不重試。重試次數不超過承接該模型的渠道數，超過重試時限時亦停止重試。0 表示首次失敗即返回。
 
 示例：
 
-- `2` 一個由 5 個渠道承接的模型，請求最多試 3 個渠道（第一次加 2 次重試）。
-- `5` 只有 2 個渠道承接這個模型時，兩個都試過就失敗：沒有未試過的渠道就不再重試。
-- `0` 不重試：第一次失敗直接返回給呼叫方。
+- `2` 由 5 個渠道承接的模型，請求最多嘗試 3 個渠道（首次請求加 2 次重試）。
+- `5` 僅 2 個渠道承接該模型時，兩個渠道均失敗後即返回失敗：沒有未嘗試的渠道時不再重試。
+- `0` 不重試：首次失敗即返回給呼叫方。
 
 相關設定：[重試時限（秒）](./gateway.md#RetryTimeOut) · [限流冷卻（秒）](./gateway.md#RetryCooldownSeconds) · [失敗時不切換會話渠道](./supply.md#SessionAffinityStrict)
 
@@ -36,13 +36,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 重試
 
-渠道對某個模型返回 429 限流後，這個渠道暫停承接該模型多久。冷卻期間該模型的新請求發往其他渠道，這個渠道的其他模型不受影響。上游給出了限流重置時間時，以上游時間為準。這是內置 rate_limit 規則的暫停時長，自訂規則用自己的秒數。0 表示只在當次請求裏跳過該渠道。
+渠道對某個模型返回 429 限流後，該渠道暫停承接該模型的時長。冷卻期間該模型的新請求發往其他渠道，該渠道的其他模型不受影響。上游提供限流重置時間時，以上游時間為準。此值是內置 rate_limit 規則的暫停時長，自訂規則使用各自的秒數。0 表示僅在當次請求中跳過該渠道。
 
 示例：
 
-- `5` gpt-4o 遇到 429 後，這個渠道 5 秒內不再承接 gpt-4o 請求，其他模型照常。
-- `60` 按分鐘限流的渠道歇完這一分鐘，而不是繼續收 429。
-- `0` 不冷卻：下一個請求可能又落到同一個渠道，再次撞上限流。
+- `5` gpt-4o 遇到 429 後，該渠道 5 秒內不再承接 gpt-4o 請求，其他模型正常服務。
+- `60` 按分鐘限流的渠道在當前分鐘結束後再承接請求，避免持續收到 429。
+- `0` 不冷卻：下一個請求可能再次發往同一渠道並再次觸發限流。
 
 相關設定：[按狀態碼冷卻](./gateway.md#RetryCooldownPerStatus) · [自訂暫停規則](./gateway.md#PauseRules)
 
@@ -54,12 +54,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 重試
 
-從請求到達算起超過這麼多秒，就不再發起新的重試。每次重試前檢查，不會打斷正在進行的那次嘗試，長時間生成照樣能完成。因時限停止重試時，呼叫方收到 503「上游繁忙」。0 表示完全不重試。
+自請求到達起超過此秒數後，不再發起新的重試。每次重試前檢查，不中斷正在進行的嘗試，長時間生成仍可完成。因時限停止重試時，呼叫方收到 503「上游繁忙」。0 表示完全不重試。
 
 示例：
 
-- `10` 第一個渠道 12 秒後才失敗，就不再重試；3 秒就失敗的，只要 10 秒未用完還會重試。
-- `120` 適合長推理請求：一個渠道一分鐘後失敗，仍有時間換一個再試。
+- `10` 第一個渠道 12 秒後失敗時不再重試；3 秒內失敗時，10 秒時限未用完則繼續重試。
+- `120` 適用於長推理請求：一個渠道一分鐘後失敗，仍有時間換用其他渠道重試。
 
 相關設定：[重試次數](./gateway.md#RetryTimes)
 
@@ -71,13 +71,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 重試
 
-為其他 HTTP 狀態碼設定冷卻秒數，寫成「狀態碼: 秒數」的 JSON 物件。和限流冷卻一樣，只讓該渠道暫停承接這一個模型。內置 per_status 規則排在額度、憑證、限流、模型不存在幾條規則之後，所以這裏寫 429 不會生效，而列出的 5xx 狀態碼不再等一分鐘內失敗三次才暫停。設為 0 的狀態碼從不冷卻。狀態碼須在 100-599 之間，秒數為不小於 0 的整數；留空表示不加。
+為其他 HTTP 狀態碼設定冷卻秒數，格式為「狀態碼: 秒數」的 JSON 物件。與限流冷卻相同，僅暫停該渠道承接對應模型。內置 per_status 規則排在額度、憑證、限流、模型不存在等規則之後，因此此處設定 429 不生效；列出的 5xx 狀態碼無需等待一分鐘內失敗三次即暫停。設為 0 的狀態碼從不冷卻。狀態碼須在 100-599 之間，秒數為不小於 0 的整數；留空表示不添加。
 
 示例：
 
-- `{"503": 120}` 渠道對某模型返回 503 後，從第一次 503 起 2 分鐘內不再承接該模型。
-- `{"502": 60, "504": 300}` 502 讓該渠道的這個模型冷卻 1 分鐘，504 冷卻 5 分鐘。
-- `{"500": 0}` 500 從不讓渠道暫停或冷卻：請求換渠道繼續，下一個請求仍可能用到它。
+- `{"503": 120}` 渠道對某模型返回 503 後，自首次 503 起 2 分鐘內不再承接該模型。
+- `{"502": 60, "504": 300}` 502 使該渠道的對應模型冷卻 1 分鐘，504 冷卻 5 分鐘。
+- `{"500": 0}` 500 從不使渠道暫停或冷卻：請求換用其他渠道繼續，下一個請求仍可能使用該渠道。
 
 相關設定：[限流冷卻（秒）](./gateway.md#RetryCooldownSeconds) · [自訂暫停規則](./gateway.md#PauseRules)
 
@@ -89,13 +89,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 重試
 
-上游說某個模型不存在後，這個渠道暫停承接該模型多久。本頁沒有對應的輸入框，要透過選項 API（PUT /api/option/）修改。它針對「model not found」「does not exist」「no endpoints found」這類錯誤，同一請求裏出現過 429 時不算。這是內置 model_not_found 規則的暫停時長，該規則還會通知管理員；自訂規則用自己的秒數。0 表示從不因此暫停。
+上游返回某個模型不存在後，該渠道暫停承接該模型的時長。本頁無對應輸入框，需透過選項 API（PUT /api/option/）修改。適用於「model not found」「does not exist」「no endpoints found」等錯誤，同一請求中出現過 429 時不計入。此值是內置 model_not_found 規則的暫停時長，該規則同時通知管理員；自訂規則使用各自的秒數。0 表示從不因此暫停。
 
 示例：
 
-- `21600` 失去 gpt-4.5 權限的渠道 6 小時內不再承接 gpt-4.5 請求，之後再試。
-- `600` 上游只是短暫下架的模型，10 分鐘後恢復。
-- `0` 渠道一直留在輪換裏，持續讓該模型的請求失敗，直到把模型從渠道上移除。
+- `21600` 失去 gpt-4.5 權限的渠道 6 小時內不再承接 gpt-4.5 請求，之後再次嘗試。
+- `600` 上游短暫下架的模型在 10 分鐘後恢復。
+- `0` 渠道持續留在輪換中，該模型的請求持續失敗，直至從渠道中移除該模型。
 
 相關設定：[自訂暫停規則](./gateway.md#PauseRules) · [限流冷卻（秒）](./gateway.md#RetryCooldownSeconds)
 
@@ -109,13 +109,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 線路暫停規則
 
-一組 JSON 暫停規則，整體替換內置規則；留空使用內置規則。規則按順序匹配，第一條命中的生效，渠道自己的規則先於這裏。命中條件是 status_codes、keywords（錯誤訊息裏的子字串，以「re:」開頭為正則）、error_types、error_codes 任一滿足，再加上 unusable、model_not_found、rate_limit_reset、per_status_config 這些標記；times 與 window_seconds 讓規則先計數再觸發。action 為 pause（按 seconds 暫停整個渠道，或預設只暫停該模型）或 retry（不暫停，直接換下一條線路）。probe 表示恢復前先發一次測試請求，失敗則暫停時長加倍；notify 會通知管理員。不足一分鐘的暫停只保存在記憶體裏。儲存的規則帶着自己的秒數，限流冷卻和模型不存在暫停的設定不再作用於它們。
+一組 JSON 暫停規則，整體替換內置規則；留空使用內置規則。規則按順序匹配，首條命中的規則生效，渠道自身的規則優先於此處。命中條件為 status_codes、keywords（錯誤訊息中的子字串，以「re:」開頭表示正則）、error_types、error_codes 任一滿足，並結合 unusable、model_not_found、rate_limit_reset、per_status_config 等標記；times 與 window_seconds 使規則先計數再觸發。action 為 pause（按 seconds 暫停整個渠道，或預設僅暫停該模型）或 retry（不暫停，直接換用下一條線路）。probe 表示恢復前先發送一次測試請求，失敗則暫停時長加倍；notify 用於通知管理員。不足一分鐘的暫停僅保存在記憶體中。已儲存的規則使用各自的秒數，限流冷卻和模型不存在暫停的設定不再作用於這些規則。
 
 示例：
 
-- `[{"name":"quota","status_codes":[402],"keywords":["credit balance is too low"],"action":"pause","seconds":1800,"scope":"channel","probe":true,"notify":true,"category":"quota"}]` 402 或餘額不足的報錯讓整個渠道暫停 30 分鐘並通知管理員；恢復前先發測試請求，餘額刷新發現有錢時提前結束暫停。
-- `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同一渠道上同一模型一分鐘內兩次 529，就在該渠道上暫停這個模型 5 分鐘；恢復前的測試失敗時，下一次暫停 10 分鐘。
-- `[]` 沒有規則：甚麼都不會被暫停，失敗的渠道只在當次請求裏被跳過。
+- `[{"name":"quota","status_codes":[402],"keywords":["credit balance is too low"],"action":"pause","seconds":1800,"scope":"channel","probe":true,"notify":true,"category":"quota"}]` 402 或餘額不足的錯誤使整個渠道暫停 30 分鐘並通知管理員；恢復前先發送測試請求，餘額刷新顯示有可用餘額時提前結束暫停。
+- `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同一渠道上同一模型一分鐘內兩次返回 529 時，在該渠道上暫停該模型 5 分鐘；恢復前的測試失敗時，下一次暫停 10 分鐘。
+- `[]` 無規則：不暫停任何渠道，失敗的渠道僅在當次請求中被跳過。
 
 相關設定：[限流冷卻（秒）](./gateway.md#RetryCooldownSeconds) · [按狀態碼冷卻](./gateway.md#RetryCooldownPerStatus) · [模型不存在暫停（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [禁用關鍵詞](./gateway.md#DisableChannelKeywords)
 
@@ -129,7 +129,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-上游表明渠道已無法服務時（例如密鑰被拒、餘額用盡）禁用該渠道。額度耗盡、帳戶被停用、錯誤裏含禁用關鍵詞也算。只對渠道測試生效：線上請求遇到這類錯誤時，由暫停規則暫停渠道。被禁用的渠道只能靠開啟自動恢復後測試通過，或手動啟用。
+上游表明渠道已無法服務時（例如密鑰被拒、餘額用盡）禁用該渠道。額度耗盡、帳戶被停用、錯誤中含禁用關鍵詞同樣適用。僅對渠道測試生效：線上請求遇到此類錯誤時，由暫停規則暫停渠道。被禁用的渠道僅能在開啟自動恢復且測試通過後，或經手動啟用後恢復。
 
 相關設定：[測試通過後重新啟用](./gateway.md#AutomaticEnableChannelEnabled) · [禁用關鍵詞](./gateway.md#DisableChannelKeywords) · [自訂暫停規則](./gateway.md#PauseRules) · [定時渠道測試](./gateway.md#ChannelTestMode)
 
@@ -141,7 +141,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-被自動禁用的渠道，渠道測試通過後重新啟用。這裏的測試指全部渠道測試（定時的或手動發起的），並且要在最長回應時間內返回。管理員手動禁用的渠道不會自動啟用。關閉後，所有被禁用的渠道都等管理員處理。
+被自動禁用的渠道在渠道測試通過後重新啟用。此處的測試指全部渠道測試（定時或手動發起），且須在最長回應時間內返回。管理員手動禁用的渠道不會自動啟用。關閉後，所有被禁用的渠道均需管理員處理。
 
 相關設定：[自動禁用無法服務的渠道](./gateway.md#AutomaticDisableChannelEnabled) · [定時渠道測試](./gateway.md#ChannelTestMode) · [最長回應時間（秒）](./gateway.md#ChannelDisableThreshold)
 
@@ -153,13 +153,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-渠道測試慢於這麼多秒，已啟用的渠道會被禁用，已禁用的保持禁用。它作用於全部渠道測試（「全部渠道」模式的定時測試，或在渠道頁手動發起），與是否開啟自動禁用無關；線上請求從不按它計時。0 表示不限制。
+渠道測試耗時超過此秒數時，已啟用的渠道將被禁用，已禁用的渠道保持禁用。適用於全部渠道測試（「全部渠道」模式的定時測試，或在渠道頁手動發起），與是否開啟自動禁用無關；線上請求不受此限制。0 表示不限制。
 
 示例：
 
-- `5` 測試請求 7.3 秒才返回的渠道被禁用；2 秒返回的照常服務。
-- `30` 放過較慢的推理模型，只禁用卡死的渠道。
-- `0` 測試只因出錯禁用渠道，從不因為慢。
+- `5` 測試請求 7.3 秒後返回的渠道被禁用；2 秒內返回的渠道正常服務。
+- `30` 允許較慢的推理模型通過，僅禁用無回應的渠道。
+- `0` 測試僅因出錯禁用渠道，不因回應慢禁用。
 
 相關設定：[定時渠道測試](./gateway.md#ChannelTestMode) · [測試通過後重新啟用](./gateway.md#AutomaticEnableChannelEnabled)
 
@@ -171,12 +171,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-一行一條錯誤訊息，上游錯誤裏含有其中一條時，視為渠道已無法服務。匹配區分大小寫，請照抄上游原文；關鍵詞優先於內置的豁免規則。命中後請求換渠道，內置的 credential 規則暫停整個渠道（1 小時，恢復前先測試）；渠道測試命中時，開啟自動禁用則禁用該渠道。留空則只剩內置的狀態碼和已知報錯判斷。
+每行一條錯誤訊息，上游錯誤中包含其中任一條時，視為渠道已無法服務。匹配區分大小寫，請按上游原文填寫；關鍵詞優先於內置的豁免規則。命中後請求換用其他渠道，內置的 credential 規則暫停整個渠道（1 小時，恢復前先測試）；渠道測試命中時，若開啟自動禁用則禁用該渠道。留空時僅使用內置的狀態碼和已知錯誤判斷。
 
 示例：
 
-- `Your account is currently blocked` 上游錯誤含這句話時，整個渠道暫停一小時，而不是一個接一個地讓請求失敗。
-- `Your credit balance is too low` 內置的 quota 規則也會命中它，且排在前面：渠道暫停 30 分鐘，餘額刷新發現有錢時提前恢復。
+- `Your account is currently blocked` 上游錯誤包含該語句時，整個渠道暫停一小時，避免請求逐一失敗。
+- `Your credit balance is too low` 內置的 quota 規則同樣會命中該語句且優先執行：渠道暫停 30 分鐘，餘額刷新顯示有可用餘額時提前恢復。
 
 相關設定：[自動禁用無法服務的渠道](./gateway.md#AutomaticDisableChannelEnabled) · [自訂暫停規則](./gateway.md#PauseRules)
 
@@ -188,13 +188,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-網關每隔一個測試間隔自動測試哪些渠道。每次測試是向渠道測試模型發的一個小請求，由上游計費。設定了環境變數 CHANNEL_TEST_FREQUENCY 時以它為準：每隔這麼多分鐘測試全部渠道。
+設定網關每個測試間隔自動測試的渠道範圍。每次測試向渠道測試模型發送一個小請求，費用由上游計費。設定了環境變數 CHANNEL_TEST_FREQUENCY 時以其為準：每隔該分鐘數測試全部渠道。
 
 取值：
 
-- `recovery` 僅被自動禁用的渠道：只測試被自動禁用的渠道，開啟自動恢復時重新啟用通過的；正常渠道不花錢。
-- `all` 全部渠道：測試所有未手動禁用的渠道：太慢的禁用，開啟自動禁用時出錯的也禁用，被自動禁用且通過的恢復。
-- `off` 關閉：不做定時測試：被禁用的渠道一直關着，直到管理員測試或啟用。
+- `recovery` 僅被自動禁用的渠道：僅測試被自動禁用的渠道，開啟自動恢復時重新啟用測試通過的渠道；正常渠道不產生費用。
+- `all` 全部渠道：測試所有未手動禁用的渠道：回應過慢的渠道被禁用，開啟自動禁用時出錯的渠道亦被禁用，被自動禁用且測試通過的渠道恢復啟用。
+- `off` 關閉：不進行定時測試：被禁用的渠道保持禁用，直至管理員測試或啟用。
 
 相關設定：[測試間隔（分鐘）](./gateway.md#ChannelTestIntervalMinutes) · [測試通過後重新啟用](./gateway.md#AutomaticEnableChannelEnabled) · [最長回應時間（秒）](./gateway.md#ChannelDisableThreshold)
 
@@ -206,12 +206,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-兩次定時渠道測試之間的分鐘數，至少 1。新間隔從下一輪起生效，無需重新啟動。間隔越短，渠道恢復越快，但測試請求也越多。
+兩次定時渠道測試之間的分鐘數，最小為 1。新間隔自下一輪起生效，無需重新啟動。間隔越短，渠道恢復越快，測試請求亦越多。
 
 示例：
 
-- `10` 上游已恢復的被自動禁用渠道，大約 10 分鐘內回來。
-- `60` 「全部渠道」模式下有 20 個渠道時，每天 480 個測試請求。
+- `10` 上游已恢復的被自動禁用渠道，約 10 分鐘內恢復啟用。
+- `60` 「全部渠道」模式下有 20 個渠道時，每天產生 480 個測試請求。
 
 相關設定：[定時渠道測試](./gateway.md#ChannelTestMode)
 
@@ -223,12 +223,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 渠道自動停用與恢復
 
-每隔多久檢查一次 Codex、Claude Code、Gemini CLI、Antigravity 渠道的 OAuth 憑證。在下次檢查之前（再加 15 分鐘）就會過期的憑證會提前刷新，閒置或被自動禁用的渠道也一樣，免得安靜一夜後第一個請求失敗；手動禁用的渠道跳過。某個渠道開始刷新失敗時發一條「渠道憑證問題」通知。0 關閉後台刷新。
+檢查 Codex、Claude Code、Gemini CLI、Antigravity 渠道 OAuth 憑證的間隔。將在下次檢查前（另加 15 分鐘）過期的憑證會提前刷新，閒置或被自動禁用的渠道同樣適用，避免長時間閒置後的首個請求失敗；手動禁用的渠道跳過。某個渠道開始刷新失敗時，發送一條「渠道憑證問題」通知。0 表示關閉後台刷新。
 
 示例：
 
 - `30` 每 30 分鐘在後台續期 45 分鐘內到期的令牌。
-- `0` 不做後台刷新：渠道閒置時令牌可能過期。
+- `0` 不進行後台刷新：渠道閒置時令牌可能過期。
 
 ## 錯誤處理
 
@@ -240,7 +240,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 錯誤處理
 
-呼叫方收到通用錯誤，而不是上游原文，原文裏可能有供應商名稱或密鑰片段。400 以外的上游錯誤變成 503 加統一文案（429 仍是 429，讓用戶端退避），渠道密鑰被拒給固定文案，模型不存在給 404。400 錯誤原樣返回，因為它說的是請求本身的問題。只在排查時短暫關閉，看看上游到底說了甚麼。
+呼叫方收到通用錯誤而非上游原文，上游原文中可能包含供應商名稱或密鑰片段。400 以外的上游錯誤轉為 503 及統一錯誤文案（429 仍為 429，以便用戶端退避），渠道密鑰被拒時返回固定文案，模型不存在時返回 404。400 錯誤原樣返回，因為它反映的是請求本身的問題。建議僅在排查問題時短暫關閉，以查看上游原始錯誤。
 
 相關設定：[統一錯誤文案](./gateway.md#ChannelFailErrorMessage)
 
@@ -252,7 +252,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 錯誤處理
 
-隱藏上游錯誤時，上游失敗後呼叫方收到的文案。文案後會附上 request id，方便呼叫方報給你。留空使用「Upstream for the current group is at capacity, please try again later」。顯示上游錯誤時不起作用。
+隱藏上游錯誤時，上游失敗後呼叫方收到的文案。文案後附帶 request id，便於呼叫方向管理員反饋。留空使用「Upstream for the current group is at capacity, please try again later」。顯示上游錯誤時此項不生效。
 
 示例：
 
@@ -270,7 +270,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 模型名匹配
 
-呼叫方發來的模型名稱不論大小寫都能匹配渠道和價格。開啟後 GPT-4o 能找到 gpt-4o 的渠道和價格，萬用字元價格也一樣。關閉時名稱必須完全一致，大小寫不同的名稱找不到渠道。
+呼叫方提交的模型名稱不區分大小寫地匹配渠道和價格。開啟後 GPT-4o 可匹配 gpt-4o 的渠道和價格，萬用字元價格同樣適用。關閉時名稱須完全一致，大小寫不同的名稱無法匹配到渠道。
 
 相關設定：[回應返回請求的模型名稱](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -282,12 +282,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 模型名匹配
 
-每個回應的 model 欄位都是呼叫方請求的名稱，而不是映射後的上游模型。有些用戶端會檢查回覆裏的模型是不是自己請求的那個。關閉時，只有自己開啟了此項的渠道和線路才這樣做。
+每個回應的 model 欄位均為呼叫方請求的名稱，而非映射後的上游模型。部分用戶端會校驗回覆中的模型是否與請求的模型一致。關閉時，僅自身開啟了此項的渠道和線路執行此操作。
 
 示例：
 
-- `true` 請求 my-chat、映射到 gpt-4o-2024-08-06 時，回應裏是 "model": "my-chat"。
-- `false` 同一請求的回應裏是 "model": "gpt-4o-2024-08-06"，除非它的渠道或線路改了名稱。
+- `true` 請求 my-chat 並映射到 gpt-4o-2024-08-06 時，回應中為 "model": "my-chat"。
+- `false` 同一請求的回應中為 "model": "gpt-4o-2024-08-06"，除非其渠道或線路設定了改名。
 
 相關設定：[模型名稱不區分大小寫](./gateway.md#ModelNameCaseInsensitiveEnabled) · [上游回應透傳](./gateway.md#FingerprintPassThroughEnabled)
 
@@ -301,9 +301,9 @@ outline: deep
 
 位置：平台設定 › 網關 › 原生協議
 
-呼叫方除了 OpenAI 格式，還能用 Anthropic Messages 格式（/claude/v1/messages 和編碼代理端點）。Claude Code 和 Anthropic SDK 需要它。關閉後這些端點返回 403，llms.txt 裏也不再列出。
+除 OpenAI 格式外，呼叫方還可使用 Anthropic Messages 格式（/claude/v1/messages 及編碼代理端點）。Claude Code 和 Anthropic SDK 需要此功能。關閉後這些端點返回 403，llms.txt 中亦不再列出。
 
-相關設定：[Gemini API](./gateway.md#GeminiAPIEnabled) · [自動加提示快取標記](./gateway.md#ClaudePromptCachingEnabled)
+相關設定：[Gemini API](./gateway.md#GeminiAPIEnabled) · [自動添加提示快取標記](./gateway.md#ClaudePromptCachingEnabled)
 
 <a id="GeminiAPIEnabled"></a>
 
@@ -313,24 +313,24 @@ outline: deep
 
 位置：平台設定 › 網關 › 原生協議
 
-呼叫方除了 OpenAI 格式，還能用 Google Gemini 格式（/gemini/v1beta 下的端點，含 Live API）。Gemini CLI 和 Google SDK 需要它。關閉後這些端點返回 403。
+除 OpenAI 格式外，呼叫方還可使用 Google Gemini 格式（/gemini/v1beta 下的端點，含 Live API）。Gemini CLI 和 Google SDK 需要此功能。關閉後這些端點返回 403。
 
 相關設定：[Claude Messages API](./gateway.md#ClaudeAPIEnabled) · [顯示 Gemini 思考過程](./gateway.md#GeminiOpenThink)
 
 <a id="ClaudePromptCachingEnabled"></a>
 
-### 自動加提示快取標記
+### 自動添加提示快取標記
 
 設定名 `ClaudePromptCachingEnabled` · 類型 bool · 預設值 `true`
 
 位置：平台設定 › 網關 › 原生協議
 
-給 Anthropic 模型的請求加上 cache_control 標記，讓上游快取提示詞。之後的請求按快取價讀取。它涵蓋任何渠道類型上的 Claude、Opus、Sonnet、Haiku 模型，只作用於提示快取設為「繼承」的渠道；設為開或關的渠道自己決定，TTL 和標記哪些訊息也由渠道決定。已自帶 cache_control 的請求不改動。API Key 的提示快取設定或 X-Modeltaps-Prompt-Cache 請求頭會替自己的請求決定。預設開啟。
+為發往 Anthropic 模型的請求添加 cache_control 標記，使上游快取提示詞，後續請求按快取價讀取。適用於任何渠道類型上的 Claude、Opus、Sonnet、Haiku 模型，僅作用於提示快取設為「繼承」的渠道；設為開啟或關閉的渠道由渠道自行決定，TTL 及標記的訊息範圍亦由渠道決定。已自帶 cache_control 的請求不做修改。API Key 的提示快取設定或 X-Modeltaps-Prompt-Cache 請求頭可決定其自身請求的行為。預設開啟。
 
 示例：
 
-- `true` 不發快取標記的用戶端，長系統提示詞也會在上游快取 5 分鐘。
-- `false` 只有自己加標記的用戶端，以及設為開啟的渠道，才用到快取。
+- `true` 對於不發送快取標記的用戶端，較長的系統提示詞同樣在上游快取 5 分鐘。
+- `false` 僅自行添加標記的用戶端及設為開啟的渠道使用快取。
 
 相關設定：[同一會話固定到一個渠道](./supply.md#SessionAffinityEnabled) · [Claude Messages API](./gateway.md#ClaudeAPIEnabled)
 
@@ -342,7 +342,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 原生協議
 
-盡量保持上游回應的原樣。Claude 和 Bedrock 的非串流回應按原始位元組透傳，串流回應保留 model 欄位，anthropic-ratelimit-*、x-ratelimit-*、x-amzn-* 等上游回應標頭傳給呼叫方。關閉後，回應像其他渠道一樣重新組裝。
+盡可能保持上游回應的原樣。Claude 和 Bedrock 的非串流回應按原始位元組透傳，串流回應保留 model 欄位，anthropic-ratelimit-*、x-ratelimit-*、x-amzn-* 等上游回應標頭傳遞給呼叫方。關閉後，回應與其他渠道一樣重新組裝。
 
 相關設定：[回應返回請求的模型名稱](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -354,13 +354,13 @@ outline: deep
 
 位置：平台設定 › 網關 › 原生協議
 
-請求要求思考但沒有給預算時，Claude 可用於思考的 max_tokens 比例。它作用於發往 Claude 的 OpenAI 格式請求。budget_tokens = max_tokens × 此值，且不低於 1024。指定了 effort 的請求按 low、medium、high 分別用 0.2、0.5、0.8。
+請求要求思考但未指定預算時，Claude 可用於思考的 max_tokens 比例。適用於發往 Claude 的 OpenAI 格式請求。budget_tokens = max_tokens × 此值，且不低於 1024。指定了 effort 的請求按 low、medium、high 分別使用 0.2、0.5、0.8。
 
 示例：
 
-- `0.8` max_tokens 為 10000 時，Claude 最多思考 8000 token，剩 2000 用於回答。
-- `0.5` max_tokens 為 4096 時，思考預算是 2048 token。
-- `0.1` max_tokens 為 8192 時，819 太小，預算提高到 1024。
+- `0.8` max_tokens 為 10000 時，Claude 最多用 8000 token 思考，剩餘 2000 用於回答。
+- `0.5` max_tokens 為 4096 時，思考預算為 2048 token。
+- `0.1` max_tokens 為 8192 時，819 低於下限，預算提高至 1024。
 
 相關設定：[預設 max_tokens](./gateway.md#ClaudeDefaultMaxTokens)
 
@@ -372,12 +372,12 @@ outline: deep
 
 位置：平台設定 › 網關 › 原生協議
 
-OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的 max_tokens。Claude 必須有這個值，所以這裏是「模型名稱: token 數」的 JSON 物件，"default" 用於其他所有模型。設了 max_tokens 或 max_completion_tokens 的請求用自己的值。留空等於 {"default": 8192}；沒有 "default" 時未列出的模型沒有上限，會被 Claude 拒絕；不是有效 JSON 的內容會被忽略。
+OpenAI 格式或 Responses 請求未設定輸出上限時，發往 Claude 的 max_tokens。Claude 要求必須提供此值，因此此處為「模型名稱: token 數」的 JSON 物件，"default" 用於其他所有模型。已設定 max_tokens 或 max_completion_tokens 的請求使用自身的值。留空等同於 {"default": 8192}；無 "default" 時，未列出的模型沒有上限，將被 Claude 拒絕；無效的 JSON 內容將被忽略。
 
 示例：
 
-- `{"default": 8192}` 所有沒設上限的 Claude 請求最多輸出 8192 token。
-- `{"default": 8192, "claude-sonnet-4-5": 64000}` 沒設上限的 claude-sonnet-4-5 請求最多輸出 64000 token，其他模型 8192。
+- `{"default": 8192}` 所有未設定上限的 Claude 請求最多輸出 8192 token。
+- `{"default": 8192, "claude-sonnet-4-5": 64000}` 未設定上限的 claude-sonnet-4-5 請求最多輸出 64000 token，其他模型為 8192。
 
 相關設定：[預設思考預算](./gateway.md#ClaudeBudgetTokensPercentage)
 
@@ -389,11 +389,11 @@ OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的
 
 位置：平台設定 › 網關 › 原生協議
 
-回應裏帶思考摘要的 Gemini 模型，寫成「模型名稱: true」的 JSON 物件。只對能思考的模型生效；未列出的模型不返回思考內容，除非請求自己要求。留空表示不列任何模型，不是有效 JSON 的內容會被忽略。
+設定在回應中附帶思考摘要的 Gemini 模型，格式為「模型名稱: true」的 JSON 物件。僅對支援思考的模型生效；未列出的模型不返回思考內容，除非請求自身要求。留空表示不列出任何模型，無效的 JSON 內容將被忽略。
 
 示例：
 
-- `{"gemini-2.5-pro": true}` gemini-2.5-pro 的回覆在答案前帶上推理過程；gemini-2.5-flash 不帶。
+- `{"gemini-2.5-pro": true}` gemini-2.5-pro 的回覆在答案前附帶推理過程；gemini-2.5-flash 不附帶。
 
 相關設定：[Gemini API](./gateway.md#GeminiAPIEnabled)
 
@@ -407,12 +407,12 @@ OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的
 
 位置：平台設定 › 網關 › 提示詞限制
 
-發往 AWS Bedrock 渠道、輸入 token 超過此值的請求，在到達上游前就被拒絕。呼叫方收到 400「prompt is too long」，Claude Code 會像對待 Anthropic 官方報錯一樣處理；否則 Bedrock 會一直掛到逾時。模型目錄裏有上下文長度時以它為準；其他渠道類型不檢查。0 關閉此檢查。
+發往 AWS Bedrock 渠道且輸入 token 超過此值的請求，在到達上游前即被拒絕。呼叫方收到 400「prompt is too long」，Claude Code 將按 Anthropic 官方錯誤處理；否則 Bedrock 將持續掛起直至逾時。模型目錄中有上下文長度時以其為準；其他渠道類型不檢查。0 表示關閉此檢查。
 
 示例：
 
-- `1000000` 發往目錄裏沒有上下文長度的 Bedrock 模型、120 萬 token 的提示詞立即收到 400。
-- `200000` 對上下文長度未知的 Bedrock 模型，超過 200000 token 的提示詞被拒絕。
+- `1000000` 發往目錄中無上下文長度的 Bedrock 模型、120 萬 token 的提示詞立即收到 400。
+- `200000` 對於上下文長度未知的 Bedrock 模型，超過 200000 token 的提示詞被拒絕。
 
 ## 上游新模型的上新規則
 
@@ -424,7 +424,7 @@ OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的
 
 位置：平台設定 › 網關 › 上游新模型的上新規則
 
-每天模型庫同步之後執行收錄規則，新發佈的模型不用人手就能加入目錄。在「模型」頁的「收錄規則」分頁裏設定。關閉後模型庫照常同步，但不會自動加入或下架任何模型。
+每日模型庫同步後執行收錄規則，新發佈的模型無需人手操作即可加入目錄。在「模型」頁的「收錄規則」分頁中設定。關閉後模型庫仍正常同步，但不會自動加入或下架任何模型。
 
 相關設定：[套用收錄規則](./gateway.md#ModelLibraryRulesApply) · [收錄規則](./gateway.md#ModelLibraryRules)
 
@@ -436,12 +436,12 @@ OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的
 
 位置：平台設定 › 網關 › 上游新模型的上新規則
 
-讓收錄規則真正改動目錄：打開時規則會加入和下架模型，並通知管理員做了甚麼。關閉是演練：規則不改動任何東西，只通知管理員將會做甚麼。在「模型」頁的「收錄規則」分頁裏設定。
+使收錄規則實際修改目錄：開啟時，規則將加入和下架模型，並通知管理員所執行的操作。關閉時為演練模式：規則不修改任何內容，僅通知管理員將要執行的操作。在「模型」頁的「收錄規則」分頁中設定。
 
 示例：
 
 - `false` 新發佈的 Claude 模型被報告為「將會啟用」，目錄保持不變。
-- `true` 同一個模型以啟用狀態加入目錄，並通知管理員已加入。
+- `true` 同一模型以啟用狀態加入目錄，並通知管理員已加入。
 
 相關設定：[執行收錄規則](./gateway.md#ModelLibraryRulesEnabled) · [收錄規則](./gateway.md#ModelLibraryRules)
 
@@ -453,12 +453,12 @@ OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的
 
 位置：平台設定 › 網關 › 上游新模型的上新規則
 
-決定哪些模型庫裏的模型加入目錄、哪些目錄模型下架的規則，以 JSON 列表儲存，在「模型」頁的「收錄規則」分頁裏編輯。規則按次序嘗試，第一條所有條件都符合的規則作決定：啟用、以停用狀態加入、不收錄或下架。條件包括廠商、模型 ID 萬用字元、發佈時間、是否有渠道能提供、是否已棄用、是否開放權重和介面類型。每個模型只決定一次，所以你刪掉的模型不會被加回來。留空使用內置規則；空列表甚麼都不做。
+決定模型庫中哪些模型加入目錄、哪些目錄模型下架的規則，以 JSON 列表儲存，在「模型」頁的「收錄規則」分頁中編輯。規則按次序匹配，由第一條符合全部條件的規則作出決定：啟用、以停用狀態加入、不收錄或下架。條件包括廠商、模型 ID 萬用字元、發佈時間、是否有渠道可提供、是否已棄用、是否開放權重和介面類型。每個模型僅決定一次，因此管理員刪除的模型不會被重新加入。留空時使用內置規則；空列表表示不執行任何操作。
 
 示例：
 
 - `[{"name":"Retire deprecated models","deprecated":true,"action":"retire"}]` 已棄用的目錄模型不再列出但仍可調用；不會加入任何模型。
-- `[{"name":"New Anthropic models","labs":["anthropic"],"released_within_days":60,"supplied":true,"action":"publish"}]` 最近 60 天發佈、而且有渠道提供的 Anthropic 模型以啟用狀態加入目錄。
+- `[{"name":"New Anthropic models","labs":["anthropic"],"released_within_days":60,"supplied":true,"action":"publish"}]` 最近 60 天內發佈且有渠道提供的 Anthropic 模型以啟用狀態加入目錄。
 - `` 內置規則：下架已棄用的模型，預覽版以停用狀態加入，啟用主要廠商的新模型，其他有渠道提供的模型以停用狀態加入。
 
-相關設定：[執行收錄規則](./gateway.md#ModelLibraryRulesEnabled) · [套用收錄規則](./gateway.md#ModelLibraryRulesApply) · [上游新模型接入規則](./supply.md#SupplyIntakeRules)
+相關設定：[執行收錄規則](./gateway.md#ModelLibraryRulesEnabled) · [套用收錄規則](./gateway.md#ModelLibraryRulesApply) · [上新規則](./supply.md#SupplyIntakeRules)

@@ -19,7 +19,7 @@ func TestPreviewIntakeRules(t *testing.T) {
 	if err := DB.Create(&ModelSupply{Model: "gpt-x", ChannelId: 1, UpstreamModel: "gpt-x", Enabled: true}).Error; err != nil {
 		t.Fatal(err)
 	}
-	preview, err := PreviewIntakeRules(DefaultIntakeRules(), "gpt-x")
+	preview, err := PreviewIntakeRules(DefaultIntakeRules(), "gpt-x", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,14 +33,17 @@ func TestPreviewIntakeRules(t *testing.T) {
 	if counts[0] != 1 || counts[1] != 1 || counts[2] != 1 || counts[-1] != 0 || len(preview.Rules) != 4 {
 		t.Fatalf("counts = %v, rules %+v", counts, preview.Rules)
 	}
+	if len(preview.Models) != 3 || preview.Models[0].Model != "embed-1" || preview.Models[0].Rule != 2 {
+		t.Fatalf("listed models = %+v", preview.Models)
+	}
 	if m := preview.Model; m == nil || !m.Known || !m.Supplied || m.Rule != 1 || m.Action != IntakeActionEnable || !m.JoinLast {
 		t.Fatalf("gpt-x = %+v, want the chat rule, joining last since it is supplied", preview.Model)
 	}
-	preview, _ = PreviewIntakeRules(DefaultIntakeRules(), "brand-new-exp")
+	preview, _ = PreviewIntakeRules(DefaultIntakeRules(), "brand-new-exp", false)
 	if m := preview.Model; m == nil || m.Known || m.Rule != 0 || m.Action != IntakeActionPending {
 		t.Fatalf("a new name = %+v, want the preview rule", preview.Model)
 	}
-	preview, _ = PreviewIntakeRules(nil, "")
+	preview, _ = PreviewIntakeRules(nil, "", false)
 	if len(preview.Rules) != 1 || preview.Rules[0].Index != -1 || preview.Rules[0].Count != 3 {
 		t.Fatalf("no rules: %+v, want everything on the fallback", preview.Rules)
 	}

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownUp, ArrowUpRight, ChevronRight, ListChecks, ListOrdered, PackagePlus, Pin, Route, Send, Server } from 'lucide-react';
 
@@ -51,7 +51,8 @@ function Step({ icon: Icon, label, value, muted = false, to, highlight, onPick }
       </button>
     );
   }
-  return <div className={className}>{body}</div>;
+  // A step that opens nothing has no hover: it reads as a label, not as a control.
+  return <div className={cn('flex min-w-0 items-center gap-2.5 px-2 py-1.5', muted && 'opacity-45')}>{body}</div>;
 }
 
 Step.propTypes = {
@@ -64,11 +65,28 @@ Step.propTypes = {
   onPick: PropTypes.func
 };
 
+// Scrolls to the setting a step names and flashes it, on every click (a ?highlight= link only
+// fires when the URL changes, so a second click on the same step would do nothing).
+const FLASH_CLASS = 'highlight-target-active';
+export function flashSetting(anchor) {
+  const el = Array.from(document.querySelectorAll('[data-highlight]')).find(
+    (node) => node.getAttribute('data-highlight') === anchor && !node.closest('[hidden]') && node.getClientRects().length > 0
+  );
+  if (!el) return false;
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  el.classList.remove(FLASH_CLASS);
+  // Restart the fade when the same row is flashed again.
+  void el.offsetWidth;
+  el.classList.add(FLASH_CLASS);
+  clearTimeout(el.flashTimer);
+  el.flashTimer = setTimeout(() => el.classList.remove(FLASH_CLASS), 3200);
+  return true;
+}
+
 const Arrow = () => <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground/60" />;
 
 export default function SupplyFlow({ ctx }) {
   const { t } = useTranslation();
-  const [, setSearchParams] = useSearchParams();
   const { inputs } = ctx;
   const routing = inputs.ModelSupplyEnabled === 'true';
   const affinity = inputs.SessionAffinityEnabled === 'true';
@@ -83,7 +101,8 @@ export default function SupplyFlow({ ctx }) {
     };
   }, []);
   const rules = parseIntakeRules(inputs.SupplyIntakeRules) || defaultRules;
-  const pick = (highlight) => setSearchParams({ highlight }, { replace: true });
+  // A row that is not shown (the order-by choice while routing is off) falls back to its card.
+  const pick = (highlight) => flashSetting(highlight) || flashSetting(highlight === 'SupplyCostOrder' ? 'supply-mode' : '');
   const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
   const ttl = Number(inputs.SessionAffinityTTLSeconds) || 0;
 
@@ -112,7 +131,7 @@ export default function SupplyFlow({ ctx }) {
       value: affinity ? (ttl > 0 ? text(t, 'affinityValue', { time: durationLabel(t, ttl) }) : text(t, 'on')) : text(t, 'off'),
       highlight: 'session-affinity'
     },
-    { key: 'channel', icon: Server, label: text(t, 'channel'), value: text(t, 'channelValue') }
+    { key: 'channel', icon: Server, label: text(t, 'channel'), value: text(t, 'channelValue'), to: admin.providers() }
   ];
 
   return (
@@ -127,7 +146,7 @@ export default function SupplyFlow({ ctx }) {
       </div>
       {/* New upstream models join the call order through the intake rules. */}
       <div className={cn('flex flex-wrap items-center gap-x-1 gap-y-2 border-t border-border pt-2', !routing && 'opacity-45')}>
-        <Step icon={PackagePlus} label={text(t, 'newModel')} value={text(t, 'newModelValue')} />
+        <Step icon={PackagePlus} label={text(t, 'newModel')} value={text(t, 'newModelValue')} to={admin.models('pending')} />
         <Arrow />
         <Step
           icon={ListChecks}

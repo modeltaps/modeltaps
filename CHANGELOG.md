@@ -47,6 +47,15 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
 - Number fields no longer show the browser's spin arrows and use tabular figures. Bounded numbers
   (policy limits, shares of a tier, the session affinity duration, the lowest cost thresholds) use
   one compact field with the value centered between minus and plus buttons and its unit after it.
+- Intake rules are edited in place: a rule opens in its row as a sentence ("when a model meets
+  every condition below, then ..."), shows only the conditions it uses with "Add condition" for
+  the others, and moves or goes from the open row. Channels with their own rules use the same
+  editor. The rule test picks a catalog model from a search list grouped by the rule that decides
+  each one, or takes any typed name.
+- The request map of the supply settings scrolls to and flashes its setting on every click, and
+  its steps for channels and new upstream models open the providers page and the new upstream
+  models list.
+- The settings reference texts in Chinese and Japanese use formal interface wording.
 - Four dialogs whose content ran to the edges get the usual padding: own policy limits, the
   billing note of the models page, the price update check and the batch supplies dialog.
 

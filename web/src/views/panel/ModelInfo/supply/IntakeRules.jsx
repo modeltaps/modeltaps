@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, Ban, CircleCheck, CircleOff, Clock, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ban, ChevronDown, CircleCheck, CircleOff, Clock, Plus, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Segmented } from '@/components/objects';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Intake rules decide what happens to a model a channel's upstream starts listing: switch its
 // supply on, leave it for review, add it off, or skip it, and where it joins the model's order.
@@ -25,7 +27,6 @@ export const INTAKE_ENDPOINTS = [
   'rerank',
   'decisions'
 ];
-const TRISTATE = ['any', 'yes', 'no'];
 
 // The built-in rules carry English names; show them in the UI language until an admin renames one.
 const DEFAULT_NAME_KEYS = {
@@ -102,235 +103,195 @@ export function describeIntakeRule(t, rule) {
   return { when: when.join(' · '), then: then.join(' · ') };
 }
 
-function TriSelect({ value, onChange, label }) {
+const ACTION_ICONS = { enable: CircleCheck, pending: Clock, disable: CircleOff, skip: Ban };
+
+// The conditions a rule can set, in the order the editor shows them. `vendors` has no editor and
+// is kept as it is.
+const CONDITIONS = ['endpoints', 'families', 'patterns', 'supplied'];
+const conditionSet = (form, key) =>
+  key === 'endpoints' ? form.endpoints.length > 0 : key === 'supplied' ? form.supplied !== 'any' : String(form[key]).trim() !== '';
+const conditionCleared = (key) => (key === 'endpoints' ? [] : key === 'supplied' ? 'any' : '');
+
+// One rule edited as a sentence: "When a model meets every condition below, then <action>,
+// <placement>". Only the conditions in use are shown; others are added from a menu.
+function RuleSentenceEditor({ form, onChange }) {
   const { t } = useTranslation();
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 w-28" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {TRISTATE.map((v) => (
-          <SelectItem key={v} value={v}>
-            {t(`intakeRules.tri.${v}`)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-TriSelect.propTypes = { value: PropTypes.string, onChange: PropTypes.func, label: PropTypes.string };
-
-function Labeled({ label, children, className = '' }) {
-  return (
-    <div className={cn('space-y-1', className)}>
-      <span className="block text-xs text-muted-foreground">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-Labeled.propTypes = { label: PropTypes.string, children: PropTypes.node, className: PropTypes.string };
-
-function RuleCard({ index, total, form, onChange, onMove, onRemove }) {
-  const { t } = useTranslation();
+  const [shown, setShown] = useState(() => CONDITIONS.filter((k) => conditionSet(form, k)));
   const set = (patch) => onChange({ ...form, ...patch });
+  const remove = (key) => {
+    setShown((list) => list.filter((k) => k !== key));
+    set({ [key]: conditionCleared(key) });
+  };
+  const add = (key) => {
+    setShown((list) => [...list, key]);
+    if (key === 'supplied') set({ supplied: 'yes' });
+  };
+  const missing = CONDITIONS.filter((k) => !shown.includes(k));
   const toggleEndpoint = (e) =>
     set({ endpoints: form.endpoints.includes(e) ? form.endpoints.filter((x) => x !== e) : [...form.endpoints, e] });
+  const row = (key, control) => (
+    <div key={key} className="grid grid-cols-[7rem_1fr_auto] items-start gap-3">
+      <span className="pt-1.5 text-xs text-muted-foreground">{t(`intakeRules.editor.${key}`)}</span>
+      <div className="min-w-0">{control}</div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7"
+        onClick={() => remove(key)}
+        aria-label={t('intakeRules.editor.removeCondition')}
+      >
+        <X className="size-3.5" />
+      </Button>
+    </div>
+  );
   return (
-    <div data-testid="intake-rule" className="space-y-3 rounded-[10px] border border-border p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="w-5 shrink-0 text-sm tabular-nums text-muted-foreground">{index + 1}</span>
+    <div className="space-y-4">
+      <label className="grid grid-cols-[7rem_1fr] items-center gap-3">
+        <span className="text-xs text-muted-foreground">{t('intakeRules.name')}</span>
         <Input
           value={intakeRuleName(t, form.name)}
           onChange={(e) => set({ name: e.target.value })}
           placeholder={t('intakeRules.namePlaceholder')}
-          aria-label={t('intakeRules.name')}
-          className="h-8 min-w-40 flex-1"
+          className="h-8"
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
-          aria-label={t('intakeRules.up')}
-        >
-          <ArrowUp className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          disabled={index === total - 1}
-          onClick={() => onMove(1)}
-          aria-label={t('intakeRules.down')}
-        >
-          <ArrowDown className="size-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="size-8" onClick={onRemove} aria-label={t('intakeRules.remove')}>
-          <Trash2 className="size-4" />
-        </Button>
-      </div>
-      <div className="grid gap-3 pl-7 sm:grid-cols-2">
-        <Labeled label={t('intakeRules.endpoints')} className="sm:col-span-2">
-          <div className="flex flex-wrap gap-1.5">
-            {INTAKE_ENDPOINTS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                aria-pressed={form.endpoints.includes(e)}
-                onClick={() => toggleEndpoint(e)}
-                className={cn(
-                  'rounded-md border px-2 py-0.5 font-mono text-xs',
-                  form.endpoints.includes(e) ? 'border-foreground bg-foreground text-background' : 'border-border bg-field hover:bg-muted'
-                )}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        </Labeled>
-        <Labeled label={t('intakeRules.families')}>
-          <Input
-            value={form.families}
-            onChange={(e) => set({ families: e.target.value })}
-            placeholder={t('intakeRules.tri.any')}
-            className="h-8 font-mono"
-          />
-        </Labeled>
-        <Labeled label={t('intakeRules.patterns')}>
-          <Input
-            value={form.patterns}
-            onChange={(e) => set({ patterns: e.target.value })}
-            placeholder={t('intakeRules.tri.any')}
-            className="h-8 font-mono"
-          />
-        </Labeled>
-        <Labeled label={t('intakeRules.supplied')}>
-          <TriSelect value={form.supplied} onChange={(v) => set({ supplied: v })} label={t('intakeRules.supplied')} />
-        </Labeled>
-        <div className="flex flex-wrap gap-3">
-          <Labeled label={t('intakeRules.action')}>
-            <Select value={form.action} onValueChange={(v) => set({ action: v })}>
-              <SelectTrigger className="h-8 w-32" aria-label={t('intakeRules.action')}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {INTAKE_ACTIONS.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {t(`intakeRules.actions.${a}`)}
-                  </SelectItem>
+      </label>
+      <div className="space-y-2">
+        <p className="text-xs font-medium">{t(shown.length ? 'intakeRules.editor.when' : 'intakeRules.editor.whenAny')}</p>
+        {shown.map((key) => {
+          if (key === 'endpoints')
+            return row(
+              key,
+              <div className="flex flex-wrap gap-1.5">
+                {INTAKE_ENDPOINTS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    aria-pressed={form.endpoints.includes(e)}
+                    onClick={() => toggleEndpoint(e)}
+                    className={cn(
+                      'h-7 rounded-md border px-2 font-mono text-xs transition-colors',
+                      form.endpoints.includes(e)
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-border bg-field hover:bg-muted'
+                    )}
+                  >
+                    {e}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-          </Labeled>
-          {form.action !== 'skip' && (
-            <Labeled label={t('intakeRules.placement')}>
-              <Select value={form.placement} onValueChange={(v) => set({ placement: v })}>
-                <SelectTrigger className="h-8 w-44" aria-label={t('intakeRules.placement')}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {INTAKE_PLACEMENTS.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {t(`intakeRules.placements.${p}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Labeled>
-          )}
-        </div>
+              </div>
+            );
+          if (key === 'supplied')
+            return row(
+              key,
+              <Segmented
+                label={t('intakeRules.editor.supplied')}
+                value={form.supplied === 'no' ? 'no' : 'yes'}
+                onChange={(v) => set({ supplied: v })}
+                options={['yes', 'no'].map((v) => ({ value: v, label: t(`intakeRules.tri.${v}`) }))}
+              />
+            );
+          return row(
+            key,
+            <div className="space-y-1">
+              <Input
+                value={form[key]}
+                onChange={(e) => set({ [key]: e.target.value })}
+                placeholder={t(`intakeRules.editor.${key}Placeholder`)}
+                className="h-8 font-mono"
+              />
+              <p className="text-xs text-muted-foreground">{t('intakeRules.editor.globHint')}</p>
+            </div>
+          );
+        })}
+        {missing.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                <Plus className="size-3.5" />
+                {t('intakeRules.editor.addCondition')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {missing.map((key) => (
+                <DropdownMenuItem key={key} onClick={() => add(key)}>
+                  {t(`intakeRules.editor.${key}`)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium">{t('intakeRules.editor.then')}</span>
+        <Select value={form.action} onValueChange={(v) => set({ action: v })}>
+          <SelectTrigger className="h-8 w-36" aria-label={t('intakeRules.action')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {INTAKE_ACTIONS.map((a) => (
+              <SelectItem key={a} value={a}>
+                {t(`intakeRules.actions.${a}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {form.action !== 'skip' && (
+          <Select value={form.placement} onValueChange={(v) => set({ placement: v })}>
+            <SelectTrigger className="h-8 w-48" aria-label={t('intakeRules.placement')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INTAKE_PLACEMENTS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {t(`intakeRules.placements.${p}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </div>
   );
 }
 
-RuleCard.propTypes = {
-  index: PropTypes.number,
-  total: PropTypes.number,
-  form: PropTypes.object,
-  onChange: PropTypes.func,
-  onMove: PropTypes.func,
-  onRemove: PropTypes.func
-};
-
-// Edits a list of rules. `rules` are the starting rule objects (remount with a new key to load
-// others); every edit calls onChange with the new list. The form keeps its own text, so a comma
-// being typed is not tidied away.
-export default function IntakeRulesEditor({ rules, onChange }) {
-  const { t } = useTranslation();
-  const [forms, setForms] = useState(() => rules.map(intakeRuleToForm));
-  const emit = (next) => {
-    setForms(next);
-    onChange(next.map(intakeFormToRule));
-  };
-  return (
-    <div className="space-y-2">
-      {forms.map((form, i) => (
-        <RuleCard
-          key={i}
-          index={i}
-          total={forms.length}
-          form={form}
-          onChange={(next) => emit(forms.map((f, j) => (j === i ? next : f)))}
-          onMove={(delta) => {
-            const next = [...forms];
-            [next[i], next[i + delta]] = [next[i + delta], next[i]];
-            emit(next);
-          }}
-          onRemove={() => emit(forms.filter((_, j) => j !== i))}
-        />
-      ))}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{t('intakeRules.orderHint')}</p>
-        <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={() => emit([...forms, intakeRuleToForm()])}>
-          <Plus className="size-4" /> {t('intakeRules.add')}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-IntakeRulesEditor.propTypes = { rules: PropTypes.array.isRequired, onChange: PropTypes.func.isRequired };
-
-// Read-only list of rules in words.
-export function IntakeRuleList({ rules }) {
-  const { t } = useTranslation();
-  return (
-    <ul className="divide-y divide-border overflow-hidden rounded-[10px] border border-border">
-      {rules.map((rule, index) => {
-        const { when, then } = describeIntakeRule(t, rule);
-        return (
-          <li key={`${rule.name}-${index}`} className="grid gap-x-4 gap-y-0.5 px-3 py-2 text-[13px] sm:grid-cols-[12rem_1fr]">
-            <span className="truncate" title={intakeRuleName(t, rule.name)}>
-              {intakeRuleName(t, rule.name) || '—'}
-            </span>
-            <span className="min-w-0 text-muted-foreground">
-              {when}
-              <span aria-hidden> → </span>
-              <span className="text-foreground">{then}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-IntakeRuleList.propTypes = { rules: PropTypes.array.isRequired };
-
-const ACTION_ICONS = { enable: CircleCheck, pending: Clock, disable: CircleOff, skip: Ban };
+RuleSentenceEditor.propTypes = { form: PropTypes.object.isRequired, onChange: PropTypes.func.isRequired };
 
 // The rules as sentences, tried from the top: what each one looks at, what it does, and (with
 // `stats` from the preview API) how many catalog models it would decide, with a few of them. The
 // rule `matched` (an index, -1 for the fallback) is marked. The fallback row closes the list.
-export function IntakeRuleBoard({ rules, stats = null, matched = null }) {
+// With `onChange` the board is the editor: a row opens in place to edit that rule (one at a time),
+// rules move and go from the open row, and new ones are added at the end.
+export function IntakeRuleBoard({ rules, stats = null, matched = null, onChange = null }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(null);
+  // The open rule keeps its own form, so text being typed (a comma) is not tidied away.
+  const [form, setForm] = useState(null);
+  const editable = typeof onChange === 'function';
   const byIndex = new Map((stats?.rules || []).map((r) => [r.index, r]));
   const rows = [...rules.map((rule, index) => ({ rule, index })), { rule: { action: 'pending' }, index: -1 }];
+  const openRule = (index, rule) => {
+    setOpen(index);
+    setForm(intakeRuleToForm(rule));
+  };
+  const editRule = (next) => {
+    setForm(next);
+    onChange(rules.map((r, i) => (i === open ? intakeFormToRule(next) : r)));
+  };
+  const move = (index, delta) => {
+    const next = [...rules];
+    [next[index], next[index + delta]] = [next[index + delta], next[index]];
+    onChange(next);
+    setOpen(index + delta);
+  };
+  const remove = (index) => {
+    onChange(rules.filter((_, i) => i !== index));
+    setOpen(null);
+  };
+  const addRule = () => {
+    const rule = intakeFormToRule(intakeRuleToForm());
+    onChange([...rules, rule]);
+    openRule(rules.length, rule);
+  };
   return (
     <ol className="divide-y divide-border overflow-hidden rounded-[10px] border border-border" data-testid="intake-board">
       {rows.map(({ rule, index }) => {
@@ -339,13 +300,9 @@ export function IntakeRuleBoard({ rules, stats = null, matched = null }) {
         const Icon = ACTION_ICONS[rule.action] || Clock;
         const stat = byIndex.get(index);
         const hit = matched === index;
-        return (
-          <li
-            key={`${rule.name}-${index}`}
-            data-testid="intake-board-row"
-            aria-current={hit || undefined}
-            className={cn('grid grid-cols-[1.5rem_1fr_auto] items-center gap-x-3 px-3 py-2.5 text-[13px]', hit && 'bg-muted')}
-          >
+        const isOpen = editable && open === index;
+        const summary = (
+          <>
             <span
               className={cn(
                 'flex size-6 items-center justify-center rounded-md text-xs tabular-nums',
@@ -354,7 +311,7 @@ export function IntakeRuleBoard({ rules, stats = null, matched = null }) {
             >
               {fallback ? '…' : index + 1}
             </span>
-            <span className="min-w-0">
+            <span className="min-w-0 text-left">
               <span className="block truncate font-medium">
                 {fallback ? t('intakeRules.board.fallback') : intakeRuleName(t, rule.name) || t('intakeRules.board.unnamed')}
               </span>
@@ -367,14 +324,86 @@ export function IntakeRuleBoard({ rules, stats = null, matched = null }) {
                 </span>
               </span>
             </span>
-            <span className="text-right text-xs text-muted-foreground" title={stat?.examples?.join('\n') || undefined}>
+            <span
+              className="flex items-center gap-2 text-right text-xs text-muted-foreground"
+              title={stat?.examples?.join('\n') || undefined}
+            >
               {stat ? t('intakeRules.board.count', { count: stat.count }) : ''}
+              {editable && !fallback && <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-180')} />}
             </span>
+          </>
+        );
+        const rowClass = cn('grid w-full grid-cols-[1.5rem_1fr_auto] items-center gap-x-3 px-3 py-2.5 text-[13px]', hit && 'bg-muted');
+        return (
+          <li key={`${index}`} data-testid="intake-board-row" aria-current={hit || undefined}>
+            {editable && !fallback ? (
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                className={cn(rowClass, 'transition-colors hover:bg-muted/60')}
+                onClick={() => (isOpen ? setOpen(null) : openRule(index, rule))}
+              >
+                {summary}
+              </button>
+            ) : (
+              <div className={rowClass}>{summary}</div>
+            )}
+            {isOpen && form && (
+              <div className="space-y-4 border-t border-border bg-muted/20 px-4 py-4 sm:pl-12">
+                <RuleSentenceEditor key={index} form={form} onChange={editRule} />
+                <div className="flex flex-wrap items-center gap-1 border-t border-border pt-3">
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={index === 0} onClick={() => move(index, -1)}>
+                    <ArrowUp className="size-3.5" />
+                    {t('intakeRules.up')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    disabled={index === rules.length - 1}
+                    onClick={() => move(index, 1)}
+                  >
+                    <ArrowDown className="size-3.5" />
+                    {t('intakeRules.down')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={() => remove(index)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    {t('intakeRules.remove')}
+                  </Button>
+                  <span className="flex-1" />
+                  <Button variant="outline" size="sm" className="h-7" onClick={() => setOpen(null)}>
+                    {t('intakeRules.editor.done')}
+                  </Button>
+                </div>
+              </div>
+            )}
           </li>
         );
       })}
+      {editable && (
+        <li>
+          <button
+            type="button"
+            onClick={addRule}
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            <Plus className="size-4" />
+            {t('intakeRules.add')}
+          </button>
+        </li>
+      )}
     </ol>
   );
 }
 
-IntakeRuleBoard.propTypes = { rules: PropTypes.array.isRequired, stats: PropTypes.object, matched: PropTypes.number };
+IntakeRuleBoard.propTypes = {
+  rules: PropTypes.array.isRequired,
+  stats: PropTypes.object,
+  matched: PropTypes.number,
+  onChange: PropTypes.func
+};

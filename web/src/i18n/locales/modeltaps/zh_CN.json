@@ -4931,16 +4931,16 @@
       "rest": "其余待确认"
     },
     "name": "规则名",
-    "namePlaceholder": "给规则起个名字",
+    "namePlaceholder": "输入规则名称",
     "up": "上移",
     "down": "下移",
     "remove": "删除规则",
     "add": "添加规则",
-    "orderHint": "从上往下试，第一条命中的规则决定；都不中的模型待确认。",
+    "orderHint": "按从上到下的顺序匹配，以第一条匹配的规则为准；未匹配任何规则的模型待确认。",
     "endpoints": "能力（任一）",
     "families": "系列",
     "patterns": "模型名",
-    "supplied": "已有别的渠道提供",
+    "supplied": "已由其他渠道提供",
     "action": "处理",
     "placement": "排位",
     "tri": {
@@ -4951,25 +4951,25 @@
     "actions": {
       "enable": "启用",
       "pending": "待确认",
-      "disable": "加入但停用",
+      "disable": "加入并停用",
       "skip": "不加入"
     },
     "placements": {
-      "auto": "已有线路就排最后",
+      "auto": "已有线路时排在最后",
       "policy": "正常排位",
-      "last": "总是排最后"
+      "last": "始终排在最后"
     },
     "when": {
       "endpoints": "能力 {{list}}",
       "families": "系列 {{list}}",
       "patterns": "名称 {{list}}",
       "vendors": "厂商 #{{list}}",
-      "supplied": "已有别的渠道提供",
-      "unsupplied": "还没有渠道提供",
+      "supplied": "已由其他渠道提供",
+      "unsupplied": "尚无渠道提供",
       "any": "任何模型"
     },
-    "defaultNote": "当前是内置规则，修改后保存为你自己的一份。",
-    "customNote": "你自己的规则替代了内置规则。",
+    "defaultNote": "当前使用内置规则；修改后将保存为自定义规则。",
+    "customNote": "当前使用自定义规则，已替代内置规则。",
     "showBuiltIn": "内置规则",
     "useBuiltIn": "恢复内置规则",
     "channel": {
@@ -4978,7 +4978,26 @@
       "site": "使用全站规则",
       "custom": "本渠道自定义"
     },
-    "board": { "fallback": "默认规则", "fallbackWhen": "未匹配以上规则", "unnamed": "未命名规则", "count": "{{count}} 个模型" }
+    "board": { "fallback": "默认规则", "fallbackWhen": "未匹配以上规则", "unnamed": "未命名规则", "count": "{{count}} 个模型" },
+    "editor": {
+      "when": "当模型满足以下全部条件时",
+      "whenAny": "条件：任何模型",
+      "then": "则",
+      "endpoints": "能力包含任一",
+      "families": "系列匹配",
+      "patterns": "模型名匹配",
+      "supplied": "已由其他渠道提供",
+      "familiesPlaceholder": "例如 claude-*, gpt-5*",
+      "patternsPlaceholder": "例如 *-preview*, *-exp*",
+      "globHint": "多个值以逗号分隔，* 匹配任意字符",
+      "addCondition": "添加条件",
+      "removeCondition": "移除条件",
+      "done": "完成"
+    },
+    "result": {
+      "last": "排在已有线路之后",
+      "normal": "按调用顺序排位"
+    }
   },
   "systemLogs": {
     "levelLabel": "级别",

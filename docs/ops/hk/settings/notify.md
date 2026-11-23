@@ -18,11 +18,11 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-不發往任何通知渠道的管理員通知類型；由卡片上的開關寫入。用逗號分隔；留空表示所有類型都發。類型有 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可以只接收部分類型。
+不發送至任何通知渠道的管理員通知類型，由卡片上的開關寫入。以逗號分隔；留空表示發送所有類型。類型包括 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可設定為僅接收部分類型。
 
 示例：
 
-- `price_change,model_drift` 上游價格變動和模型列表變化不發，其他類型照發。
+- `price_change,model_drift` 不發送上游價格變動和模型列表變化通知，其他類型正常發送。
 
 相關設定：[每類每小時最多條數](./notify.md#NotifyKindLimitPerHour)
 
@@ -36,12 +36,12 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-同一類通知一小時內最多發送的條數，超出的丟棄。這一小時從該類第一條通知算起，限量的一小時過後第一條通知會註明丟棄了多少。每類分別計數，每個節點各自計數。0 表示不限。
+同一類通知一小時內最多發送的條數，超出部分將被丟棄。該小時從該類第一條通知起計，限量的一小時結束後，第一條通知將註明丟棄的數量。各類別、各節點分別計數。0 表示不限制。
 
 示例：
 
-- `20` 預設值：一小時內 50 條 channel_disabled 通知發出 20 條，過了這一小時的下一條註明丟棄了 30 條。
-- `0` 每條通知都發，不管多少。
+- `20` 預設值：一小時內產生 50 條 channel_disabled 通知時發送 20 條，該小時結束後的下一條通知註明已丟棄 30 條。
+- `0` 發送所有通知，不限數量。
 
 相關設定：[關閉的通知類型](./notify.md#NotifyDisabledKinds)
 
@@ -55,11 +55,11 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-訂閱類渠道（Codex、Claude Code）的用量窗口到達哪些百分比時發通知。每個檔位在一個窗口週期裏只發一次，窗口重置後重新計。用逗號分隔，每檔在 1 到 100 之間；留空為 50, 75, 100，填 0 關閉提醒。單個渠道在它的「監控」頁設了自己的檔位時以渠道為準。這些通知屬於 subscription_usage 類型。
+訂閱類渠道（Codex、Claude Code）的用量窗口達到哪些百分比時發送通知。每個檔位在一個窗口週期內僅發送一次，窗口重置後重新計算。以逗號分隔，每檔取值 1 到 100；留空時為 50, 75, 100，填寫 0 表示關閉提醒。單個渠道在其「監控」頁設定了檔位時，以渠道設定為準。此類通知屬於 subscription_usage 類型。
 
 示例：
 
-- `80, 95` 5 小時窗口到 82% 發一條，到 96% 再發一條；重置後兩檔都可以再觸發。
-- `0` 不發用量提醒，自己設了檔位的渠道除外。
+- `80, 95` 5 小時窗口達到 82% 時發送一條，達到 96% 時再發送一條；重置後兩檔均可再次觸發。
+- `0` 不發送用量提醒，單獨設定了檔位的渠道除外。
 
 相關設定：[關閉的通知類型](./notify.md#NotifyDisabledKinds) · [每類每小時最多條數](./notify.md#NotifyKindLimitPerHour)

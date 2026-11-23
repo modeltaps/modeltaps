@@ -70,19 +70,19 @@ outline: deep
 値：
 
 - `local` このゲートウェイ：サーバーアドレスの下でこのゲートウェイに 1 時間保管します。リンクごとに最大 5 回、1 回のダウンロードは 2 MB/s までです。複数ノード構成では、どのノードでもリンクを返せるよう Redis が必要です。
-- `s3` S3 互換：AWS S3、Cloudflare R2、MinIO、Backblaze B2 などの S3 互換ストレージ。公開 URL がなければリンクは 1 時間有効な署名付きになり、バケットは非公開のままで構いません。ゲートウェイはファイルを削除しないので、ストレージ側でライフサイクルルール（例：1 日）を設定してください。
+- `s3` S3 互換：AWS S3、Cloudflare R2、MinIO、Backblaze B2 などの S3 互換ストレージです。公開 URL がない場合、リンクは 1 時間有効な署名付きになり、バケットは非公開のままで構いません。ゲートウェイはファイルを削除しないため、ストレージ側でライフサイクルルール（例：1 日）を設定してください。
 - `alioss` Alibaba Cloud OSS：リンクは署名付きで 1 時間有効なので、バケットは非公開のままで構いません。
-- `smms` SM.MS：無料の画像ホスティング。画像は公開されます。
-- `imgur` Imgur：無料の画像ホスティング。画像は公開されます。
+- `smms` SM.MS：無料の画像ホスティングです。画像は公開されます。
+- `imgur` Imgur：無料の画像ホスティングです。画像は公開されます。
 - `off` オフ：画像は base64 で返り、画像 URL しか読まないクライアントには画像が届きません。
 
-関連する設定：[上流が返す画像・動画リンクも保管する](./media.md#ImageStorageRehostUpstream) · [サーバーアドレス](./site.md#ServerAddress)
+関連する設定：[上流が返す画像・動画リンクの保管](./media.md#ImageStorageRehostUpstream) · [サーバーアドレス](./site.md#ServerAddress)
 
 ガイド：[deployment/storage.md](../deployment/storage.md)
 
 <a id="ImageStorageRehostUpstream"></a>
 
-### 上流が返す画像・動画リンクも保管する
+### 上流が返す画像・動画リンクの保管
 
 キー `ImageStorageRehostUpstream` · 型 bool · 既定値 `true`
 
@@ -106,8 +106,8 @@ outline: deep
 
 例：
 
-- `https://<account>.r2.cloudflarestorage.com` Cloudflare R2。リージョンは auto です。
-- `https://s3.eu-central-1.amazonaws.com` フランクフルトの AWS S3。リージョン eu-central-1 をアドレスから読み取ります。
+- `https://<account>.r2.cloudflarestorage.com` Cloudflare R2 の場合です。リージョンは auto です。
+- `https://s3.eu-central-1.amazonaws.com` フランクフルトの AWS S3 の場合です。リージョン eu-central-1 をアドレスから読み取ります。
 
 関連する設定：[S3 リージョン](./media.md#ImageStorageS3Region) · [S3 バケット](./media.md#ImageStorageS3BucketName) · [S3 公開 URL](./media.md#ImageStorageS3CDNURL)
 
@@ -189,12 +189,12 @@ S3 アクセスキーのシークレットです。暗号化キーを設定し�
 
 場所：プラットフォーム設定 › メディアとストレージ › 画像ストレージ
 
-アップロードした各画像の Expires ヘッダーに書く日数で、キャッシュや CDN 向けです。何も削除しないので、削除にはストレージのライフサイクルルールを使ってください。0 ならヘッダーを書きません。
+アップロードした各画像の Expires ヘッダーに書き込む日数で、キャッシュや CDN 向けです。この設定でファイルは削除されないため、削除にはストレージのライフサイクルルールを使用してください。0 の場合はヘッダーを書き込みません。
 
 例：
 
 - `1` 今日アップロードした画像は明日期限切れと示しますが、ファイルはライフサイクルルールが消すまで残ります。
-- `0` Expires ヘッダーなし。
+- `0` Expires ヘッダーを書き込みません。
 
 関連する設定：[S3 公開 URL](./media.md#ImageStorageS3CDNURL)
 
@@ -210,7 +210,7 @@ S3 アクセスキーのシークレットです。暗号化キーを設定し�
 
 例：
 
-- `oss-cn-beijing.aliyuncs.com` 北京のバケット。リージョン cn-beijing をアドレスから読み取ります。
+- `oss-cn-beijing.aliyuncs.com` 北京のバケットの場合です。リージョン cn-beijing をアドレスから読み取ります。
 
 関連する設定：[OSS リージョン](./media.md#ImageStorageOSSRegion) · [OSS バケット](./media.md#ImageStorageOSSBucketName)
 
@@ -274,7 +274,7 @@ OSS ユーザーの AccessKey シークレットです。暗号化キーを設�
 
 場所：プラットフォーム設定 › メディアとストレージ › 画像ストレージ
 
-この無料画像ホスティングでのアカウントの API トークンで、アップロードに使います。そこの画像は公開されます。
+この無料画像ホスティングでのアカウントの API トークンで、アップロードに使用します。アップロードした画像は公開されます。
 
 関連する設定：[画像ストレージ](./media.md#ImageStorageProvider)
 
@@ -286,7 +286,7 @@ OSS ユーザーの AccessKey シークレットです。暗号化キーを設�
 
 場所：プラットフォーム設定 › メディアとストレージ › 画像ストレージ
 
-Imgur に登録したアプリケーションのクライアント ID で、匿名アップロードに使います。そこの画像は公開されます。
+Imgur に登録したアプリケーションのクライアント ID で、匿名アップロードに使用します。アップロードした画像は公開されます。
 
 関連する設定：[画像ストレージ](./media.md#ImageStorageProvider)
 

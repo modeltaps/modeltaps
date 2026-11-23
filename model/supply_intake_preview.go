@@ -27,11 +27,19 @@ type IntakePreviewModel struct {
 	JoinLast bool   `json:"join_last"`
 }
 
+// IntakePreviewListed is one catalog model and the rule that decides it (-1 for the fallback).
+type IntakePreviewListed struct {
+	Model string `json:"model"`
+	Rule  int    `json:"rule"`
+}
+
 // IntakePreview is the outcome of a set of rules over the catalog.
 type IntakePreview struct {
 	Total int                 `json:"total"`
 	Rules []IntakePreviewRule `json:"rules"`
 	Model *IntakePreviewModel `json:"model,omitempty"`
+	// Models lists every catalog model with its rule, when asked for (a picker to try them).
+	Models []IntakePreviewListed `json:"models,omitempty"`
 }
 
 const intakePreviewExamples = 3
@@ -47,9 +55,10 @@ func decideIntakeIndex(rules []SupplyIntakeRule, s intakeSubject) (int, SupplyIn
 
 // PreviewIntakeRules runs the rules over the public models of the catalog. A model counts as
 // supplied when it has an enabled supply, as it would for a new channel's upstream listing it.
-// With name set, the outcome for that name is reported too; a name outside the catalog is judged
+// With list, every model is returned with its rule. With name set, the outcome for that name is
+// reported too; a name outside the catalog is judged
 // by its name alone (no endpoints or vendor, not supplied).
-func PreviewIntakeRules(rules []SupplyIntakeRule, name string) (*IntakePreview, error) {
+func PreviewIntakeRules(rules []SupplyIntakeRule, name string, list bool) (*IntakePreview, error) {
 	var infos []*ModelInfo
 	if err := DB.Select("model", "endpoints", "vendor_id").
 		Where("kind = ? AND (alias_of = ? OR alias_of IS NULL)", "", "").Order("model").Find(&infos).Error; err != nil {
@@ -83,6 +92,9 @@ func PreviewIntakeRules(rules []SupplyIntakeRule, name string) (*IntakePreview, 
 		i, rule := decideIntakeIndex(rules, subject)
 		entry := slot(i, rule.Action)
 		entry.Count++
+		if list {
+			preview.Models = append(preview.Models, IntakePreviewListed{Model: info.Model, Rule: i})
+		}
 		if len(entry.Examples) < intakePreviewExamples {
 			entry.Examples = append(entry.Examples, info.Model)
 		}

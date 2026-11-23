@@ -18,11 +18,11 @@ outline: deep
 
 位置：平台设置 › 站点 › 服务器地址
 
-用户访问本站用的公开地址，服务器拼出的每个链接和回调都以它开头。登录回调、邮件和 Telegram 回复里的链接、支付回调、生成图片的链接和文档示例都用它，CSRF 校验也认它的来源。按用户输入的样子填写协议和域名，保存时会去掉末尾的斜杠。默认的 http://localhost:3000 只在服务器本机可用。通行密钥绑定在它的域名上：换域名后用户需要重新注册通行密钥。
+用户访问本站所用的公开地址，服务器生成的所有链接和回调均以此为前缀。登录回调、邮件和 Telegram 回复中的链接、支付回调、生成图片的链接和文档示例均使用此地址，CSRF 校验也以其来源为准。按用户访问时输入的形式填写协议和域名，保存时将去除末尾的斜杠。默认值 http://localhost:3000 仅在服务器本机可用。通行密钥绑定于此地址的域名：更换域名后，用户需重新注册通行密钥。
 
 示例：
 
-- `https://api.example.com` 重置密码邮件链接到 https://api.example.com/user/reset，OIDC 提供方回调到 https://api.example.com/oauth/oidc/<slug>。
+- `https://api.example.com` 重置密码邮件链接至 https://api.example.com/user/reset，OIDC 提供方回调至 https://api.example.com/oauth/oidc/<slug>。
 
 相关设置：[支付回调地址](./payment.md#PaymentCallbackAddress) · [通行密钥](./auth.md#PasskeyLoginEnabled)
 
@@ -36,7 +36,7 @@ outline: deep
 
 位置：平台设置 › 站点 › 品牌
 
-显示在页面标题、控制台顶部和邮件里的站点名称。支付订单描述、身份验证器 App、通行密钥提示和通知 Webhook 里也用它称呼本站。留空显示 Modeltaps。
+显示在页面标题、控制台顶部和邮件中的站点名称。支付订单描述、身份验证器 App、通行密钥提示和通知 Webhook 中也以此名称指代本站。留空时显示 Modeltaps。
 
 相关设置：[Logo 地址](./site.md#Logo)
 
@@ -48,11 +48,11 @@ outline: deep
 
 位置：平台设置 › 站点 › 品牌
 
-显示在每封邮件顶部、退出登录页和设备授权页上的图片。请用 https 绝对地址，邮件客户端才能加载。留空时这些页面显示内置标志，邮件不带图片。
+显示在每封邮件顶部、退出登录页和设备授权页上的图片。请使用 https 绝对地址，以便邮件客户端加载。留空时上述页面显示内置标志，邮件不含图片。
 
 示例：
 
-- `https://cdn.example.com/logo.svg` 邮件正文上方显示 130 px 宽的 Logo；退出登录页用它代替内置标志。
+- `https://cdn.example.com/logo.svg` 邮件正文上方显示 130 px 宽的 Logo；退出登录页以其代替内置标志。
 
 相关设置：[站点名称](./site.md#SystemName)
 
@@ -64,11 +64,11 @@ outline: deep
 
 位置：平台设置 › 站点 › 品牌
 
-用你自己的内容代替内置首页。以 http:// 或 https:// 开头的值会以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（会先做安全过滤）。留空保留内置首页。
+以自定义内容替代内置首页。以 http:// 或 https:// 开头的值将以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（渲染前进行安全过滤）。留空时保留内置首页。
 
 示例：
 
-- `https://www.example.com` 首页在站点顶栏下以整页框架显示你的官网。
+- `https://www.example.com` 首页在站点顶栏下以整页框架显示官方网站。
 - `# Welcome
 Sign in to get an API key.` 首页显示一个标题和一行文字。
 
@@ -82,7 +82,7 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-「关于」页面的内容。以 http:// 或 https:// 开头的值会以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（会先做安全过滤）。留空显示内置的关于文字和项目链接。
+「关于」页面的内容。以 http:// 或 https:// 开头的值将以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（渲染前进行安全过滤）。留空时显示内置的关于文字和项目链接。
 
 示例：
 
@@ -98,11 +98,11 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-替换公开页面页脚的 HTML，显示前会做安全过滤。留空显示带版权和文档链接的默认页脚。设置了自定义页脚后，首页也改由控制台应用渲染，不再用预先生成的静态页。
+替换公开页面页脚的 HTML，显示前进行安全过滤。留空时显示包含版权信息和文档链接的默认页脚。设置自定义页脚后，首页也改由控制台应用渲染，不再使用预先生成的静态页面。
 
 示例：
 
-- `© 2026 Example Inc · <a href="/about">About</a>` 每个公开页面底部显示这一行，代替默认页脚。
+- `© 2026 Example Inc · <a href="/about">About</a>` 每个公开页面底部显示此行内容，代替默认页脚。
 
 相关设置：[首页内容](./site.md#HomePageContent) · [文档链接](./site.md#DocsLink)
 
@@ -114,11 +114,11 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-加到每个页面 head 里的 HTML，用于 Google Analytics、Umami、Plausible 等统计脚本。它对每个访客运行、能访问整个页面，只粘贴你信任的服务商给的代码。留空不加任何内容。
+插入每个页面 head 中的 HTML，用于 Google Analytics、Umami、Plausible 等统计脚本。该代码对每位访客运行，可访问整个页面，请仅粘贴可信服务商提供的代码。留空时不插入任何内容。
 
 示例：
 
-- `<script defer src="https://umami.example.com/script.js" data-website-id="<site id>"></script>` Umami 统计控制台和公开页面的访问量。
+- `<script defer src="https://umami.example.com/script.js" data-website-id="<site id>"></script>` 使用 Umami 统计控制台和公开页面的访问量。
 
 <a id="BrandIconSyncEnabled"></a>
 
@@ -128,7 +128,7 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-每 24 小时从 npm registry 检查厂商与渠道图标库有没有新版本，校验通过后切换。检查失败时继续用当前图标。关闭则一直用本版本内置的图标。每个节点各自同步；浏览器始终只从本站加载图标。
+每 24 小时从 npm registry 检查厂商与渠道图标库是否有新版本，校验通过后切换至新版本。检查失败时继续使用当前图标。关闭后始终使用本版本内置的图标。各节点分别同步；浏览器始终仅从本站加载图标。
 
 相关设置：[图标库 registry](./site.md#BrandIconRegistry) · [抓取未知厂商图标](./site.md#BrandIconFaviconFetchEnabled)
 
@@ -140,12 +140,12 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-同步图标库时下载用的 npm registry。填 http 或 https 地址，不带查询参数；末尾的斜杠会被去掉。留空使用 https://registry.npmmirror.com。
+同步图标库时使用的 npm registry。填写 http 或 https 地址，不含查询参数；末尾的斜杠将被去除。留空时使用 https://registry.npmmirror.com。
 
 示例：
 
 - `https://registry.npmjs.org` 从官方 npm registry 下载图标库。
-- `https://registry.npmmirror.com` 默认镜像，在中国大陆访问更快。
+- `https://registry.npmmirror.com` 默认镜像，在中国大陆访问速度更快。
 
 相关设置：[自动同步图标库](./site.md#BrandIconSyncEnabled)
 
@@ -157,7 +157,7 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 品牌
 
-保存没有内置图标的厂商或渠道时，由服务器抓取其网站的 favicon 并缓存。浏览器仍然只从本站加载图标。关闭则这些厂商没有抓取的图标。
+保存没有内置图标的厂商或渠道时，由服务器抓取其网站的 favicon 并缓存。浏览器仍仅从本站加载图标。关闭后这些厂商不显示抓取的图标。
 
 相关设置：[自动同步图标库](./site.md#BrandIconSyncEnabled)
 
@@ -171,7 +171,7 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 显示
 
-在控制台、日志和 Billing API 里把余额、额度和费用显示为美元金额（额度 ÷ 每美元额度）。关闭则显示原始额度数值。只改变显示，不改变扣费。
+在控制台、日志和 Billing API 中将余额、额度和费用显示为美元金额（额度 ÷ 每美元额度）。关闭后显示原始额度数值。仅影响显示，不影响扣费。
 
 示例：
 
@@ -188,7 +188,7 @@ Sign in to get an API key.` 首页显示一个标题和一行文字。
 
 位置：平台设置 › 站点 › 显示
 
-Billing API 返回调用方 API Key 的额度，而不是用户余额。指的是 OpenAI 风格的 /v1/dashboard/billing/subscription 和 /usage 接口。不限额度的 Key 仍返回用户余额，组织的 Key 始终返回它自己的额度。关闭则始终返回用户余额。
+Billing API 返回调用方 API Key 的额度，而非用户余额。此处指 OpenAI 风格的 /v1/dashboard/billing/subscription 和 /usage 接口。不限额度的 Key 仍返回用户余额，组织的 Key 始终返回其自身额度。关闭后始终返回用户余额。
 
 相关设置：[以美元显示金额](./site.md#DisplayInCurrencyEnabled)
 
@@ -200,12 +200,12 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 
 位置：平台设置 › 站点 › 显示
 
-1 美元等于多少额度，额度和美元之间的所有换算都用它。充值 $1 入账这么多额度；控制台、日志和 Billing API 里的美元金额都是额度除以它。余额按额度存储，在运行中的站点上改它会改变每一笔余额的价值：除非是新站点，请保持 500000。
+1 美元对应的额度数，额度与美元之间的所有换算均以此为准。充值 $1 入账相应额度；控制台、日志和 Billing API 中的美元金额均为额度除以此值。余额按额度存储，在运行中的站点上修改此值将改变每笔余额的价值：除新站点外，请保持 500000。
 
 示例：
 
 - `500000` 默认值：充值 $10 入账 5,000,000 额度，1,000 额度等于 $0.002。
-- `1000000` 在运行中的站点上，一笔 5,000,000 额度的余额从 $10 变成 $5。
+- `1000000` 在运行中的站点上，一笔 5,000,000 额度的余额从 $10 变为 $5。
 
 相关设置：[以美元显示金额](./site.md#DisplayInCurrencyEnabled)
 
@@ -219,7 +219,7 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 
 位置：平台设置 › 站点 › 语言
 
-不知道对方用什么语言时使用的语言：邮件用它发送，浏览器语言不受支持时首页也用它。在控制台里选过语言的用户按自己的语言。邮件模板编辑器也默认打开这个语言。留空表示英语。
+无法确定用户语言时使用的语言：邮件以此语言发送，浏览器语言不受支持时首页也使用此语言。已在控制台中选择语言的用户按其所选语言。邮件模板编辑器也默认打开此语言。留空表示英语。
 
 取值：
 
@@ -239,11 +239,11 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 
 位置：平台设置 › 站点 › 外部链接
 
-用户购买兑换码的外部商店，从充值页在新标签页打开。留空则隐藏这个按钮。
+用户购买兑换码的外部商店，从充值页在新标签页中打开。留空时隐藏此按钮。
 
 示例：
 
-- `https://shop.example.com/codes` 充值页在兑换码输入框下方显示一个按钮，点开就是这个商店。
+- `https://shop.example.com/codes` 充值页在兑换码输入框下方显示一个按钮，点击后打开此商店。
 
 <a id="DocsLink"></a>
 
@@ -253,7 +253,7 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 
 位置：平台设置 › 站点 › 外部链接
 
-站点文档所在的地址，页脚、账户菜单和 API 页面都会链接到它。/llms.txt 和智能体技能文件也指向它。留空则隐藏外部文档链接；已登录用户仍能看到控制台内置文档。
+站点文档的地址，页脚、账户菜单和 API 页面均链接至此。/llms.txt 和智能体技能文件也指向此地址。留空时隐藏外部文档链接；已登录用户仍可查看控制台内置文档。
 
 示例：
 
@@ -271,8 +271,8 @@ Billing API 返回调用方 API Key 的额度，而不是用户余额。指的�
 
 位置：平台设置 › 站点 › 版本公告
 
-在控制台顶部给已登录用户显示的横幅，每个用户查看或关闭后不再出现。内容一改就会重新显示。支持 Markdown 和 HTML。留空表示没有公告。
+在控制台顶部向已登录用户显示的横幅，每位用户查看或关闭后不再显示。内容修改后将重新显示。支持 Markdown 和 HTML。留空表示不显示公告。
 
 示例：
 
-- `Maintenance on Saturday 02:00-03:00 UTC: requests may fail for a few minutes.` 每个已登录用户看到一次横幅；修改内容后所有人会再看到一次。
+- `Maintenance on Saturday 02:00-03:00 UTC: requests may fail for a few minutes.` 每位已登录用户看到一次横幅；修改内容后所有用户将再次看到。

@@ -68,7 +68,7 @@ outline: deep
 
 例：
 
-- `https://www.example.com` ホームページにサイトヘッダーの下でコーポレートサイトをフレーム表示します。
+- `https://www.example.com` ホームページのサイトヘッダーの下に、コーポレートサイトをフレーム表示します。
 - `# Welcome
 Sign in to get an API key.` ホームページに見出しと 1 行のテキストを表示します。
 
@@ -122,7 +122,7 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 
 <a id="BrandIconSyncEnabled"></a>
 
-### アイコンライブラリを自動同期
+### アイコンライブラリの自動同期
 
 キー `BrandIconSyncEnabled` · 型 bool · 既定値 `true` · ほとんど変更しない
 
@@ -130,7 +130,7 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 
 24 時間ごとに npm registry でベンダーとチャネルのアイコンライブラリの新バージョンを確認し、検証後に切り替えます。確認に失敗した場合は現在のアイコンを使い続けます。オフにするとこのビルドに内蔵されたアイコンのままです。ノードごとに同期し、ブラウザは常に本サイトからアイコンを読み込みます。
 
-関連する設定：[アイコンライブラリの registry](./site.md#BrandIconRegistry) · [未知のベンダーのアイコンを取得](./site.md#BrandIconFaviconFetchEnabled)
+関連する設定：[アイコンライブラリの registry](./site.md#BrandIconRegistry) · [未知のベンダーのアイコン取得](./site.md#BrandIconFaviconFetchEnabled)
 
 <a id="BrandIconRegistry"></a>
 
@@ -145,13 +145,13 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 例：
 
 - `https://registry.npmjs.org` 公式の npm registry からアイコンライブラリをダウンロードします。
-- `https://registry.npmmirror.com` 既定のミラーで、中国本土からは速く届きます。
+- `https://registry.npmmirror.com` 既定のミラーです。中国本土からのダウンロードが高速です。
 
-関連する設定：[アイコンライブラリを自動同期](./site.md#BrandIconSyncEnabled)
+関連する設定：[アイコンライブラリの自動同期](./site.md#BrandIconSyncEnabled)
 
 <a id="BrandIconFaviconFetchEnabled"></a>
 
-### 未知のベンダーのアイコンを取得
+### 未知のベンダーのアイコン取得
 
 キー `BrandIconFaviconFetchEnabled` · 型 bool · 既定値 `true` · ほとんど変更しない
 
@@ -159,13 +159,13 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 
 内蔵アイコンのないベンダーやチャネルを保存すると、サーバーがそのサイトの favicon を取得してキャッシュします。ブラウザはそれでもすべてのアイコンを本サイトから読み込みます。オフにすると、そうしたベンダーには取得したアイコンが付きません。
 
-関連する設定：[アイコンライブラリを自動同期](./site.md#BrandIconSyncEnabled)
+関連する設定：[アイコンライブラリの自動同期](./site.md#BrandIconSyncEnabled)
 
 ## 表示
 
 <a id="DisplayInCurrencyEnabled"></a>
 
-### 金額を米ドルで表示
+### 米ドルでの金額表示
 
 キー `DisplayInCurrencyEnabled` · 型 bool · 既定値 `true`
 
@@ -182,7 +182,7 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 
 <a id="DisplayTokenStatEnabled"></a>
 
-### Billing API で API キーのクォータを返す
+### Billing API での API キーのクォータ返却
 
 キー `DisplayTokenStatEnabled` · 型 bool · 既定値 `true`
 
@@ -190,7 +190,7 @@ Sign in to get an API key.` ホームページに見出しと 1 行のテキス�
 
 Billing API が、ユーザーの残高ではなく呼び出した API キーのクォータを返します。対象は OpenAI 形式の /v1/dashboard/billing/subscription と /usage エンドポイントです。クォータ無制限のキーは引き続きユーザーの残高を返し、組織のキーは常にそのキー自身のクォータを返します。オフにすると常にユーザーの残高を返します。
 
-関連する設定：[金額を米ドルで表示](./site.md#DisplayInCurrencyEnabled)
+関連する設定：[米ドルでの金額表示](./site.md#DisplayInCurrencyEnabled)
 
 <a id="QuotaPerUnit"></a>
 
@@ -200,14 +200,14 @@ Billing API が、ユーザーの残高ではなく呼び出した API キーの
 
 場所：プラットフォーム設定 › サイト › 表示
 
-何クォータで 1 米ドルになるかで、クォータとドルの換算はすべてこれを使います。$1 のチャージでこの量のクォータが入り、コンソール・ログ・Billing API のドル金額はクォータをこれで割った値です。残高はクォータで保存されるため、運用中のサイトで変更するとすべての残高の価値が変わります。新しいサイトでない限り 500000 のままにしてください。
+1 米ドルに相当するクォータ数で、クォータとドルの換算はすべてこの値を使います。$1 のチャージでこの量のクォータが入り、コンソール・ログ・Billing API のドル金額はクォータをこの値で割ったものです。残高はクォータで保存されるため、運用中のサイトで変更するとすべての残高の価値が変わります。新しいサイトでない限り 500000 のままにしてください。
 
 例：
 
 - `500000` 既定値：$10 のチャージで 5,000,000 クォータが入り、1,000 クォータは $0.002 です。
 - `1000000` 運用中のサイトでは、5,000,000 クォータの残高が $10 から $5 に下がります。
 
-関連する設定：[金額を米ドルで表示](./site.md#DisplayInCurrencyEnabled)
+関連する設定：[米ドルでの金額表示](./site.md#DisplayInCurrencyEnabled)
 
 ## 言語
 
@@ -219,7 +219,7 @@ Billing API が、ユーザーの残高ではなく呼び出した API キーの
 
 場所：プラットフォーム設定 › サイト › 言語
 
-相手の言語がわからないときに使う言語で、メールはこの言語で送られ、ブラウザーの言語に対応していないときはホームページもこの言語になります。コンソールで言語を選んだユーザーにはその言語が使われます。メールテンプレートの編集画面もこの言語で開きます。空欄は英語です。
+利用者の言語が不明な場合に使う言語で、メールはこの言語で送られ、ブラウザーの言語に対応していない場合はホームページもこの言語になります。コンソールで言語を選んだユーザーにはその言語が使われます。メールテンプレートの編集画面もこの言語で開きます。空欄の場合は英語です。
 
 値：
 

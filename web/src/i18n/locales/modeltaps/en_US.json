@@ -5025,16 +5025,16 @@
       "rest": "Everything else waits for review"
     },
     "name": "Rule name",
-    "namePlaceholder": "Name this rule",
+    "namePlaceholder": "Rule name",
     "up": "Move up",
     "down": "Move down",
     "remove": "Remove rule",
     "add": "Add rule",
-    "orderHint": "Tried from the top; the first matching rule decides. A model no rule matches waits for review.",
+    "orderHint": "Rules are matched from the top; the first matching rule applies. A model no rule matches waits for review.",
     "endpoints": "Abilities (any of)",
     "families": "Families",
     "patterns": "Model names",
-    "supplied": "Other channels supply it",
+    "supplied": "Supplied by other channels",
     "action": "Then",
     "placement": "Placement",
     "tri": {
@@ -5049,7 +5049,7 @@
       "skip": "Do not add"
     },
     "placements": {
-      "auto": "Last if others supply it",
+      "auto": "Last when already supplied",
       "policy": "Normal position",
       "last": "Always last"
     },
@@ -5058,12 +5058,12 @@
       "families": "family {{list}}",
       "patterns": "name {{list}}",
       "vendors": "vendor #{{list}}",
-      "supplied": "others supply it",
-      "unsupplied": "nobody supplies it yet",
+      "supplied": "supplied by other channels",
+      "unsupplied": "supplied by no channel yet",
       "any": "any model"
     },
-    "defaultNote": "These are the built-in rules. Editing them saves your own copy.",
-    "customNote": "Your own rules replace the built-in ones.",
+    "defaultNote": "The built-in rules apply; editing saves them as custom rules.",
+    "customNote": "Custom rules replace the built-in rules.",
     "showBuiltIn": "Built-in rules",
     "useBuiltIn": "Go back to the built-in rules",
     "channel": {
@@ -5078,6 +5078,25 @@
       "unnamed": "Unnamed rule",
       "count_one": "{{count}} model",
       "count_other": "{{count}} models"
+    },
+    "editor": {
+      "when": "When a model meets every condition below",
+      "whenAny": "Condition: any model",
+      "then": "Then",
+      "endpoints": "Has any ability",
+      "families": "Family matches",
+      "patterns": "Name matches",
+      "supplied": "Supplied by other channels",
+      "familiesPlaceholder": "e.g. claude-*, gpt-5*",
+      "patternsPlaceholder": "e.g. *-preview*, *-exp*",
+      "globHint": "Separate values with commas; * matches any characters",
+      "addCondition": "Add condition",
+      "removeCondition": "Remove condition",
+      "done": "Done"
+    },
+    "result": {
+      "last": "joins after the existing supplies",
+      "normal": "placed by the call order"
     }
   },
   "systemLogs": {
