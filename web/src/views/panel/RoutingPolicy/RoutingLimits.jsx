@@ -6,8 +6,8 @@ import { Gauge, Loader2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { NumberField } from '@/components/ui/number-field';
+import { Dialog, DialogContent, DialogBody, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { OptionList } from '@/components/settings/cards';
 import { InlineRow } from '../Setting/parts';
@@ -95,22 +95,22 @@ export default function RoutingLimits({ trigger = true }) {
             <DialogTitle>{t('settingsUi.platform.cards.routing-limits.title')}</DialogTitle>
             <DialogDescription>{t('settingsUi.platform.cards.routing-limits.description')}</DialogDescription>
           </DialogHeader>
-          <OptionList>
-            {ROUTING_LIMIT_KEYS.map((key) => (
-              <InlineRow key={key} id={key}>
-                <Input
-                  id={key}
-                  type="number"
-                  min={0}
-                  value={values[key] ?? ''}
-                  disabled={!origin}
-                  placeholder="20"
-                  onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
-                  className="w-24 text-right tabular-nums"
-                />
-              </InlineRow>
-            ))}
-          </OptionList>
+          <DialogBody>
+            <OptionList>
+              {ROUTING_LIMIT_KEYS.map((key) => (
+                <InlineRow key={key} id={key}>
+                  <NumberField
+                    id={key}
+                    min={0}
+                    value={values[key] ?? ''}
+                    disabled={!origin}
+                    placeholder="20"
+                    onChange={(next) => setValues((v) => ({ ...v, [key]: next }))}
+                  />
+                </InlineRow>
+              ))}
+            </OptionList>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={close} disabled={saving}>
               {t('common.cancel')}

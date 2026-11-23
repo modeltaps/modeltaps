@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogBody, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1139,7 +1139,7 @@ export default function ModelInfo() {
             <DialogHeader>
               <DialogTitle>{t('pricingPage.billingInfoTitle')}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-1 text-sm">
+            <DialogBody className="space-y-1 text-sm">
               <p>
                 <b>{t('pricingPage.currencyInfo1')}</b>
                 {t('pricingPage.currencyInfo2')}
@@ -1153,7 +1153,7 @@ export default function ModelInfo() {
                 {t('pricingPage.currencyInfo6')}
               </p>
               <p>{t('pricingPage.currencyInfo7')}</p>
-            </div>
+            </DialogBody>
             <DialogFooter>
               <Button variant="outline" onClick={() => setBillingInfoOpen(false)}>
                 {t('common.close')}

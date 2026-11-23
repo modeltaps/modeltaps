@@ -5,7 +5,7 @@ import { ChevronDown, Loader2, Minus, Network, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogBody, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
 import ProviderIcon from '@/components/brand/ProviderIcon';
@@ -93,16 +93,18 @@ export default function SupplyBatchMenu({ rows, onDone }) {
             <DialogTitle>{t(action === 'remove' ? 'modelSupply.batch.removeTitle' : 'modelSupply.batch.addTitle', { count })}</DialogTitle>
             <DialogDescription>{t(action === 'remove' ? 'modelSupply.batch.removeHint' : 'modelSupply.batch.addHint')}</DialogDescription>
           </DialogHeader>
-          <Combobox
-            id="supply-batch-channel"
-            value={channelId}
-            onValueChange={setChannelId}
-            options={options}
-            placeholder={channels === null ? t('common.loading', { defaultValue: '…' }) : t('modelSupply.batch.pick')}
-            searchPlaceholder={t('modelSupply.add.searchChannel')}
-            emptyText={t('modelSupply.add.noChannel')}
-            className="rounded-[10px]"
-          />
+          <DialogBody>
+            <Combobox
+              id="supply-batch-channel"
+              value={channelId}
+              onValueChange={setChannelId}
+              options={options}
+              placeholder={channels === null ? t('common.loading', { defaultValue: '…' }) : t('modelSupply.batch.pick')}
+              searchPlaceholder={t('modelSupply.add.searchChannel')}
+              emptyText={t('modelSupply.add.noChannel')}
+              className="rounded-[10px]"
+            />
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAction(null)} disabled={busy}>
               {t('common.cancel')}

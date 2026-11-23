@@ -7,6 +7,7 @@ import { ChevronRight, ListChecks, Pencil, Pin, Plus, Route, Search, Waypoints, 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
 
 import { verifyJSON } from 'utils/common';
@@ -16,7 +17,6 @@ import { ModifiedDot } from '@/components/settings/SettingHelp';
 import { InlineRow, SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
 import { settingEnumLabel, settingLabel } from '@/components/settings/catalog';
 import { Segmented } from '@/components/objects';
-import { cn } from '@/lib/utils';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
@@ -557,8 +557,10 @@ export function SupplyModeCard({ ctx }) {
         {routing && costOrder === 'cost' && (
           <>
             <InlineRow id="SupplyCostMinSavingPercent">
-              <UnitInput
+              <NumberField
                 id="SupplyCostMinSavingPercent"
+                min={0}
+                max={99}
                 unit="%"
                 placeholder="5"
                 value={inputs.SupplyCostMinSavingPercent}
@@ -566,8 +568,10 @@ export function SupplyModeCard({ ctx }) {
               />
             </InlineRow>
             <InlineRow id="SupplyCostMinSuccessPercent">
-              <UnitInput
+              <NumberField
                 id="SupplyCostMinSuccessPercent"
+                min={0}
+                max={100}
                 unit="%"
                 placeholder="95"
                 value={inputs.SupplyCostMinSuccessPercent}
@@ -594,32 +598,6 @@ function CardTitle({ icon: Icon, id }) {
 
 CardTitle.propTypes = { icon: PropTypes.elementType.isRequired, id: PropTypes.string.isRequired };
 
-// A short number field with its unit inside, for an InlineRow.
-function UnitInput({ id, unit, value, onChange, placeholder, className = 'w-24' }) {
-  return (
-    <span className={cn('relative', className)}>
-      <Input
-        id={id}
-        type="number"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="pr-9 text-right tabular-nums"
-      />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{unit}</span>
-    </span>
-  );
-}
-
-UnitInput.propTypes = {
-  id: PropTypes.string.isRequired,
-  unit: PropTypes.string,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onChange: PropTypes.func.isRequired,
-  placeholder: PropTypes.string,
-  className: PropTypes.string
-};
-
 export function SessionAffinityCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
@@ -631,11 +609,13 @@ export function SessionAffinityCard({ ctx }) {
         <ToggleRow id="SessionAffinityStrict" description="" {...bindSwitch(ctx, 'SessionAffinityStrict')} />
         <InlineRow id="SessionAffinityTTLSeconds">
           {seconds > 0 && <span className="text-xs text-muted-foreground">{durationLabel(t, seconds)}</span>}
-          <UnitInput
+          <NumberField
             id="SessionAffinityTTLSeconds"
             unit={t('settingsUi.platform.units.seconds')}
             placeholder="3600"
-            className="w-28"
+            min={60}
+            step={60}
+            className="w-36"
             value={inputs.SessionAffinityTTLSeconds}
             onChange={(v) => setField('SessionAffinityTTLSeconds', v)}
           />

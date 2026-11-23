@@ -44,6 +44,11 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
 - A setting's `?` help opens as a floating panel instead of inside the row, so nothing below it
   moves.
 - The order-by choices are named "Call order first" and "Lowest cost".
+- Number fields no longer show the browser's spin arrows and use tabular figures. Bounded numbers
+  (policy limits, shares of a tier, the session affinity duration, the lowest cost thresholds) use
+  one compact field with the value centered between minus and plus buttons and its unit after it.
+- Four dialogs whose content ran to the edges get the usual padding: own policy limits, the
+  billing note of the models page, the price update check and the batch supplies dialog.
 
 ### Removed
 

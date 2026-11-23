@@ -24,7 +24,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -295,7 +295,7 @@ const COLUMN_WIDTHS = {
   select: 60,
   order: 64,
   drift: 96,
-  priority: 112,
+  priority: 144,
   requests: 152,
   success: 80,
   latency: 80,
@@ -409,24 +409,29 @@ function PercentInput({ id, name, value, onSave }) {
     setSynced(value);
     setText(String(value));
   }
-  const commit = () => {
-    const n = Math.min(99, Math.max(1, Math.round(Number(text)) || 1));
-    setText(String(n));
+  const commit = (raw) => {
+    if (String(raw).trim() === '') return;
+    const n = Math.min(99, Math.max(1, Math.round(Number(raw)) || 1));
     if (n !== value) onSave(id, n);
   };
+  // Steps and typing settle for a moment before the order is saved, so a few clicks save once.
+  useEffect(() => {
+    if (text === String(value)) return undefined;
+    const timer = setTimeout(() => commit(text), 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
   return (
-    <span className="inline-flex items-center gap-1">
-      <Input
-        aria-label={t('channels.order.percentOf', { name })}
-        inputMode="numeric"
-        value={text}
-        onChange={(e) => setText(e.target.value.replace(/\D/g, ''))}
-        onBlur={commit}
-        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-        className="h-7 w-12 rounded-md px-2 text-right tabular-nums"
-      />
-      <span className="text-xs text-muted-foreground">%</span>
-    </span>
+    <NumberField
+      aria-label={t('channels.order.percentOf', { name })}
+      value={text}
+      onChange={setText}
+      min={1}
+      max={99}
+      unit="%"
+      onBlur={() => commit(text)}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+    />
   );
 }
 

@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberField } from '@/components/ui/number-field';
 import { Switch } from '@/components/ui/switch';
 import { Combobox } from '@/components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -78,26 +79,6 @@ import { usd } from '../../Channel/channelPrices';
 import { admin } from 'routes/paths';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
-
-function NumberCell({ value, onChange, label, className }) {
-  return (
-    <Input
-      type="number"
-      inputMode="numeric"
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn('h-8 rounded-lg px-2 tabular-nums', className)}
-    />
-  );
-}
-
-NumberCell.propTypes = {
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onChange: PropTypes.func,
-  label: PropTypes.string,
-  className: PropTypes.string
-};
 
 // Form to add a supply: pick a channel (the ones that already list the model first), the
 // upstream name is filled in from the channel's model mapping; it goes in a tier of its own below
@@ -421,15 +402,14 @@ function SupplyRow({ supply, state, share, tierShare, tierSize, next, outsideGro
         <td colSpan={5}>
           <div className="flex items-center gap-2">
             {tierSize > 1 && (
-              <span className="inline-flex items-center gap-1">
-                <NumberCell
-                  label={t('modelSupply.tierShare')}
-                  value={editing.percent}
-                  onChange={(v) => setEditing({ ...editing, percent: v })}
-                  className="w-16"
-                />
-                <span className="text-xs text-muted-foreground">%</span>
-              </span>
+              <NumberField
+                aria-label={t('modelSupply.tierShare')}
+                value={editing.percent}
+                onChange={(v) => setEditing({ ...editing, percent: v })}
+                min={1}
+                max={99}
+                unit="%"
+              />
             )}
             <span className="flex-1" />
             <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => setEditing(null)}>

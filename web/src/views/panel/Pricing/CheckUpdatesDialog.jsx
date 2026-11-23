@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogBody, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const STORAGE_KEY = 'modeltaps_price_update_url';
 
@@ -64,7 +64,7 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
     setLoading(true);
     try {
       const res = await API.get(url);
-      const data = Array.isArray(res?.data) ? res.data : res?.data?.data ?? [];
+      const data = Array.isArray(res?.data) ? res.data : (res?.data?.data ?? []);
       if (!Array.isArray(data)) toast.error(t('CheckUpdatesTable.dataFormatIncorrect'));
       else setNewPricing(data);
     } catch (err) {
@@ -140,8 +140,10 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
       .map((r) => {
         const np = newPricing.find((n) => n.model === r.model);
         let changes = '';
-        if (r.input !== np.input) changes += `${t('CheckUpdatesTable.inputMultiplierChanged')} ${r.input} ${t('CheckUpdatesTable.to')} ${np.input}; `;
-        if (r.output !== np.output) changes += `${t('CheckUpdatesTable.outputMultiplierChanged')} ${r.output} ${t('CheckUpdatesTable.to')} ${np.output}; `;
+        if (r.input !== np.input)
+          changes += `${t('CheckUpdatesTable.inputMultiplierChanged')} ${r.input} ${t('CheckUpdatesTable.to')} ${np.input}; `;
+        if (r.output !== np.output)
+          changes += `${t('CheckUpdatesTable.outputMultiplierChanged')} ${r.output} ${t('CheckUpdatesTable.to')} ${np.output}; `;
         if (hasRatiosDiff(r.extra_ratios, np.extra_ratios)) changes += `${t('CheckUpdatesTable.extraRatiosChanges')}; `;
         if (hasLongContextDiff(r.long_context, np.long_context)) changes += describeLongContextChange(r.long_context, np.long_context);
         return { model: r.model, changes: changes.replace(/;\s*$/, '').trim() };
@@ -160,7 +162,7 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
         <DialogHeader>
           <DialogTitle>{t('CheckUpdatesTable.checkUpdates')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="flex gap-2">
             <Input value={url} placeholder={t('CheckUpdatesTable.url')} onChange={onUrlChange} />
             <Button type="button" variant="outline" onClick={checkUpdates} disabled={loading}>
@@ -176,9 +178,15 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
           {newPricing.length > 0 && (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                <Badge>{t('CheckUpdatesTable.priceServerTotal')}: {newPricing.length}</Badge>
-                <Badge variant="secondary">{t('CheckUpdatesTable.newModels')}: {addModel.length}</Badge>
-                <Badge variant="outline">{t('CheckUpdatesTable.priceChangeModels')}: {diffModel.length}</Badge>
+                <Badge>
+                  {t('CheckUpdatesTable.priceServerTotal')}: {newPricing.length}
+                </Badge>
+                <Badge variant="secondary">
+                  {t('CheckUpdatesTable.newModels')}: {addModel.length}
+                </Badge>
+                <Badge variant="outline">
+                  {t('CheckUpdatesTable.priceChangeModels')}: {diffModel.length}
+                </Badge>
               </div>
 
               {!addModel.length && !diffModel.length && <Alert variant="success">{t('CheckUpdatesTable.noUpdates')}</Alert>}
@@ -188,7 +196,9 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
                   <p className="mb-2 text-sm font-medium">{t('CheckUpdatesTable.newModels')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {addModel.map((m) => (
-                      <Badge key={m} variant="outline">{m}</Badge>
+                      <Badge key={m} variant="outline">
+                        {m}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -206,10 +216,12 @@ export default function CheckUpdatesDialog({ open, onClose, onOk, row = [] }) {
                 </div>
               )}
 
-              <Alert variant="info">{t('CheckUpdatesTable.note')}: {t('CheckUpdatesTable.overwriteOrAddOnly')}</Alert>
+              <Alert variant="info">
+                {t('CheckUpdatesTable.note')}: {t('CheckUpdatesTable.overwriteOrAddOnly')}
+              </Alert>
             </div>
           )}
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
             {t('CheckUpdatesTable.cancel')}
