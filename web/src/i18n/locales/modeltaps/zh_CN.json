@@ -3035,7 +3035,7 @@
   },
   "nav": {
     "sections": {
-      "develop": "开发",
+      "develop": "API",
       "organization": "组织",
       "gateway": "网关",
       "people": "用户",

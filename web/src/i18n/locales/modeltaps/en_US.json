@@ -3161,7 +3161,7 @@
   },
   "nav": {
     "sections": {
-      "develop": "Develop",
+      "develop": "API",
       "organization": "Organization",
       "gateway": "Gateway",
       "people": "Users",

@@ -3017,7 +3017,7 @@
   },
   "nav": {
     "sections": {
-      "develop": "開発",
+      "develop": "API",
       "organization": "組織",
       "gateway": "ゲートウェイ",
       "people": "ユーザー",
