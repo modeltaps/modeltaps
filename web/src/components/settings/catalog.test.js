@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PLATFORM_GROUPS } from 'views/panel/Setting/registry';
 import { OBJECT_PAGES, catalogEntries, catalogEntry, splitFirstSentence } from './catalog';
+import { settingHref } from './SettingHelp';
 import { commandFilter, makeCommandFilter, parseSettingFilters, settingFieldValue } from '@/components/chrome/CommandMenu';
 import { normalizeSynonyms, packTiers } from '@/components/chrome/commandScore';
 
@@ -18,6 +19,16 @@ describe('settings catalog', () => {
   it('every card key of the settings page is in the catalog', () => {
     const keys = PLATFORM_GROUPS.flatMap((g) => g.cards.flatMap((c) => c.keys));
     expect(keys.filter((key) => !catalogEntry(key))).toEqual([]);
+  });
+
+  it('site settings kept on another page are on no settings card and link to that page', () => {
+    const onCards = new Set(PLATFORM_GROUPS.flatMap((g) => g.cards.flatMap((c) => c.keys)));
+    const elsewhere = catalogEntries().filter((e) => e.scope === 'site' && e.page);
+    expect(elsewhere.map((e) => e.key)).toContain('PersonalRoutingPolicyMaxCount');
+    for (const e of elsewhere) {
+      expect(onCards.has(e.key), e.key).toBe(false);
+      expect(settingHref(e.key)).toBe(`${OBJECT_PAGES[e.page]}?highlight=${e.key}`);
+    }
   });
 
   it('object fields link to a page', () => {

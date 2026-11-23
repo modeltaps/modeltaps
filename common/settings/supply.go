@@ -9,14 +9,14 @@ func supply() []Setting {
 		{
 			Key: "SupplyCostOrder", Scope: ScopeSite, Group: "supply", Card: "supply-mode", Type: TypeEnum,
 			Enum: []EnumValue{
-				{Value: "priority", Label: "Call order", Description: "Supplies are tried in the call order of the Providers page; cost does not move them."},
-				{Value: "cost", Label: "Cheaper first", Description: "Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order."},
+				{Value: "priority", Label: "Call order first", Description: "Supplies are called in the call order of the providers page; cost does not change the order."},
+				{Value: "cost", Label: "Lowest cost", Description: "Supplies with a clearly lower cost that serve reliably are called ahead of the call order."},
 			},
 			Label: "Order by",
-			Description: "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. " +
-				"Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a " +
-				"supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs " +
-				"keep the call order and share a tier by weight, and supplies of unknown cost come last.",
+			Description: "Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. " +
+				"Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With " +
+				"lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; " +
+				"supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.",
 			Examples: []Example{
 				{Value: "priority", Effect: "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."},
 				{Value: "cost", Effect: "A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back."},
@@ -159,7 +159,7 @@ func supply() []Setting {
 			Keywords: []string{"routing policy", "policy/", "self-service", "organization policy"},
 		},
 		{
-			Key: "PersonalRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "auto-routing", Type: TypeInt, Min: num(0),
+			Key: "PersonalRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-limits", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per user",
 			Description: "How many personal routing policies one user can create. Policies a user already has are kept when the " +
 				"cap is lowered; only new ones are refused. 0 sets no limit.",
@@ -171,7 +171,7 @@ func supply() []Setting {
 			Keywords: []string{"limit", "quota", "max policies"},
 		},
 		{
-			Key: "OrganizationRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "auto-routing", Type: TypeInt, Min: num(0),
+			Key: "OrganizationRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-limits", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per organization",
 			Description: "How many routing policies one organization can create. Policies it already has are kept when the cap " +
 				"is lowered; only new ones are refused. 0 sets no limit.",

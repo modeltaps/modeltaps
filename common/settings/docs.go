@@ -94,6 +94,17 @@ func (l DocsLanguage) groupTitle(group string) string {
 	return GroupTitles[group]
 }
 
+// pageObjects are the objects of the console pages a site setting can live on (Setting.Page).
+var pageObjects = map[string]Scope{"routing-policies": ScopeRoutingPolicy}
+
+// pageTitle names a console page outside the settings page, as the console calls its objects.
+func (l DocsLanguage) pageTitle(page string) string {
+	if t := l.ObjectTitles[string(pageObjects[page])]; t != "" {
+		return t
+	}
+	return GroupTitles[page]
+}
+
 func (l DocsLanguage) cardTitle(card string) string {
 	if t := l.CardTitles[card]; t != "" {
 		return t
@@ -219,7 +230,10 @@ func renderEntry(b *strings.Builder, l DocsLanguage, w map[string]string, s Sett
 	}
 	fmt.Fprintf(b, "%s\n\n", strings.Join(facts, " · "))
 	where := l.groupTitle(s.Group) + " › " + l.cardTitle(s.Card)
-	if s.Scope == ScopeSite {
+	switch {
+	case s.Scope == ScopeSite && s.Page != "":
+		where = l.pageTitle(s.Page) + " › " + l.cardTitle(s.Card)
+	case s.Scope == ScopeSite:
 		where = w["platform"] + " › " + where
 	}
 	fmt.Fprintf(b, "%s%s%s\n\n", w["where"], w["colon"], where)

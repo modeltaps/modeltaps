@@ -2212,6 +2212,10 @@
       "next": "下一个模型",
       "add": "添加模型",
       "remove": "移除模型"
+    },
+    "limits": {
+      "invalid": "上限须为 0 或正整数",
+      "saved": "已保存策略上限"
     }
   },
   "logPage": {
@@ -2918,31 +2922,31 @@
       "shareColumn": "档内占比",
       "up": "往前移",
       "down": "往后移",
-      "share": "并到上一档",
-      "unshare": "单独成档",
+      "share": "并入上一档",
+      "unshare": "移出为独立档",
       "drag": "拖动调整顺序",
       "positionShort": "第 {{n}} 档",
       "sharesWith": "与 {{names}} 同档",
       "nameSep": "、",
       "sharedTag": "同档",
       "groupWhy": "这 {{count}} 个渠道在同一档，共同提供 {{models}} 个模型，这些模型按占比分担",
-      "noCommonModel": "这两个渠道没有共同提供的模型，不能放在同一档，已排在它后面",
+      "noCommonModel": "两个渠道没有共同模型，无法设为同档，已排在其后",
       "dropHint": {
         "before": "插到这里",
         "after": "插到这里",
-        "join": "并入这一档"
+        "join": "并入此档"
       },
       "percentOf": "{{name}} 在档内的占比",
-      "howItWorks": "从第 1 档往下试，前一档都不可用才用下一档；同一档的渠道按占比分担。",
+      "howItWorks": "按档位依次调用：上一档全部不可用时启用下一档；同档渠道按占比分配流量。",
       "orderBy": "排序依据",
       "orderBySaved": "排序依据已保存",
-      "cheaperFirstNote": "便宜的线路会排到前面，价格相近时才按这里的顺序。",
-      "cheaperFirstSettings": "节省与成功率门槛 ›"
+      "cheaperFirstNote": "成本更低的线路将优先调用；成本相近时按调用顺序。",
+      "cheaperFirstSettings": "成本优先阈值 ›"
     },
     "newMenu": {
       "inUse": "已接入"
     },
-    "orderHint": "从第 1 档往下试，前一档都不可用才用下一档；同一档的渠道提供相同的模型，按占比分担。",
+    "orderHint": "按档位依次调用：上一档全部不可用时启用下一档；同档渠道提供相同的模型，按占比分配流量。",
     "attention_other": "{{count}} 个需要处理",
     "issueTag": {
       "autoDisabled": "已自动禁用",
@@ -2956,9 +2960,9 @@
     },
     "head": {
       "drift": "上游下架或改名的在用模型（请求会失败），以及上游新增的模型。没有在用的模型下架只在渠道的模型页签里标出。",
-      "order": "先用第 1 档；同一档的渠道一起分担流量",
-      "share": "在同一档里承接的流量占比",
-      "shareNone": "这一档只有它",
+      "order": "从第 1 档开始调用；同档渠道分担流量",
+      "share": "在本档中的流量占比",
+      "shareNone": "本档仅此渠道",
       "priorityWeight": "优先级高的先用，同优先级按权重分流",
       "requests": "请求数",
       "requestsHint": "{{range}}内的请求数和走势",
@@ -3263,7 +3267,7 @@
     "savedRightAway": "此页的改动会立即保存。",
     "empty": "还没有渠道提供这个模型",
     "emptyHint": "添加线路，指定由哪个渠道提供、发给上游时用什么模型名。",
-    "orderHint": "从第 1 档往下试，上一档都不可用才用下一档；同一档的线路按占比分担。",
+    "orderHint": "按档位依次调用：上一档全部不可用时启用下一档；同档线路按占比分配流量。",
     "switchOff": "按线路路由尚未开启。这些线路已保存，但在打开 ModelSupplyEnabled 之前，请求仍按各渠道的模型列表路由。",
     "upstreamRequired": "请填写发给该渠道的模型名",
     "minutes_other": "{{count}} 分钟",
@@ -3298,7 +3302,7 @@
       "dearerAcross": "更贵，更便宜的线路都失败后才用",
       "lowSuccess": "成功率低，正常的线路都失败后才用",
       "number": "第 {{n}} 档",
-      "backupHint": "上一档都不可用时才用"
+      "backupHint": "上一档均不可用时启用"
     },
     "state": {
       "ok": "可用",
@@ -3337,7 +3341,7 @@
       "searchChannel": "搜索渠道",
       "noChannel": "没有找到渠道",
       "channelRequired": "请选择渠道",
-      "hint": "上游模型名按渠道自动填写：先看模型映射，再看渠道已列出的名字，最后按该平台的写法（如 Vertex 的 @default）。默认单独一档排在最后，只做备用。",
+      "hint": "上游模型名按渠道自动填写：依次参考模型映射、渠道已列出的名称和该平台的命名方式（如 Vertex 的 @default）。默认新建末尾档位，作为备用。",
       "fromLibrary": "已按该平台的写法填写"
     },
     "pausedPage": {
@@ -3414,7 +3418,7 @@
     "dearerBackup": "更贵，仅兜底",
     "dearerBackupTip": "有更便宜的线路承接请求，这条只在它们失败时才用。",
     "lowSuccess": "成功率低",
-    "lowSuccessTip": "更便宜，但最近两小时的成功率低于「便宜的先用」要求的最低值，排在运行正常的线路后面。",
+    "lowSuccessTip": "成本更低，但最近两小时的成功率低于成本优先要求的最低值，排在运行正常的线路之后。",
     "restorePlacement": "恢复正常排位",
     "confirmPending": "启用",
     "keepOff": "不启用",
@@ -3452,12 +3456,12 @@
     "vsSellTip": "每条线路的成本相对本站基础售价（取输入、输出中较高的一侧；未计分组倍率）",
     "sellLine": "本站基础售价 {{input}} / {{output}}（入 / 出，每百万 token，未计分组倍率）",
     "tierShare": "档内占比",
-    "tierShareTip": "在同一档里按权重分到的请求占比",
-    "shareNow": "现在 {{share}}%",
+    "tierShareTip": "按权重计算的本档请求占比",
+    "shareNow": "当前 {{share}}%",
     "percentInvalid": "占比须为 1 到 99 之间的整数",
-    "tierUp": "整档上移",
-    "tierDown": "整档下移",
-    "place": { "label": "放在", "last": "单独一档，排在最后", "join": "第 {{n}} 档，与 {{names}} 同档" }
+    "tierUp": "上移本档",
+    "tierDown": "下移本档",
+    "place": { "label": "所在档位", "last": "新建末尾档位", "join": "第 {{n}} 档（与 {{names}} 同档）" }
   },
   "settingsUi": {
     "search": {
@@ -3506,7 +3510,7 @@
         },
         "supply": {
           "label": "线路分配",
-          "description": "请求走哪条线路：按线路路由与排序依据、会话亲和、上新规则与路由策略"
+          "description": "配置请求的线路分配：线路路由与排序依据、会话亲和、上新规则与路由策略"
         },
         "gateway": {
           "label": "网关",
@@ -3735,8 +3739,8 @@
         },
         "supply-mode": {
           "title": "线路路由与排序依据",
-          "description": "请求是否按线路分配，以及便宜的线路能不能排到调用顺序前面",
-          "hint": "调用顺序在供应商页排；单个模型可以在它的「线路」页签里单独设置",
+          "description": "设置请求是否按线路分配，以及成本是否参与排序",
+          "hint": "调用顺序在供应商页配置；单个模型可在其「线路」页签单独设置",
           "migrateChecking": "正在核对要迁移的线路…",
           "migrateNote": "保存时先把渠道的模型迁移成 {{supplies}} 条线路。",
           "migrateLost": "切换后有 {{count}} 个模型没有可用线路。",
@@ -3767,12 +3771,12 @@
           "description": "渠道自动加入上游新模型时：直接启用、待确认还是不加入，以及排在哪",
           "hint": "渠道可以在「监控」里改用自己的规则",
           "edit": "编辑规则",
-          "tryLabel": "试一个模型名",
-          "tryPlaceholder": "输入模型名试算，例如 gpt-5.2-preview",
-          "tryRule": "第 {{n}} 条决定：",
-          "tryFallback": "没有规则命中：",
-          "tryUnknown": "目录里没有这个模型，只按名字判断",
-          "countNote": "右侧是按目录里 {{count}} 个模型试算的结果"
+          "tryLabel": "规则测试",
+          "tryPlaceholder": "输入模型名称以测试规则，例如 gpt-5.2-preview",
+          "tryRule": "匹配规则 {{n}}：",
+          "tryFallback": "未匹配任何规则：",
+          "tryUnknown": "该模型不在目录中，仅按名称匹配",
+          "countNote": "命中数基于目录中的 {{count}} 个模型计算"
         },
         "pricing": {
           "title": "定价",
@@ -3782,6 +3786,12 @@
         "modified-settings": {
           "title": "已修改的设置",
           "description": "所有与默认值不同的设置，可一键恢复"
+        },
+        "routing-limits": {
+          "title": "自建策略上限",
+          "description": "每个用户和每个组织最多可创建的路由策略数量。0 表示不限制。",
+          "summary": "每个用户 {{user}} · 每个组织 {{org}}",
+          "open": "在路由策略页修改 ›"
         }
       },
       "actions": {
@@ -4159,22 +4169,22 @@
         }
       },
       "supplyFlow": {
-        "label": "请求怎么走",
+        "label": "请求路由流程",
         "request": "请求",
-        "requestValue": "调用一个模型",
+        "requestValue": "调用模型",
         "routing": "按线路路由",
-        "on": "开",
-        "off": "关",
-        "routingOff": "关：按渠道模型列表",
+        "on": "已开启",
+        "off": "已关闭",
+        "routingOff": "已关闭，按渠道模型列表路由",
         "order": "调用顺序",
-        "orderValue": "在供应商页排",
+        "orderValue": "在供应商页配置",
         "orderBy": "排序依据",
         "affinity": "会话亲和",
-        "affinityValue": "开 · {{time}}",
+        "affinityValue": "已开启 · {{time}}",
         "channel": "渠道",
-        "channelValue": "承接请求",
+        "channelValue": "处理请求",
         "newModel": "上游新模型",
-        "newModelValue": "渠道同步时出现",
+        "newModelValue": "渠道同步时发现",
         "intake": "上新规则",
         "intakeValue": "{{count}} 条",
         "joinsOrder": "加入调用顺序"
@@ -4968,7 +4978,7 @@
       "site": "使用全站规则",
       "custom": "本渠道自定义"
     },
-    "board": { "fallback": "其余", "fallbackWhen": "上面的规则都没命中", "unnamed": "未命名规则", "count": "{{count}} 个模型" }
+    "board": { "fallback": "默认规则", "fallbackWhen": "未匹配以上规则", "unnamed": "未命名规则", "count": "{{count}} 个模型" }
   },
   "systemLogs": {
     "levelLabel": "级别",

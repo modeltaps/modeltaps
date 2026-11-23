@@ -1669,17 +1669,17 @@
       "enum": [
         {
           "value": "priority",
-          "label": "Call order",
-          "description": "Supplies are tried in the call order of the Providers page; cost does not move them."
+          "label": "Call order first",
+          "description": "Supplies are called in the call order of the providers page; cost does not change the order."
         },
         {
           "value": "cost",
-          "label": "Cheaper first",
-          "description": "Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order."
+          "label": "Lowest cost",
+          "description": "Supplies with a clearly lower cost that serve reliably are called ahead of the call order."
         }
       ],
       "label": "Order by",
-      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs keep the call order and share a tier by weight, and supplies of unknown cost come last.",
+      "description": "Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.",
       "examples": [
         {
           "value": "priority",
@@ -1945,7 +1945,8 @@
       "key": "PersonalRoutingPolicyMaxCount",
       "scope": "site",
       "group": "supply",
-      "card": "auto-routing",
+      "card": "routing-limits",
+      "page": "routing-policies",
       "type": "int",
       "min": 0,
       "label": "Policies per user",
@@ -1974,7 +1975,8 @@
       "key": "OrganizationRoutingPolicyMaxCount",
       "scope": "site",
       "group": "supply",
-      "card": "auto-routing",
+      "card": "routing-limits",
+      "page": "routing-policies",
       "type": "int",
       "min": 0,
       "label": "Policies per organization",

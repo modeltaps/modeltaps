@@ -70,6 +70,10 @@ type Setting struct {
 	// ("channels", "models", "user-groups"...) and Card its tab or section.
 	Group string `json:"group"`
 	Card  string `json:"card"`
+	// Page is set for a site setting changed on another console page (an object page id such as
+	// "routing-policies") instead of the settings page; Group still files it in the reference
+	// docs, and Card names its section on that page.
+	Page string `json:"page,omitempty"`
 	// Field is the JSON name of an object field; empty for site settings.
 	Field string      `json:"field,omitempty"`
 	Type  Type        `json:"type"`

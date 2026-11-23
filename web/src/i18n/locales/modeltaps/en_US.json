@@ -2297,6 +2297,10 @@
       "next": "Next model",
       "add": "Add model",
       "remove": "Remove model"
+    },
+    "limits": {
+      "invalid": "A limit must be 0 or a positive whole number",
+      "saved": "Policy limits saved"
     }
   },
   "logPage": {
@@ -3040,31 +3044,31 @@
       "shareColumn": "Share of tier",
       "up": "Move earlier",
       "down": "Move later",
-      "share": "Join the tier above",
-      "unshare": "Own tier",
+      "share": "Merge into tier above",
+      "unshare": "Move to own tier",
       "drag": "Drag to reorder",
       "positionShort": "Tier {{n}}",
       "sharesWith": "same tier as {{names}}",
       "nameSep": ", ",
       "sharedTag": "shared",
       "groupWhy": "These {{count}} channels are in one tier and offer {{models}} models in common, which they share by percentage",
-      "noCommonModel": "These channels offer no model in common, so they cannot be in one tier; it now comes right after",
+      "noCommonModel": "These channels share no model and cannot be in one tier; it has been placed right after",
       "dropHint": {
         "before": "Move here",
         "after": "Move here",
-        "join": "Join this tier"
+        "join": "Merge into this tier"
       },
       "percentOf": "Share of {{name}} in its tier",
-      "howItWorks": "Tried from tier 1 down; a tier is used only when every channel above it is unavailable. Channels of one tier share its traffic by percentage.",
+      "howItWorks": "Tiers are called in order: a tier is used only when every channel above it is unavailable. Channels in one tier split its traffic by percentage.",
       "orderBy": "Order by",
       "orderBySaved": "Order saved",
-      "cheaperFirstNote": "Cheaper supplies are tried first; this order decides only between similar prices.",
-      "cheaperFirstSettings": "Saving and success thresholds ›"
+      "cheaperFirstNote": "Supplies with a lower cost are called first; supplies of similar cost follow the call order.",
+      "cheaperFirstSettings": "Lowest cost thresholds ›"
     },
     "newMenu": {
       "inUse": "In use"
     },
-    "orderHint": "Tried from tier 1 down; a tier is used only when every channel above it is unavailable. Channels of one tier serve the same models and share traffic by percentage.",
+    "orderHint": "Tiers are called in order: a tier is used only when every channel above it is unavailable. Channels in one tier serve the same models and split traffic by percentage.",
     "attention_one": "{{count}} needs attention",
     "attention_other": "{{count}} need attention",
     "issueTag": {
@@ -3082,9 +3086,9 @@
     },
     "head": {
       "drift": "Models in use that the upstream dropped or renamed (their requests fail), and models it added. Dropped models nothing is served through appear only on the channel’s models tab.",
-      "order": "Tier 1 is tried first; channels of one tier share traffic",
+      "order": "Called from tier 1; channels in one tier split traffic",
       "share": "Share of the tier's traffic",
-      "shareNone": "Alone in its tier",
+      "shareNone": "Only channel in its tier",
       "priorityWeight": "Higher priority is tried first; equal priority splits by weight",
       "requests": "Requests",
       "requestsHint": "Requests and trend over {{range}}",
@@ -3355,7 +3359,7 @@
     "savedRightAway": "Changes on this tab are saved right away.",
     "empty": "No channel supplies this model yet",
     "emptyHint": "Add a supply to choose which channel serves it and under which upstream name.",
-    "orderHint": "Tried from tier 1 down; a tier is used only when every supply above it is unavailable. Supplies of one tier share it by percentage.",
+    "orderHint": "Tiers are called in order: a tier is used only when every supply above it is unavailable. Supplies in one tier split traffic by percentage.",
     "switchOff": "Supply routing is off. These supplies are saved, but requests still follow each channel's model list until ModelSupplyEnabled is turned on.",
     "upstreamRequired": "Enter the model name the channel should receive",
     "minutes_one": "{{count}} minute",
@@ -3393,7 +3397,7 @@
       "dearerAcross": "Dearer: tried once every cheaper supply fails",
       "lowSuccess": "Low success rate, used once the supplies that serve well fail",
       "number": "Tier {{n}}",
-      "backupHint": "used when every tier above is unavailable"
+      "backupHint": "Used when every tier above is unavailable"
     },
     "state": {
       "ok": "Available",
@@ -3432,7 +3436,7 @@
       "searchChannel": "Search channels",
       "noChannel": "No channel found",
       "channelRequired": "Choose a channel",
-      "hint": "The upstream name is filled in for the channel: its model mapping, a name the channel already lists, or how the channel's platform names the model (such as Vertex's @default). By default a new supply gets a tier of its own at the end, as a backup.",
+      "hint": "The upstream name is filled in from the channel's model mapping, the names it lists, or its platform's naming (such as Vertex's @default). By default the supply is added as a new last tier, as a backup.",
       "fromLibrary": "Filled in with how this platform names the model"
     },
     "pausedPage": {
@@ -3514,7 +3518,7 @@
     "dearerBackup": "Dearer — backup only",
     "dearerBackupTip": "Cheaper supplies take the requests; this one is used only when they fail.",
     "lowSuccess": "Low success rate",
-    "lowSuccessTip": "Cheaper, but its success rate over the last two hours is below the minimum for cost routing, so it waits behind the supplies that serve well.",
+    "lowSuccessTip": "Lower cost, but its success rate over the last two hours is below the minimum for lowest cost ordering, so it is placed after supplies that are serving normally.",
     "restorePlacement": "Use its normal position",
     "confirmPending": "Switch on",
     "keepOff": "Keep it off",
@@ -3553,12 +3557,12 @@
     "vsSellTip": "Each supply's cost against our base price (the dearer of input and output; before group ratios)",
     "sellLine": "Our base price {{input}} / {{output}} per M tokens (in / out), before group ratios",
     "tierShare": "Share of tier",
-    "tierShareTip": "The share of the tier's requests this supply takes by weight",
-    "shareNow": "now {{share}}%",
+    "tierShareTip": "Share of the tier's requests, by weight",
+    "shareNow": "Currently {{share}}%",
     "percentInvalid": "The share must be a whole number from 1 to 99",
-    "tierUp": "Move the tier up",
-    "tierDown": "Move the tier down",
-    "place": { "label": "Place", "last": "A tier of its own, last", "join": "Tier {{n}}, with {{names}}" }
+    "tierUp": "Move tier up",
+    "tierDown": "Move tier down",
+    "place": { "label": "Tier", "last": "New last tier", "join": "Tier {{n}} (with {{names}})" }
   },
   "settingsUi": {
     "search": {
@@ -3608,7 +3612,7 @@
         },
         "supply": {
           "label": "Supply allocation",
-          "description": "Which supply serves a request: routing and order, affinity, intake and routing policies"
+          "description": "How requests are assigned to supplies: routing and order, session affinity, intake rules and routing policies"
         },
         "gateway": {
           "label": "Gateway",
@@ -3837,8 +3841,8 @@
         },
         "supply-mode": {
           "title": "Supply routing and order",
-          "description": "Whether requests route by supplies, and whether cheaper supplies come ahead of the call order",
-          "hint": "The call order is set on the providers page; a single model can keep its own under Supplies",
+          "description": "Whether requests are routed by supplies, and whether cost affects the order",
+          "hint": "The call order is configured on the providers page; a model can have its own under Supplies",
           "migrateChecking": "Checking what moves over to supplies…",
           "migrateNote": "Saving first turns the channels' models into {{supplies}} supplies.",
           "migrateLost": "{{count}} models would have no usable supply after the switch.",
@@ -3869,12 +3873,12 @@
           "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
           "hint": "A channel can use rules of its own under Monitor",
           "edit": "Edit rules",
-          "tryLabel": "Try a model name",
-          "tryPlaceholder": "Type a model name to try, such as gpt-5.2-preview",
-          "tryRule": "Rule {{n}} decides:",
-          "tryFallback": "No rule matches:",
-          "tryUnknown": "not in the catalog, judged by its name only",
-          "countNote": "Counts on the right try the rules on the {{count}} models of the catalog"
+          "tryLabel": "Test the rules",
+          "tryPlaceholder": "Enter a model name to test the rules, e.g. gpt-5.2-preview",
+          "tryRule": "Matches rule {{n}}:",
+          "tryFallback": "Matches no rule:",
+          "tryUnknown": "not in the catalog; matched by name only",
+          "countNote": "Match counts are computed over the {{count}} models of the catalog"
         },
         "pricing": {
           "title": "Pricing",
@@ -3884,6 +3888,12 @@
         "modified-settings": {
           "title": "Modified settings",
           "description": "Every setting that differs from its default, with a way back"
+        },
+        "routing-limits": {
+          "title": "Own policy limits",
+          "description": "The most routing policies a user and an organization can create. 0 means no limit.",
+          "summary": "{{user}} per user · {{org}} per organization",
+          "open": "Change on the routing policies page ›"
         }
       },
       "actions": {
@@ -4263,26 +4273,26 @@
         }
       },
       "supplyFlow": {
-        "label": "How a request goes",
+        "label": "Request routing",
         "request": "Request",
-        "requestValue": "calls a model",
+        "requestValue": "Model call",
         "routing": "Supply routing",
         "on": "On",
         "off": "Off",
-        "routingOff": "Off: channel model lists",
+        "routingOff": "Off, routed by channel model lists",
         "order": "Call order",
-        "orderValue": "set on the providers page",
+        "orderValue": "Configured on the providers page",
         "orderBy": "Order by",
         "affinity": "Session affinity",
         "affinityValue": "On · {{time}}",
         "channel": "Channel",
-        "channelValue": "serves it",
+        "channelValue": "Serves the request",
         "newModel": "New upstream model",
-        "newModelValue": "found when a channel syncs",
+        "newModelValue": "Found in a channel sync",
         "intake": "Intake rules",
         "intakeValue_one": "{{count}} rule",
         "intakeValue_other": "{{count}} rules",
-        "joinsOrder": "joins the call order"
+        "joinsOrder": "Joins the call order"
       },
       "units": { "seconds": "s" }
     },
@@ -5063,8 +5073,8 @@
       "custom": "Use rules of its own"
     },
     "board": {
-      "fallback": "Everything else",
-      "fallbackWhen": "no rule above matches",
+      "fallback": "Default",
+      "fallbackWhen": "No rule above matches",
       "unnamed": "Unnamed rule",
       "count_one": "{{count}} model",
       "count_other": "{{count}} models"

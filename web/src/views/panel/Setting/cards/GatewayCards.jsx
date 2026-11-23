@@ -744,7 +744,7 @@ export function ImageProxyCard({ ctx }) {
 // organization.
 export function AutoRoutingCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField } = ctx;
+  const { inputs } = ctx;
   return (
     <OptionCard
       ctx={ctx}
@@ -762,22 +762,21 @@ export function AutoRoutingCard({ ctx }) {
       <OptionList>
         <ToggleRow id="RoutingDecisionBillingEnabled" description="" {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')} />
         <ToggleRow id="UserRoutingPolicyEnabled" description="" {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')} />
-        <InlineRow id="PersonalRoutingPolicyMaxCount">
-          <UnitInput
-            id="PersonalRoutingPolicyMaxCount"
-            placeholder="20"
-            value={inputs.PersonalRoutingPolicyMaxCount}
-            onChange={(v) => setField('PersonalRoutingPolicyMaxCount', v)}
-          />
-        </InlineRow>
-        <InlineRow id="OrganizationRoutingPolicyMaxCount">
-          <UnitInput
-            id="OrganizationRoutingPolicyMaxCount"
-            placeholder="20"
-            value={inputs.OrganizationRoutingPolicyMaxCount}
-            onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
-          />
-        </InlineRow>
+        {/* The caps moved to the routing policies page, next to the policies they limit. */}
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <span className="text-sm font-medium">{cardText(t, 'routing-limits', 'title')}</span>
+          <span className="flex min-w-0 items-center gap-3 text-[13px]">
+            <span className="truncate text-muted-foreground">
+              {t('settingsUi.platform.cards.routing-limits.summary', {
+                user: inputs.PersonalRoutingPolicyMaxCount || '0',
+                org: inputs.OrganizationRoutingPolicyMaxCount || '0'
+              })}
+            </span>
+            <Link to={`${admin.routing()}?highlight=PersonalRoutingPolicyMaxCount`} className="shrink-0 text-primary hover:underline">
+              {cardText(t, 'routing-limits', 'open')}
+            </Link>
+          </span>
+        </div>
       </OptionList>
     </OptionCard>
   );

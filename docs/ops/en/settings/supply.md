@@ -18,12 +18,12 @@ Key `SupplyCostOrder` · Type enum · Default `priority`
 
 Where: Platform settings › Supply allocation › Supply routing and order
 
-Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs keep the call order and share a tier by weight, and supplies of unknown cost come last.
+Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.
 
 Values:
 
-- `priority` Call order: Supplies are tried in the call order of the Providers page; cost does not move them.
-- `cost` Cheaper first: Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order.
+- `priority` Call order first: Supplies are called in the call order of the providers page; cost does not change the order.
+- `cost` Lowest cost: Supplies with a clearly lower cost that serve reliably are called ahead of the call order.
 
 Examples:
 
@@ -179,13 +179,15 @@ Users and organizations can create routing policies of their own, called as poli
 
 See also: [Policies per user](./supply.md#PersonalRoutingPolicyMaxCount) · [Policies per organization](./supply.md#OrganizationRoutingPolicyMaxCount)
 
+## Own policy limits
+
 <a id="PersonalRoutingPolicyMaxCount"></a>
 
 ### Policies per user
 
 Key `PersonalRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Platform settings › Supply allocation › Routing policies
+Where: Routing policy › Own policy limits
 
 How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 
@@ -202,7 +204,7 @@ See also: [Own routing policies](./supply.md#UserRoutingPolicyEnabled) · [Polic
 
 Key `OrganizationRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Platform settings › Supply allocation › Routing policies
+Where: Routing policy › Own policy limits
 
 How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 

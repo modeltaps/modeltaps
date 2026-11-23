@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 import {
   OBJECT_PAGES,
   catalogEntry,
@@ -26,6 +27,9 @@ import { API } from 'utils/api';
 export function settingHref(key) {
   const entry = catalogEntry(key);
   if (!entry) return null;
+  // A site setting kept on another page (entry.page) opens there.
+  if (entry.scope === 'site' && entry.page && OBJECT_PAGES[entry.page])
+    return `${OBJECT_PAGES[entry.page]}?highlight=${encodeURIComponent(entry.key)}`;
   if (entry.scope === 'site') return `${admin.settings(entry.group)}?highlight=${encodeURIComponent(entry.key)}`;
   return OBJECT_PAGES[entry.group] || null;
 }
@@ -96,26 +100,54 @@ SettingHelpBody.propTypes = { settingKey: PropTypes.string.isRequired, full: Pro
 export function SettingHelpToggle({ settingKey, full, className }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+  const panelRef = useRef(null);
+  // The help floats over the page instead of opening in the row, so nothing below it moves.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => {
+      if (anchorRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
   if (!catalogEntry(settingKey)) return null;
   return (
     <>
       <button
+        ref={anchorRef}
         type="button"
         aria-expanded={open}
         aria-label={t('settingsUi.catalog.help')}
         onClick={() => setOpen((o) => !o)}
         className={cn(
           'inline-flex size-4 shrink-0 items-center justify-center rounded-full border border-border align-middle text-[10px] font-medium leading-none text-muted-foreground transition-colors hover:border-foreground hover:text-foreground',
+          open && 'border-foreground text-foreground',
           className
         )}
       >
         ?
       </button>
-      {open && (
-        <div className="basis-full rounded-md bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          <SettingHelpBody settingKey={settingKey} full={full} />
-        </div>
-      )}
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={anchorRef}
+        side="bottom"
+        align="start"
+        offset={6}
+        maxHeight={360}
+        role="dialog"
+        aria-label={t('settingsUi.catalog.help')}
+        className="w-[min(22rem,calc(100vw-1rem))] rounded-lg border border-border bg-popover px-3 py-2.5 text-xs leading-relaxed text-muted-foreground shadow-lg"
+      >
+        <SettingHelpBody settingKey={settingKey} full={full} />
+      </FloatingPanel>
     </>
   );
 }

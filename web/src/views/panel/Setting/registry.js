@@ -126,10 +126,9 @@ export const PLATFORM_GROUPS = [
       card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
       card('supply-intake-rules', 'form', ['SupplyIntakeRules']),
       card('auto-routing', 'form', [
+        // The per-user and per-organization policy caps are set on the routing policies page.
         'RoutingDecisionBillingEnabled',
-        'UserRoutingPolicyEnabled',
-        'OrganizationRoutingPolicyMaxCount',
-        'PersonalRoutingPolicyMaxCount'
+        'UserRoutingPolicyEnabled'
       ])
     ]
   },

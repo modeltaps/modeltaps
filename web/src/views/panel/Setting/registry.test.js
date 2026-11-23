@@ -191,16 +191,11 @@ describe('platform settings registry', () => {
 });
 
 describe('auto routing options', () => {
-  it('the supply allocation auto routing card saves the organization policy switch and cap', () => {
+  it('the supply allocation auto routing card saves the billing and own policy switches', () => {
     expect(cardById('auto-routing')).toMatchObject({
       groupId: 'supply',
       kind: 'form',
-      keys: [
-        'RoutingDecisionBillingEnabled',
-        'UserRoutingPolicyEnabled',
-        'OrganizationRoutingPolicyMaxCount',
-        'PersonalRoutingPolicyMaxCount'
-      ]
+      keys: ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled']
     });
   });
 });

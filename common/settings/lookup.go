@@ -21,6 +21,9 @@ var objectPages = map[string]string{
 // ConsolePath is where a setting is changed in the console: the field of a platform setting, or
 // the page of the object a field belongs to.
 func ConsolePath(s Setting) string {
+	if s.Scope == ScopeSite && s.Page != "" {
+		return objectPages[s.Page] + "?highlight=" + url.QueryEscape(s.Key)
+	}
 	if s.Scope == ScopeSite {
 		return "/panel/admin/settings/" + s.Group + "?highlight=" + url.QueryEscape(s.Key)
 	}
@@ -40,6 +43,9 @@ var GroupTitles = map[string]string{
 
 // Location says in words where a setting is set: "Platform settings > Gateway > retry".
 func Location(s Setting) string {
+	if s.Scope == ScopeSite && s.Page != "" {
+		return GroupTitles[s.Page] + " > " + s.Card
+	}
 	if s.Scope == ScopeSite {
 		return "Platform settings > " + GroupTitles[s.Group] + " > " + s.Card
 	}

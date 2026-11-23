@@ -15,7 +15,7 @@ import { orgRoutingPolicyApi } from './routingPolicyApi';
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
-vi.mock('utils/common', async (orig) => ({ ...(await orig()), showError: vi.fn(), showSuccess: vi.fn() }));
+vi.mock('utils/common', async (orig) => ({ ...(await orig()), showError: vi.fn(), showSuccess: vi.fn(), useIsRoot: () => false }));
 
 const POLICY = {
   id: 3,

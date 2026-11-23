@@ -20,8 +20,9 @@ import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { ROW_OPENS, rowOpenProps, RowControl, Segmented, useObjectRoute } from '@/components/objects';
 import { PageEmptyState } from '@/components/list-page';
-import { showError, showSuccess } from 'utils/common';
+import { showError, showSuccess, useIsRoot } from 'utils/common';
 import RoutingPolicyPanel from './RoutingPolicyPanel';
+import RoutingLimits from './RoutingLimits';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
 import PolicyCallName from './PolicyCallName';
@@ -36,6 +37,7 @@ const SCOPE_INTROS = { organization: 'routingPolicy.organizationsIntro', persona
 export default function RoutingPolicy() {
   const { t } = useTranslation();
   const { orgEnabled: organizationsEnabled } = useOrg();
+  const isRoot = useIsRoot();
   const [searchParams, setSearchParams] = useSearchParams();
   const scopes = organizationsEnabled ? ['platform', 'organization', 'personal'] : ['platform', 'personal'];
   const requested = searchParams.get('scope');
@@ -51,7 +53,14 @@ export default function RoutingPolicy() {
     />
   );
   return (
-    <RoutingPolicyList key={scope} api={SCOPE_APIS[scope]} filter={filter} intro={SCOPE_INTROS[scope] ? t(SCOPE_INTROS[scope]) : null} />
+    <RoutingPolicyList
+      key={scope}
+      api={SCOPE_APIS[scope]}
+      filter={filter}
+      intro={SCOPE_INTROS[scope] ? t(SCOPE_INTROS[scope]) : null}
+      // How many policies users and organizations may create: root only, on the platform console.
+      actions={isRoot ? <RoutingLimits /> : null}
+    />
   );
 }
 
@@ -60,7 +69,7 @@ export default function RoutingPolicy() {
 // page (personal and organization policies): `api` is the scoped client (routingPolicyApi.js). With a
 // review client the list shows other scopes' policies, read-only except the enable switch; with a
 // readOnly client (organization members) nothing can be changed.
-export function RoutingPolicyList({ api, filter = null, intro = null, introDetail = null }) {
+export function RoutingPolicyList({ api, filter = null, intro = null, introDetail = null, actions = null }) {
   const { t } = useTranslation();
   const review = Boolean(api.review);
   const readOnly = Boolean(api.readOnly);
@@ -320,6 +329,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
   return (
     <div className="space-y-6">
       <PageActions>
+        {actions}
         <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -531,5 +541,6 @@ RoutingPolicyList.propTypes = {
   api: PropTypes.object.isRequired,
   filter: PropTypes.node,
   intro: PropTypes.node,
-  introDetail: PropTypes.string
+  introDetail: PropTypes.string,
+  actions: PropTypes.node
 };
