@@ -228,15 +228,16 @@ DisplayMenu.propTypes = {
 };
 
 // 表格视图列注册表（对齐 Log 页的「列」勾选菜单）。id 用于列显隐判断。
-// One price column for the selected group ("input / output"); the billing type only shows when a
-// model is not billed per token, and the whole row opens the details.
+// The selected group's input and output prices in a column each; the billing type only shows when
+// a model is not billed per token, and the whole row opens the details.
 const MODEL_PRICE_COLUMNS = [
   { id: 'model', labelKey: 'modelpricePage.modelName' },
   { id: 'provider', labelKey: 'modelpricePage.provider' },
-  { id: 'price', labelKey: 'modelpricePage.price' }
+  { id: 'input', labelKey: 'modelpricePage.input' },
+  { id: 'output', labelKey: 'modelpricePage.output' }
 ];
 
-const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility-v2';
+const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility-v3';
 
 const buildDefaultColumnVisibility = () => Object.fromEntries(MODEL_PRICE_COLUMNS.map((c) => [c.id, true]));
 
@@ -667,8 +668,16 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     if (input <= 0 && output <= 0) return t('modelpricePage.free');
     return `${ValueFormatter(input, true, unit === 'M')} / ${ValueFormatter(output, true, unit === 'M')}`;
   };
+  // The table's two price cells. A per-token price splits into input and output; a routed model,
+  // a price the group cannot see, or a per-call / per-minute price is one note across both.
+  const priceCells = (row) => {
+    const { input, output } = row.price;
+    if (row.routing || typeof input !== 'number' || row.type !== 'tokens') return { span: priceText(row) };
+    const side = (v) => (v > 0 ? ValueFormatter(v, true, unit === 'M') : t('modelpricePage.free'));
+    return { input: side(input), output: side(output) };
+  };
   const groupRatio = userGroupMap[selectedGroup]?.ratio;
-  const priceHeader = `${t('modelpricePage.price')} / 1${unit}`;
+  const priceHeaderTitle = groupRatio != null ? `x${groupRatio}` : undefined;
   const copyButton = (name) => (
     <RowControl>
       <button
@@ -875,9 +884,14 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                   <TableRow className="hover:bg-transparent">
                     {columnVisibility.model && <TableHead>{t('modelpricePage.modelName')}</TableHead>}
                     {columnVisibility.provider && <TableHead>{t('modelpricePage.provider')}</TableHead>}
-                    {columnVisibility.price && (
-                      <TableHead className="text-right" title={groupRatio != null ? `x${groupRatio}` : undefined}>
-                        {priceHeader}
+                    {columnVisibility.input && (
+                      <TableHead className="text-right" title={priceHeaderTitle}>
+                        {`${t('modelpricePage.input')} / 1${unit}`}
+                      </TableHead>
+                    )}
+                    {columnVisibility.output && (
+                      <TableHead className="text-right" title={priceHeaderTitle}>
+                        {`${t('modelpricePage.output')} / 1${unit}`}
                       </TableHead>
                     )}
                   </TableRow>
@@ -901,16 +915,28 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                           </div>
                         </TableCell>
                       )}
-                      {columnVisibility.price && (
-                        <TableCell
-                          className={cn(
-                            'whitespace-nowrap text-right tabular-nums',
-                            (model.routing || typeof model.price.input !== 'number') && 'text-muted-foreground'
-                          )}
-                        >
-                          {priceText(model)}
-                        </TableCell>
-                      )}
+                      {(() => {
+                        const cells = priceCells(model);
+                        const cellClass = 'whitespace-nowrap text-right tabular-nums';
+                        if (cells.span != null) {
+                          const span = (columnVisibility.input ? 1 : 0) + (columnVisibility.output ? 1 : 0);
+                          if (!span) return null;
+                          return (
+                            <TableCell
+                              colSpan={span}
+                              className={cn(cellClass, (model.routing || typeof model.price.input !== 'number') && 'text-muted-foreground')}
+                            >
+                              {cells.span}
+                            </TableCell>
+                          );
+                        }
+                        return (
+                          <>
+                            {columnVisibility.input && <TableCell className={cellClass}>{cells.input}</TableCell>}
+                            {columnVisibility.output && <TableCell className={cellClass}>{cells.output}</TableCell>}
+                          </>
+                        );
+                      })()}
                     </TableRow>
                   ))}
                 </TableBody>

@@ -25,7 +25,8 @@ export const MODEL_COLUMNS = [
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints', defaultHidden: true },
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
-  { id: 'price', labelKey: 'modelInfoPage.price' },
+  { id: 'price_input', labelKey: 'modelsPage.priceIn' },
+  { id: 'price_output', labelKey: 'modelsPage.priceOut' },
   { id: 'vs_sell', labelKey: 'modelsPage.cheapestVsSell', defaultHidden: true },
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
   { id: 'visible', labelKey: 'modelsPage.visibleToUsers', fixed: true },
@@ -42,7 +43,8 @@ export const MODEL_COLUMNS = [
 ];
 
 // The column picker's storage key (v5: release date and cheapest-vs-sell start hidden so the full
-// model name fits on a laptop screen); the old keys are cleaned up.
+// model name fits on a laptop screen; input and output prices are two columns); the old keys are
+// cleaned up.
 export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v5';
 export const LEGACY_COLUMN_STORAGE_KEYS = [
   'model-catalog-columns',

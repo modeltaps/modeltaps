@@ -199,18 +199,29 @@ const flatPriceTitle = (price, t) =>
   price.type === 'minutes' && price.input ? t('modelpricePage.perHourTitle', { price: HourPriceFormatter(price.input) }) : undefined;
 
 // Price on one line: per token "input / output" in the chosen unit (the header names it), per call
-// or per minute the single price with its unit; a dash without a price.
-export function PriceCell({ price, unit, hideUnit = false }) {
+// or per minute the single price with its unit; a dash without a price. With `side` ("input" or
+// "output") only that side of a per-token price shows, for tables that give each its own column;
+// a per-call or per-minute price sits in the input column and leaves the output one empty.
+export function PriceCell({ price, unit, hideUnit = false, side }) {
   const { t } = useTranslation();
   if (!price) return <span className="text-muted-foreground">—</span>;
   const isM = unit === 'M';
   const lock = price.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('pricing_edit.locked')} />;
   if (price.type !== 'tokens') {
+    if (side === 'output') return <span className="text-muted-foreground">—</span>;
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums" title={flatPriceTitle(price, t)}>
         {flatPrice(price)}
         <span className="text-xs text-muted-foreground">/ {flatPriceUnit(price.type, t)}</span>
         {lock}
+      </span>
+    );
+  }
+  if (side) {
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums">
+        {ValueFormatter(side === 'output' ? price.output : price.input, true, isM)}
+        {side === 'input' && lock}
       </span>
     );
   }
@@ -228,7 +239,12 @@ export function PriceCell({ price, unit, hideUnit = false }) {
   );
 }
 
-PriceCell.propTypes = { price: PropTypes.object, unit: PropTypes.string, hideUnit: PropTypes.bool };
+PriceCell.propTypes = {
+  price: PropTypes.object,
+  unit: PropTypes.string,
+  hideUnit: PropTypes.bool,
+  side: PropTypes.oneOf(['input', 'output'])
+};
 
 // A mark before the price when supplies that take requests cost more than the quote or have no
 // known cost. A click opens the model's supplies.
@@ -315,10 +331,11 @@ ModelCell.propTypes = { row: PropTypes.object, vendor: PropTypes.object };
 
 const numberCell = (c) => <span className="tabular-nums">{c.getValue() || '-'}</span>;
 
-// 价格列表头:点击在 1K / 1M tokens 之间切换单位,tooltip 提示切换目标。
-export function PriceHeader({ unit, onUnitChange }) {
+// 价格列表头:点击在 1K / 1M tokens 之间切换单位,tooltip 提示切换目标。`side` names the input
+// column ("Input / 1M") when input and output have columns of their own.
+export function PriceHeader({ unit, onUnitChange, side }) {
   const { t } = useTranslation();
-  const label = t('modelsPage.priceHeader', { unit });
+  const label = side === 'input' ? `${t('modelsPage.priceIn')} / 1${unit}` : t('modelsPage.priceHeader', { unit });
   if (!onUnitChange) return label;
   const nextUnit = unit === 'M' ? 'K' : 'M';
   const hint = t('modelsPage.priceUnitToggle', { unit: nextUnit });
@@ -340,7 +357,7 @@ export function PriceHeader({ unit, onUnitChange }) {
   );
 }
 
-PriceHeader.propTypes = { unit: PropTypes.string, onUnitChange: PropTypes.func };
+PriceHeader.propTypes = { unit: PropTypes.string, onUnitChange: PropTypes.func, side: PropTypes.oneOf(['input']) };
 
 // Row menu: price, profile, channels, supplies, copy the name; with `onToggleHidden` (the phone
 // list, which has no switch) also show / hide; then the deletes, destructive and last.
@@ -590,15 +607,22 @@ export default function ModelTable({
         )
       },
       {
-        id: 'price',
-        header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} />,
+        // Input and output prices get a column each; the input header switches the unit for both.
+        id: 'price_input',
+        header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} side="input" />,
         meta: { className: 'text-right', dim: true },
         cell: (c) => (
           <span className="inline-flex items-center justify-end gap-1">
             <CostMark summary={c.row.original.cost_summary} unit={unit} onOpen={() => onOpen(c.row.original, 'supplies')} />
-            <PriceCell price={c.row.original.price} unit={unit} hideUnit />
+            <PriceCell price={c.row.original.price} unit={unit} side="input" />
           </span>
         )
+      },
+      {
+        id: 'price_output',
+        header: t('modelsPage.priceOut'),
+        meta: { className: 'text-right', dim: true },
+        cell: (c) => (c.row.original.price ? <PriceCell price={c.row.original.price} unit={unit} side="output" /> : null)
       },
       {
         // The cheapest available supply of known cost against the base price: how much room the
