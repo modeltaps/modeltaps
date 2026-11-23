@@ -247,6 +247,8 @@ export default function SettingsPage({ label, groups, activeGroupId, hideNav = f
           {groups.map((group) => (
             <section key={group.id} hidden={group.id !== active.id} aria-label={group.label}>
               {group.tabs?.length > 0 && group.id === active.id && <GroupTabs group={group} activeTab={activeTab} dirty={dirty} />}
+              {/* An overview of how the group's settings fit together, above its cards. */}
+              {group.intro && group.id === active.id && <div className="mb-6">{group.intro()}</div>}
               <div className="space-y-6">
                 {group.cards.map((card) => (
                   <CardSlot
@@ -284,6 +286,7 @@ SettingsPage.propTypes = {
       icon: PropTypes.elementType,
       badge: PropTypes.node,
       tabs: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string.isRequired, label: PropTypes.node.isRequired })),
+      intro: PropTypes.func,
       cards: PropTypes.arrayOf(
         PropTypes.shape({ id: PropTypes.string.isRequired, tab: PropTypes.string, render: PropTypes.func.isRequired })
       ).isRequired

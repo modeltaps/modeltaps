@@ -30,8 +30,13 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   own or moves with its whole tier, and its share of a tier is typed as a percentage. Adding a
   supply asks which tier it goes in (a tier of its own at the end by default) instead of a
   priority and a weight.
-- The supply allocation settings start with the routing switch and the order-by choice, say what
-  does not apply while routing is off, and show the intake rules one line each until you edit them.
+- The supply allocation settings open with a map of how a request goes (routing switch, call
+  order, order by, session affinity, channel, and intake rules for new upstream models), each step
+  showing its current value and leading to its setting; steps that do not apply while routing is
+  off are dimmed. Each setting takes one line, with its explanation behind the `?`.
+- Intake rules read as sentences with how many catalog models each one would decide, worked out
+  from the rules as they stand, unsaved edits included. Typing a model name marks the rule that
+  decides it and says what happens; `POST /api/supply_pause/intake_rules/preview` does the same.
 
 ### Removed
 

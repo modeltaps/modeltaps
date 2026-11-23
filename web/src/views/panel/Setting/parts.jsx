@@ -411,6 +411,29 @@ export function ToggleRow({ id, label: labelProp, description: descriptionProp, 
   );
 }
 
+// One row of an OptionList with the label on the left and any control on the right, for a page
+// that keeps every explanation behind the `?` instead of a line under the label.
+export function InlineRow({ id, label: labelProp, children }) {
+  const copyText = useSettingCopy(id, labelProp, '');
+  const known = Boolean(catalogEntry(id));
+  // The control on the right shows the unit, so the label drops its "(unit)".
+  const { name } = splitLabelUnit(copyText.label);
+  return (
+    <div className="space-y-3 px-4 py-3" data-setting-key={known ? id : undefined} data-highlight={known ? id : undefined}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+          <Label htmlFor={id} className="text-sm font-medium leading-5">
+            {withDot(name, copyText.modified)}
+          </Label>
+          {copyText.help && <SettingHelpToggle settingKey={id} full={copyText.helpFull} />}
+          {copyText.overridden && <div className="basis-full text-xs text-muted-foreground">{withOverrides('', copyText.overridden)}</div>}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 // Labelled select bound to one option; the label sits above the control. An enum setting of the
 // catalog may leave out `options` labels: they come from the catalog.
 export function SelectRow({ id, label: labelProp, description: descriptionProp, value, onChange, options, disabled, className }) {

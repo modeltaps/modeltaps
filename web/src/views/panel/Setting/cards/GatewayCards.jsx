@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronRight, ListChecks, Pencil, Pin, Plus, Route, Search, Waypoints, X } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,20 @@ import { verifyJSON } from 'utils/common';
 import { FormField } from '@/components/ui/form-field';
 import { FieldSection, OptionList } from '@/components/settings/cards';
 import { ModifiedDot } from '@/components/settings/SettingHelp';
-import { SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
-import { settingEnumLabel } from '@/components/settings/catalog';
-import { SettingHelpLine } from '@/components/settings/SettingHelp';
+import { InlineRow, SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
+import { settingEnumLabel, settingLabel } from '@/components/settings/catalog';
+import { Segmented } from '@/components/objects';
+import { cn } from '@/lib/utils';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
-import IntakeRulesEditor, { IntakeRuleList, intakeRulesJSON, parseIntakeRules } from 'views/panel/ModelInfo/supply/IntakeRules';
-import { fetchIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/supply/supplyApi';
+import IntakeRulesEditor, {
+  IntakeRuleBoard,
+  describeIntakeRule,
+  intakeRulesJSON,
+  parseIntakeRules
+} from 'views/panel/ModelInfo/supply/IntakeRules';
+import { fetchIntakeRules, previewIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/supply/supplyApi';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -370,13 +376,18 @@ export function SupplyPauseRulesCard({ ctx }) {
 
 // What happens to a model a channel's upstream starts listing (for channels that add new
 // upstream models on their own). Empty means the built-in rules; editing them saves a copy that
-// replaces them as a whole.
+// replaces them as a whole. The rules read as sentences with how many catalog models each one
+// would decide, worked out by the server from the rules as they stand (unsaved edits included);
+// a model name typed in shows which rule decides it and what happens.
 export function SupplyIntakeRulesCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const [defaults, setDefaults] = useState(null);
   // Bumped to reload the editor after "use the built-in rules".
   const [version, setVersion] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  const [preview, setPreview] = useState(null);
   useEffect(() => {
     let alive = true;
     fetchIntakeRules()
@@ -386,45 +397,75 @@ export function SupplyIntakeRulesCard({ ctx }) {
       alive = false;
     };
   }, []);
-  // The rules read as one line each; the editor opens on demand (or right away while there are
-  // unsaved edits, so they stay in view).
-  const [editing, setEditing] = useState(false);
   const saved = parseIntakeRules(inputs.SupplyIntakeRules);
   const custom = saved !== null;
   const rules = saved || defaults;
   const dirty = (inputs.SupplyIntakeRules || '') !== (ctx.origin?.SupplyIntakeRules || '');
-  const routing = inputs.ModelSupplyEnabled === 'true';
-  if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" />;
+  const rulesKey = rules ? JSON.stringify(rules) : '';
+  useEffect(() => {
+    if (!rulesKey) return undefined;
+    let alive = true;
+    const timer = setTimeout(() => {
+      previewIntakeRules({ rules: JSON.parse(rulesKey), name: name.trim() })
+        .then((res) => alive && setPreview(res.success ? res.data : null))
+        .catch(() => alive && setPreview(null));
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [rulesKey, name]);
+  if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" title={<CardTitle icon={ListChecks} id="supply-intake-rules" />} />;
+  const result = name.trim() && preview?.model;
+  const sentence = result
+    ? describeIntakeRule(t, {
+        action: result.action,
+        placement: result.action === 'skip' ? undefined : result.join_last ? 'last' : 'policy'
+      }).then
+    : '';
   return (
-    <OptionCard ctx={ctx} id="supply-intake-rules">
+    <OptionCard ctx={ctx} id="supply-intake-rules" title={<CardTitle icon={ListChecks} id="supply-intake-rules" />}>
       <div className="space-y-3">
-        {!routing && <p className="text-[13px] text-warning">{cardText(t, 'supply-intake-rules', 'routingOff')}</p>}
-        <SettingHelpLine settingKey="SupplyIntakeRules" />
-        <p className="text-[13px] text-muted-foreground">{t(custom ? 'intakeRules.customNote' : 'intakeRules.defaultNote')}</p>
-        {editing || dirty ? (
-          <IntakeRulesEditor
-            key={`${version}-${custom}`}
-            rules={rules}
-            onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
-          />
-        ) : (
-          <>
-            <IntakeRuleList rules={rules} />
+        <div className="space-y-1.5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={cardText(t, 'supply-intake-rules', 'tryPlaceholder')}
+              aria-label={cardText(t, 'supply-intake-rules', 'tryLabel')}
+              className="pl-9 font-mono"
+            />
+          </div>
+          {result && (
+            <p className="text-[13px]" data-testid="intake-try-result">
+              <span className="text-muted-foreground">
+                {result.rule >= 0
+                  ? t('settingsUi.platform.cards.supply-intake-rules.tryRule', { n: result.rule + 1 })
+                  : cardText(t, 'supply-intake-rules', 'tryFallback')}
+              </span>{' '}
+              <span className="font-medium">{sentence}</span>
+              {!result.known && <span className="text-muted-foreground"> · {cardText(t, 'supply-intake-rules', 'tryUnknown')}</span>}
+            </p>
+          )}
+        </div>
+        <IntakeRuleBoard rules={rules} stats={preview} matched={result ? result.rule : null} />
+        <div className="flex flex-wrap items-center gap-2">
+          {!(editing || dirty) && (
             <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" />
               {cardText(t, 'supply-intake-rules', 'edit')}
             </Button>
-          </>
-        )}
-        {custom && defaults && (
-          <details className="group space-y-2">
-            <summary className="flex cursor-pointer list-none items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-              <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
-              {t('intakeRules.showBuiltIn')}
-            </summary>
-            <IntakeRuleList rules={defaults} />
+          )}
+          <span className="text-xs text-muted-foreground">
+            {preview ? t('settingsUi.platform.cards.supply-intake-rules.countNote', { count: preview.total }) : ''}
+          </span>
+          <span className="flex-1" />
+          <span className="text-xs text-muted-foreground">{t(custom ? 'intakeRules.customNote' : 'intakeRules.defaultNote')}</span>
+          {custom && defaults && (
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="rounded-[10px]"
               onClick={() => {
@@ -434,7 +475,14 @@ export function SupplyIntakeRulesCard({ ctx }) {
             >
               {t('intakeRules.useBuiltIn')}
             </Button>
-          </details>
+          )}
+        </div>
+        {(editing || dirty) && (
+          <IntakeRulesEditor
+            key={`${version}-${custom}`}
+            rules={rules}
+            onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
+          />
         )}
       </div>
     </OptionCard>
@@ -488,76 +536,111 @@ export function SupplyModeCard({ ctx }) {
   const routing = inputs.ModelSupplyEnabled === 'true';
   const switching = routing !== (origin?.ModelSupplyEnabled === 'true');
   const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
-  const enumOptions = (key, values) => values.map((v) => ({ value: v, label: settingEnumLabel(t, key, v) }));
-  const text = (part) => cardText(t, 'supply-mode', part);
+  const options = ['priority', 'cost'].map((v) => ({ value: v, label: settingEnumLabel(t, 'SupplyCostOrder', v) }));
   return (
-    <OptionCard ctx={ctx} id="supply-mode">
+    <OptionCard ctx={ctx} id="supply-mode" title={<CardTitle icon={Route} id="supply-mode" />}>
       <OptionList>
-        <ToggleRow id="ModelSupplyEnabled" {...bindSwitch(ctx, 'ModelSupplyEnabled')}>
+        <ToggleRow id="ModelSupplyEnabled" description="" {...bindSwitch(ctx, 'ModelSupplyEnabled')}>
           {switching && <SupplyRoutingNote turningOn={routing} />}
         </ToggleRow>
+        {routing && (
+          <InlineRow id="SupplyCostOrder">
+            <Segmented
+              label={settingLabel(t, 'SupplyCostOrder')}
+              options={options}
+              value={costOrder}
+              onChange={(v) => setField('SupplyCostOrder', v)}
+            />
+          </InlineRow>
+        )}
+        {/* The two guards only mean something while cost orders supplies. */}
+        {routing && costOrder === 'cost' && (
+          <>
+            <InlineRow id="SupplyCostMinSavingPercent">
+              <UnitInput
+                id="SupplyCostMinSavingPercent"
+                unit="%"
+                placeholder="5"
+                value={inputs.SupplyCostMinSavingPercent}
+                onChange={(v) => setField('SupplyCostMinSavingPercent', v)}
+              />
+            </InlineRow>
+            <InlineRow id="SupplyCostMinSuccessPercent">
+              <UnitInput
+                id="SupplyCostMinSuccessPercent"
+                unit="%"
+                placeholder="95"
+                value={inputs.SupplyCostMinSuccessPercent}
+                onChange={(v) => setField('SupplyCostMinSuccessPercent', v)}
+              />
+            </InlineRow>
+          </>
+        )}
       </OptionList>
-      {routing ? (
-        <p className="text-[13px] text-muted-foreground">
-          {text('orderNote')}{' '}
-          <Link to={admin.providers()} className="text-primary hover:underline">
-            {text('openProviders')}
-          </Link>
-        </p>
-      ) : (
-        <p className="text-[13px] text-warning">{text('routingOff')}</p>
-      )}
-      {routing && (
-        <SelectRow
-          id="SupplyCostOrder"
-          value={costOrder}
-          onChange={(v) => setField('SupplyCostOrder', v)}
-          options={enumOptions('SupplyCostOrder', ['priority', 'cost'])}
-        />
-      )}
-      {/* The two guards only mean something while cost orders supplies. */}
-      {routing && costOrder === 'cost' && (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextRow
-            id="SupplyCostMinSavingPercent"
-            type="number"
-            unit="%"
-            value={inputs.SupplyCostMinSavingPercent}
-            onChange={(v) => setField('SupplyCostMinSavingPercent', v)}
-            placeholder="5"
-          />
-          <TextRow
-            id="SupplyCostMinSuccessPercent"
-            type="number"
-            unit="%"
-            value={inputs.SupplyCostMinSuccessPercent}
-            onChange={(v) => setField('SupplyCostMinSuccessPercent', v)}
-            placeholder="95"
-          />
-        </div>
-      )}
     </OptionCard>
   );
 }
 
+// A card title with the icon its step has in the supply overview above the cards.
+function CardTitle({ icon: Icon, id }) {
+  const { t } = useTranslation();
+  return (
+    <span className="inline-flex items-center gap-2">
+      <Icon className="size-4 text-muted-foreground" />
+      {cardText(t, id, 'title')}
+    </span>
+  );
+}
+
+CardTitle.propTypes = { icon: PropTypes.elementType.isRequired, id: PropTypes.string.isRequired };
+
+// A short number field with its unit inside, for an InlineRow.
+function UnitInput({ id, unit, value, onChange, placeholder, className = 'w-24' }) {
+  return (
+    <span className={cn('relative', className)}>
+      <Input
+        id={id}
+        type="number"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pr-9 text-right tabular-nums"
+      />
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{unit}</span>
+    </span>
+  );
+}
+
+UnitInput.propTypes = {
+  id: PropTypes.string.isRequired,
+  unit: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  className: PropTypes.string
+};
+
 export function SessionAffinityCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const gs = (k) => t(gsKey(k));
-
+  const seconds = Number(inputs.SessionAffinityTTLSeconds) || 0;
   return (
-    <OptionCard ctx={ctx} id="session-affinity">
+    <OptionCard ctx={ctx} id="session-affinity" title={<CardTitle icon={Pin} id="session-affinity" />}>
       <OptionList>
-        <ToggleRow id="SessionAffinityEnabled" {...bindSwitch(ctx, 'SessionAffinityEnabled')} />
-        <ToggleRow id="SessionAffinityStrict" {...bindSwitch(ctx, 'SessionAffinityStrict')} />
+        <ToggleRow id="SessionAffinityEnabled" description="" {...bindSwitch(ctx, 'SessionAffinityEnabled')} />
+        <ToggleRow id="SessionAffinityStrict" description="" {...bindSwitch(ctx, 'SessionAffinityStrict')} />
+        <InlineRow id="SessionAffinityTTLSeconds">
+          {seconds > 0 && <span className="text-xs text-muted-foreground">{durationLabel(t, seconds)}</span>}
+          <UnitInput
+            id="SessionAffinityTTLSeconds"
+            unit={t('settingsUi.platform.units.seconds')}
+            placeholder="3600"
+            className="w-28"
+            value={inputs.SessionAffinityTTLSeconds}
+            onChange={(v) => setField('SessionAffinityTTLSeconds', v)}
+          />
+        </InlineRow>
       </OptionList>
-      <TextRow
-        id="SessionAffinityTTLSeconds"
-        type="number"
-        value={inputs.SessionAffinityTTLSeconds}
-        onChange={(v) => setField('SessionAffinityTTLSeconds', v)}
-        placeholder={gs('sessionAffinityTTL.placeholder')}
-      />
     </OptionCard>
   );
 }
@@ -666,6 +749,7 @@ export function AutoRoutingCard({ ctx }) {
     <OptionCard
       ctx={ctx}
       id="auto-routing"
+      title={<CardTitle icon={Waypoints} id="auto-routing" />}
       description={
         <>
           {cardText(t, 'auto-routing', 'description')}{' '}
@@ -676,23 +760,25 @@ export function AutoRoutingCard({ ctx }) {
       }
     >
       <OptionList>
-        <ToggleRow id="RoutingDecisionBillingEnabled" {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')} />
-        <ToggleRow id="UserRoutingPolicyEnabled" {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')} />
+        <ToggleRow id="RoutingDecisionBillingEnabled" description="" {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')} />
+        <ToggleRow id="UserRoutingPolicyEnabled" description="" {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')} />
+        <InlineRow id="PersonalRoutingPolicyMaxCount">
+          <UnitInput
+            id="PersonalRoutingPolicyMaxCount"
+            placeholder="20"
+            value={inputs.PersonalRoutingPolicyMaxCount}
+            onChange={(v) => setField('PersonalRoutingPolicyMaxCount', v)}
+          />
+        </InlineRow>
+        <InlineRow id="OrganizationRoutingPolicyMaxCount">
+          <UnitInput
+            id="OrganizationRoutingPolicyMaxCount"
+            placeholder="20"
+            value={inputs.OrganizationRoutingPolicyMaxCount}
+            onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
+          />
+        </InlineRow>
       </OptionList>
-      <TextRow
-        id="PersonalRoutingPolicyMaxCount"
-        type="number"
-        value={inputs.PersonalRoutingPolicyMaxCount}
-        onChange={(v) => setField('PersonalRoutingPolicyMaxCount', v)}
-        placeholder="20"
-      />
-      <TextRow
-        id="OrganizationRoutingPolicyMaxCount"
-        type="number"
-        value={inputs.OrganizationRoutingPolicyMaxCount}
-        onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
-        placeholder="20"
-      />
     </OptionCard>
   );
 }

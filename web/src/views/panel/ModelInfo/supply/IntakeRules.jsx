@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ban, CircleCheck, CircleOff, Clock, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -321,3 +321,60 @@ export function IntakeRuleList({ rules }) {
 }
 
 IntakeRuleList.propTypes = { rules: PropTypes.array.isRequired };
+
+const ACTION_ICONS = { enable: CircleCheck, pending: Clock, disable: CircleOff, skip: Ban };
+
+// The rules as sentences, tried from the top: what each one looks at, what it does, and (with
+// `stats` from the preview API) how many catalog models it would decide, with a few of them. The
+// rule `matched` (an index, -1 for the fallback) is marked. The fallback row closes the list.
+export function IntakeRuleBoard({ rules, stats = null, matched = null }) {
+  const { t } = useTranslation();
+  const byIndex = new Map((stats?.rules || []).map((r) => [r.index, r]));
+  const rows = [...rules.map((rule, index) => ({ rule, index })), { rule: { action: 'pending' }, index: -1 }];
+  return (
+    <ol className="divide-y divide-border overflow-hidden rounded-[10px] border border-border" data-testid="intake-board">
+      {rows.map(({ rule, index }) => {
+        const fallback = index < 0;
+        const { when, then } = describeIntakeRule(t, rule);
+        const Icon = ACTION_ICONS[rule.action] || Clock;
+        const stat = byIndex.get(index);
+        const hit = matched === index;
+        return (
+          <li
+            key={`${rule.name}-${index}`}
+            data-testid="intake-board-row"
+            aria-current={hit || undefined}
+            className={cn('grid grid-cols-[1.5rem_1fr_auto] items-center gap-x-3 px-3 py-2.5 text-[13px]', hit && 'bg-muted')}
+          >
+            <span
+              className={cn(
+                'flex size-6 items-center justify-center rounded-md text-xs tabular-nums',
+                hit ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+              )}
+            >
+              {fallback ? '…' : index + 1}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-medium">
+                {fallback ? t('intakeRules.board.fallback') : intakeRuleName(t, rule.name) || t('intakeRules.board.unnamed')}
+              </span>
+              <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                <span className="truncate">{fallback ? t('intakeRules.board.fallbackWhen') : when}</span>
+                <span aria-hidden>→</span>
+                <span className="inline-flex items-center gap-1 text-foreground">
+                  <Icon className="size-3.5" />
+                  {then}
+                </span>
+              </span>
+            </span>
+            <span className="text-right text-xs text-muted-foreground" title={stat?.examples?.join('\n') || undefined}>
+              {stat ? t('intakeRules.board.count', { count: stat.count }) : ''}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+IntakeRuleBoard.propTypes = { rules: PropTypes.array.isRequired, stats: PropTypes.object, matched: PropTypes.number };

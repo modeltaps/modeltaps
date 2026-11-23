@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -38,6 +38,7 @@ import {
   SupplyPauseRulesCard,
   SupplyIntakeRulesCard
 } from './cards/GatewayCards';
+import SupplyFlow from './cards/SupplyFlow';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
 import { BuiltinChatCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
 import { SmtpCard } from './cards/MailCard';
@@ -109,6 +110,9 @@ const CARD_COMPONENTS = {
   'modified-settings': ModifiedSettingsCard
 };
 
+// Overviews drawn above a group's cards.
+const GROUP_INTROS = { supply: SupplyFlow };
+
 export default function Setting() {
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
@@ -142,6 +146,7 @@ export default function Setting() {
     label: t(groupLabelKey(group.id)),
     description: t(groupDescriptionKey(group.id)),
     tabs: group.tabs?.map((id) => ({ id, label: t(tabLabelKey(id)) })),
+    intro: GROUP_INTROS[group.id] ? () => createElement(GROUP_INTROS[group.id], { ctx }) : undefined,
     cards: group.cards.map((card) => {
       const Component = CARD_COMPONENTS[card.id];
       return { id: card.id, tab: card.tab, keys: card.keys, render: () => <Component ctx={ctx} /> };

@@ -57,6 +57,11 @@ export const fetchPauseRules = (channelId) =>
 
 // Intake rules: { custom, rules, defaults } and, with a channel id, that channel's own rules
 // (channel_rules, null when it uses the site-wide ones).
+// What intake rules would do before they are saved: per rule how many catalog models it decides,
+// and with `name` the outcome for that model. `rules` null tries the rules in effect.
+export const previewIntakeRules = ({ rules = null, name = '' }) =>
+  API.post('/api/supply_pause/intake_rules/preview', { rules, name }).then(body);
+
 export const fetchIntakeRules = (channelId) =>
   API.get('/api/supply_pause/intake_rules', { params: channelId ? { channel_id: channelId } : {} }).then(body);
 

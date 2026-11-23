@@ -3844,10 +3844,7 @@
           "migrateLost": "{{count}} models would have no usable supply after the switch.",
           "migrateNothing": "Saving turns it on; every channel model already has its supply.",
           "migrateUnknown": "Saving first turns the channels' models into supplies (the preview could not be read).",
-          "offNote": "Saving goes back to the channels' model lists right away; the supplies are kept.",
-          "orderNote": "Requests follow the call order of the providers page: tried from tier 1 down, a tier used only when every channel above it is unavailable; channels of one tier share it by percentage.",
-          "openProviders": "Set the order on the providers page ›",
-          "routingOff": "Off: requests follow the channels' model lists and model mappings. The call order, the order-by setting and the intake rules apply once it is on."
+          "offNote": "Saving goes back to the channels' model lists right away; the supplies are kept."
         },
         "supply-pause-rules": {
           "title": "Supply pause rules",
@@ -3871,8 +3868,13 @@
           "title": "Intake rules for new upstream models",
           "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
           "hint": "A channel can use rules of its own under Monitor",
-          "routingOff": "Supply routing is off: these rules still add supplies to channels, but they affect requests only once it is on.",
-          "edit": "Edit rules"
+          "edit": "Edit rules",
+          "tryLabel": "Try a model name",
+          "tryPlaceholder": "Type a model name to try, such as gpt-5.2-preview",
+          "tryRule": "Rule {{n}} decides:",
+          "tryFallback": "No rule matches:",
+          "tryUnknown": "not in the catalog, judged by its name only",
+          "countNote": "Counts on the right try the rules on the {{count}} models of the catalog"
         },
         "pricing": {
           "title": "Pricing",
@@ -4259,7 +4261,30 @@
           "label": "Also store images and videos upstreams return as links",
           "hint": "When an upstream such as DALL·E or Flux returns an image link, a Midjourney task an image link or a Kling task a video link, clients get a link on this site that works where the upstream host is blocked or slow. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on."
         }
-      }
+      },
+      "supplyFlow": {
+        "label": "How a request goes",
+        "request": "Request",
+        "requestValue": "calls a model",
+        "routing": "Supply routing",
+        "on": "On",
+        "off": "Off",
+        "routingOff": "Off: channel model lists",
+        "order": "Call order",
+        "orderValue": "set on the providers page",
+        "orderBy": "Order by",
+        "affinity": "Session affinity",
+        "affinityValue": "On · {{time}}",
+        "channel": "Channel",
+        "channelValue": "serves it",
+        "newModel": "New upstream model",
+        "newModelValue": "found when a channel syncs",
+        "intake": "Intake rules",
+        "intakeValue_one": "{{count}} rule",
+        "intakeValue_other": "{{count}} rules",
+        "joinsOrder": "joins the call order"
+      },
+      "units": { "seconds": "s" }
     },
     "personal": {
       "username": "Username",
@@ -5036,6 +5061,13 @@
       "hint": "Decide which new upstream models switch on at once, which wait for review, and where they join a model other channels already supply.",
       "site": "Use the site rules",
       "custom": "Use rules of its own"
+    },
+    "board": {
+      "fallback": "Everything else",
+      "fallbackWhen": "no rule above matches",
+      "unnamed": "Unnamed rule",
+      "count_one": "{{count}} model",
+      "count_other": "{{count}} models"
     }
   },
   "systemLogs": {

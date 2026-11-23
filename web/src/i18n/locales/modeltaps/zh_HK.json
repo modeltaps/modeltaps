@@ -3741,10 +3741,7 @@
           "migrateLost": "切換後有 {{count}} 個模型沒有可用線路。",
           "migrateNothing": "儲存後直接打開，渠道的模型都已有線路。",
           "migrateUnknown": "儲存時先把渠道的模型遷移成線路（預覽沒讀到）。",
-          "offNote": "儲存後立刻回到按渠道的模型列表分流，線路保留。",
-          "orderNote": "請求按供應商頁的調用順序分給線路：從第 1 檔往下試，前一檔都不可用才用下一檔；同一檔的渠道按佔比分擔。",
-          "openProviders": "去供應商頁排順序 ›",
-          "routingOff": "已關閉：請求按渠道的模型列表和模型映射分配。打開後，調用順序、排序依據和上新規則才影響請求。"
+          "offNote": "儲存後立刻回到按渠道的模型列表分流，線路保留。"
         },
         "supply-pause-rules": {
           "title": "線路暫停規則",
@@ -3768,8 +3765,13 @@
           "title": "上游新模型的上新規則",
           "description": "渠道自動加入上游新模型時：直接啟用、待確認還是不加入，以及排在哪個位置",
           "hint": "渠道可在「監控」中改用自己的規則",
-          "routingOff": "按線路路由關着：這些規則照樣會給渠道加線路，但打開之後才影響請求。",
-          "edit": "編輯規則"
+          "edit": "編輯規則",
+          "tryLabel": "試一個模型名",
+          "tryPlaceholder": "輸入模型名試算，例如 gpt-5.2-preview",
+          "tryRule": "第 {{n}} 條決定：",
+          "tryFallback": "沒有規則命中：",
+          "tryUnknown": "目錄裏沒有這個模型，只按名字判斷",
+          "countNote": "右側是按目錄裏 {{count}} 個模型試算的結果"
         },
         "pricing": {
           "title": "定價",
@@ -4154,7 +4156,29 @@
           "label": "轉存上游返回的圖片和影片連結",
           "hint": "DALL·E、Flux 等上游直接給圖片連結、Midjourney 任務給圖片連結、可靈任務給影片連結時，用戶端拿到本站連結，上游網域在內地打不開時也能用。圖片立即下載存好；影片在第一次下載時由網關取回並快取，單個最大 512 MB。取不到時原樣返回上游連結。"
         }
-      }
+      },
+      "supplyFlow": {
+        "label": "請求怎麼走",
+        "request": "請求",
+        "requestValue": "調用一個模型",
+        "routing": "按線路路由",
+        "on": "開",
+        "off": "關",
+        "routingOff": "關：按渠道模型列表",
+        "order": "調用順序",
+        "orderValue": "在供應商頁排",
+        "orderBy": "排序依據",
+        "affinity": "會話親和",
+        "affinityValue": "開 · {{time}}",
+        "channel": "渠道",
+        "channelValue": "承接請求",
+        "newModel": "上游新模型",
+        "newModelValue": "渠道同步時出現",
+        "intake": "上新規則",
+        "intakeValue": "{{count}} 條",
+        "joinsOrder": "加入調用順序"
+      },
+      "units": { "seconds": "秒" }
     },
     "personal": {
       "username": "用戶名",
@@ -4942,7 +4966,8 @@
       "hint": "決定哪些上游新模型直接啟用、哪些待確認，以及在其他渠道已提供的模型中排在哪個位置。",
       "site": "使用全站規則",
       "custom": "本渠道自訂"
-    }
+    },
+    "board": { "fallback": "其餘", "fallbackWhen": "上面的規則都沒命中", "unnamed": "未命名規則", "count": "{{count}} 個模型" }
   },
   "systemLogs": {
     "levelLabel": "級別",
