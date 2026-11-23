@@ -35,12 +35,12 @@ Example client configuration:
 |---|---|
 | `settings_search` | Settings matching some words (key, name, description, keywords), filtered by object (`scope`), group, modified only. Platform settings come with their current value; secrets only say set or unset. |
 | `settings_describe` | One or more settings in full: type, unit, range, values, description, examples, related settings, guide page and the console URL to change it, with current and default values. |
-| `settings_effective` | The value a setting takes effect with and where it comes from. For `model.supply_mode`, `channel.fee_rate`, `channel.prompt_caching`, `user_group.ratio` and `token.group`, give `object_id` (model name, channel id, group symbol, key id). |
+| `settings_effective` | The value a setting takes effect with and where it comes from. For `channel.fee_rate`, `channel.prompt_caching`, `user_group.ratio` and `token.group`, give `object_id` (model name, channel id, group symbol, key id). |
 | `settings_docs` | Sections of the English operator docs, including the settings reference. |
 
 ## Examples
 
-- "Why does gpt-5.1 go to Requesty?" → `settings_effective` `model.supply_mode` with `gpt-5.1`, then `settings_describe` `SupplyCostOrder`.
+- "Why does gpt-5.1 go to Requesty?" → `settings_describe` `SupplyCostOrder`, then `settings_effective` `channel.fee_rate` for the Requesty channel.
 - "What did we change from the defaults?" → `settings_search` with `modified_only: true`.
 - "How do I sell at 12% over the official price?" → `settings_docs` "margin group ratio", then `settings_describe` `user_group.ratio` and `PaymentCostPercent`.
 

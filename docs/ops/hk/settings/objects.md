@@ -27,7 +27,7 @@ outline: deep
 - `10` 在同一分組裏服務同一模型、優先級為 0 的渠道之前先試。
 - `0` 預設值。優先級 -1 的後備渠道只在所有 0 級渠道都出錯時才會用到。
 
-相關設定：[權重](./objects.md#channel-weight) · [優先級](./objects.md#supply-priority) · [成本與優先級](./supply.md#SupplyCostOrder)
+相關設定：[權重](./objects.md#channel-weight) · [優先級](./objects.md#supply-priority) · [排序依據](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ outline: deep
 - `3` 和同優先級、權重 1 的渠道一起時，承接約 3 ÷ (3 + 1) = 75% 的請求。
 - `1` 預設值：同一優先級的渠道平分請求。
 
-相關設定：[優先級](./objects.md#channel-priority) · [權重](./objects.md#supply-weight) · [預設分流方式](./supply.md#SupplyModeDefault)
+相關設定：[優先級](./objects.md#channel-priority) · [權重](./objects.md#supply-weight)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ outline: deep
 - `3` Vercel AI Gateway 刷卡：$100 額度收 $3.00 手續費。
 - `0` 按標價結算的官方廠商 API。
 
-相關設定：[收款成本率](./billing.md#PaymentCostPercent) · [成本與優先級](./supply.md#SupplyCostOrder) · [分組倍率](./objects.md#user_group-ratio)
+相關設定：[收款成本率](./billing.md#PaymentCostPercent) · [排序依據](./supply.md#SupplyCostOrder) · [分組倍率](./objects.md#user_group-ratio)
 
 指南：[use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -231,31 +231,6 @@ outline: deep
 
 指南：[use/pricing_and_routing.md#the-three-numbers](../use/pricing_and_routing.md#the-three-numbers)
 
-<a id="model-supply_mode"></a>
-
-### 分流方式
-
-設定名 `model.supply_mode` · 類型 enum · 預設值 default
-
-位置：Models › supplies
-
-同一檔線路怎樣分擔這個模型的請求。檔位總是按次序嘗試，分流方式只決定一檔之內怎樣分。它只對單獨設定次序的模型生效：按調用順序的模型，一檔之內總是按權重分擔。
-
-取值：
-
-- `default` 跟隨預設：用平台設定裏的預設分流方式。
-- `balance` 負載均衡：同一檔的線路按權重分擔請求。
-- `failover` 主備：同一檔權重最高的線路承接全部請求，其餘作為後備。
-
-示例：
-
-- `failover` 同一檔裏權重 3 和 1 的兩條線路：只要權重 3 的線路正常，它就承接全部請求。
-- `balance` 同樣兩條線路分別承接約 75% 和 25% 的請求。
-
-相關設定：[預設分流方式](./supply.md#SupplyModeDefault) · [線路次序](./objects.md#model-allocation) · [權重](./objects.md#supply-weight)
-
-指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
-
 <a id="model-allocation"></a>
 
 ### 線路次序
@@ -276,7 +251,7 @@ outline: deep
 - `policy` 在供應商頁把某個供應商往上移，這個模型裏它也跟着往上。
 - `manual` 調用順序變了，這個模型的次序不變；新渠道排在它已有線路的下面。
 
-相關設定：[調用順序](./objects.md#allocation-tiers) · [優先級](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode)
+相關設定：[調用順序](./objects.md#allocation-tiers) · [優先級](./objects.md#supply-priority) · [權重](./objects.md#supply-weight)
 
 ## 線路
 
@@ -288,14 +263,14 @@ outline: deep
 
 位置：Models › supplies
 
-這條線路在模型各線路中的檔位：最高檔先承接請求，低一檔只在上面的線路全部不可用時才用。優先級相同的線路組成一檔，按分流方式分擔。按調用順序時由策略設定；設了自己數值的線路不再跟隨渠道。
+這條線路在模型各線路中的檔位：最高檔先承接請求，低一檔只在上面的線路全部不可用時才用。優先級相同的線路組成一檔，按權重分擔。按調用順序時由策略設定；設了自己數值的線路不再跟隨渠道。
 
 示例：
 
 - `2` 排在兩條優先級 1 的線路上面：只有這條線路出錯時才用到它們。
 - `1` 和另一條優先級 1 的線路組成一檔，分擔這一檔的請求。
 
-相關設定：[權重](./objects.md#supply-weight) · [線路次序](./objects.md#model-allocation) · [成本與優先級](./supply.md#SupplyCostOrder)
+相關設定：[權重](./objects.md#supply-weight) · [線路次序](./objects.md#model-allocation) · [排序依據](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -307,14 +282,14 @@ outline: deep
 
 位置：Models › supplies
 
-這條線路在本檔中的份額：負載均衡時承接 自身權重 ÷ 本檔總權重，主備時權重最高的承接全部請求。0 按 1 計。按調用順序時，一個供應商的權重在它的渠道之間平分。
+這條線路在本檔中的份額：自身權重 ÷ 本檔總權重。0 按 1 計。按調用順序時，一個供應商的權重在它的渠道之間平分。
 
 示例：
 
-- `3` 本檔另有一條權重 1 的線路：負載均衡時約承接 75% 的請求，主備時承接全部。
-- `1` 兩條權重 1 的線路在負載均衡下各承接一半。
+- `3` 本檔另有一條權重 1 的線路時，約承接 75% 的請求。
+- `1` 兩條權重 1 的線路各承接一半。只想當備用的線路，放到下一檔。
 
-相關設定：[優先級](./objects.md#supply-priority) · [分流方式](./objects.md#model-supply_mode) · [預設分流方式](./supply.md#SupplyModeDefault)
+相關設定：[優先級](./objects.md#supply-priority) · [線路次序](./objects.md#model-allocation)
 
 <a id="supply-enabled"></a>
 
@@ -362,7 +337,7 @@ outline: deep
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` 官方 Anthropic API 在前；渠道 7 只在它出錯時才用。
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` 渠道 3 和 5 共用第一個位置：分別承接約 75% 和 25% 的請求。
 
-相關設定：[線路次序](./objects.md#model-allocation) · [優先級](./objects.md#supply-priority) · [成本與優先級](./supply.md#SupplyCostOrder)
+相關設定：[線路次序](./objects.md#model-allocation) · [優先級](./objects.md#supply-priority) · [排序依據](./supply.md#SupplyCostOrder)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

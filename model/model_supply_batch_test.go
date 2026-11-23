@@ -8,36 +8,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 )
 
-func TestSetModelSupplyMode(t *testing.T) {
-	usePreviewTestDB(t)
-	rows := []*ModelInfo{
-		{Model: "a", Status: ModelStatusPublished},
-		{Model: "b", Status: ModelStatusPublished},
-		{Model: "alias", AliasOf: "a"},
-		{Model: "auto/x", Kind: ModelInfoKindRoutingPolicy},
-	}
-	ids := []int{}
-	for _, info := range rows {
-		if err := DB.Create(info).Error; err != nil {
-			t.Fatal(err)
-		}
-		ids = append(ids, info.Id)
-	}
-	affected, err := SetModelSupplyMode(ids, SupplyModeFailover)
-	if err != nil || affected != 2 {
-		t.Fatalf("affected %d, err %v; want the two public models", affected, err)
-	}
-	if supplyModeOf("a") != SupplyModeFailover || supplyModeOf("b") != SupplyModeFailover {
-		t.Fatal("models do not route with failover after the batch")
-	}
-	if affected, _ := SetModelSupplyMode(ids[:1], SupplyModeDefault); affected != 1 {
-		t.Fatalf("back to default: affected %d", affected)
-	}
-	if _, err := SetModelSupplyMode(ids, "random"); !errors.Is(err, ErrModelSupplyMode) {
-		t.Fatalf("invalid mode: err = %v", err)
-	}
-}
-
 func TestApplySupplyBatch(t *testing.T) {
 	usePreviewTestDB(t)
 	for _, info := range []*ModelInfo{

@@ -386,20 +386,35 @@ export function SupplyIntakeRulesCard({ ctx }) {
       alive = false;
     };
   }, []);
+  // The rules read as one line each; the editor opens on demand (or right away while there are
+  // unsaved edits, so they stay in view).
+  const [editing, setEditing] = useState(false);
   const saved = parseIntakeRules(inputs.SupplyIntakeRules);
   const custom = saved !== null;
   const rules = saved || defaults;
+  const dirty = (inputs.SupplyIntakeRules || '') !== (ctx.origin?.SupplyIntakeRules || '');
+  const routing = inputs.ModelSupplyEnabled === 'true';
   if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" />;
   return (
     <OptionCard ctx={ctx} id="supply-intake-rules">
       <div className="space-y-3">
+        {!routing && <p className="text-[13px] text-warning">{cardText(t, 'supply-intake-rules', 'routingOff')}</p>}
         <SettingHelpLine settingKey="SupplyIntakeRules" />
         <p className="text-[13px] text-muted-foreground">{t(custom ? 'intakeRules.customNote' : 'intakeRules.defaultNote')}</p>
-        <IntakeRulesEditor
-          key={`${version}-${custom}`}
-          rules={rules}
-          onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
-        />
+        {editing || dirty ? (
+          <IntakeRulesEditor
+            key={`${version}-${custom}`}
+            rules={rules}
+            onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
+          />
+        ) : (
+          <>
+            <IntakeRuleList rules={rules} />
+            <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={() => setEditing(true)}>
+              {cardText(t, 'supply-intake-rules', 'edit')}
+            </Button>
+          </>
+        )}
         {custom && defaults && (
           <details className="group space-y-2">
             <summary className="flex cursor-pointer list-none items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -463,17 +478,18 @@ function SupplyRoutingNote({ turningOn }) {
 
 SupplyRoutingNote.propTypes = { turningOn: PropTypes.bool.isRequired };
 
-// Whether requests route by supplies, how a model that follows the default picks a supply within
-// one priority tier, and whether a supply's cost reorders the tiers (with the saving and success
-// rate a cheaper supply needs to be put ahead). Labels, hints, the values' descriptions and examples come from the settings catalog.
+// Whether requests route by supplies and, while they do, whether a supply's cost moves it ahead of
+// the call order (with the saving and success rate a cheaper supply needs). The call order itself
+// is kept on the providers page; a tier there shares its requests by weight. Labels, hints, the
+// values' descriptions and examples come from the settings catalog.
 export function SupplyModeCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, origin, setField } = ctx;
   const routing = inputs.ModelSupplyEnabled === 'true';
   const switching = routing !== (origin?.ModelSupplyEnabled === 'true');
-  const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
   const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
   const enumOptions = (key, values) => values.map((v) => ({ value: v, label: settingEnumLabel(t, key, v) }));
+  const text = (part) => cardText(t, 'supply-mode', part);
   return (
     <OptionCard ctx={ctx} id="supply-mode">
       <OptionList>
@@ -481,20 +497,26 @@ export function SupplyModeCard({ ctx }) {
           {switching && <SupplyRoutingNote turningOn={routing} />}
         </ToggleRow>
       </OptionList>
-      <SelectRow
-        id="SupplyModeDefault"
-        value={value}
-        onChange={(v) => setField('SupplyModeDefault', v)}
-        options={enumOptions('SupplyModeDefault', ['balance', 'failover'])}
-      />
-      <SelectRow
-        id="SupplyCostOrder"
-        value={costOrder}
-        onChange={(v) => setField('SupplyCostOrder', v)}
-        options={enumOptions('SupplyCostOrder', ['priority', 'cost'])}
-      />
+      {routing ? (
+        <p className="text-[13px] text-muted-foreground">
+          {text('orderNote')}{' '}
+          <Link to={admin.providers()} className="text-primary hover:underline">
+            {text('openProviders')}
+          </Link>
+        </p>
+      ) : (
+        <p className="text-[13px] text-warning">{text('routingOff')}</p>
+      )}
+      {routing && (
+        <SelectRow
+          id="SupplyCostOrder"
+          value={costOrder}
+          onChange={(v) => setField('SupplyCostOrder', v)}
+          options={enumOptions('SupplyCostOrder', ['priority', 'cost'])}
+        />
+      )}
       {/* The two guards only mean something while cost orders supplies. */}
-      {costOrder === 'cost' && (
+      {routing && costOrder === 'cost' && (
         <div className="grid gap-5 sm:grid-cols-2">
           <TextRow
             id="SupplyCostMinSavingPercent"

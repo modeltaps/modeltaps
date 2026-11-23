@@ -704,22 +704,6 @@ func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFu
 		return nil
 	}
 
-	// A failover model takes the heaviest supply of the tier; only a tie is broken at random.
-	if cc.Supplies != nil && supplyModeOf(modelName) == SupplyModeFailover {
-		heaviest := 0
-		for _, choice := range validChannels {
-			heaviest = max(heaviest, cc.supplyWeight(modelName, choice.Channel))
-		}
-		tied := validChannels[:0:0]
-		for _, choice := range validChannels {
-			if cc.supplyWeight(modelName, choice.Channel) == heaviest {
-				tied = append(tied, choice)
-			}
-		}
-		validChannels = tied
-		totalWeight = heaviest * len(tied)
-	}
-
 	if len(validChannels) == 1 {
 		selectedChannel := validChannels[0].Channel
 		// 建立新的粘性 session 映射
@@ -1141,24 +1125,6 @@ func (cc *ChannelsChooser) Load() {
 	cc.Supplies = nil
 	cc.Unlock()
 	logger.SysLog("channels Load success")
-}
-
-// supplyModeOf returns the supply mode a public model routes with: its own, or the site default
-// when it follows the default.
-func supplyModeOf(modelName string) string {
-	return routingSupplyMode(lookupModelInfo(modelName), currentAllocationActive())
-}
-
-// routingSupplyMode is the mode a model routes with. Under an allocation policy a tier with
-// several supplies always shares traffic by weight, so the mode only applies to manual models.
-func routingSupplyMode(info *ModelInfo, allocationActive bool) string {
-	if allocationActive && followsPolicy(info) {
-		return SupplyModeBalance
-	}
-	if info != nil {
-		return EffectiveSupplyMode(info.SupplyMode)
-	}
-	return EffectiveSupplyMode("")
 }
 
 // loadFromSupplies builds the routing table from enabled supplies on enabled channels: each

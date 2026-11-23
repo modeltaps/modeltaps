@@ -265,7 +265,6 @@ func AddLibraryModels(req LibraryAddRequest) (*LibraryAddResult, error) {
 		info := libraryModelInfo(e)
 		info.Status = status
 		info.Hidden = status != ModelStatusPublished
-		info.SupplyMode = SupplyModeDefault
 		info.Source = ModelInfoSourceLibrary
 		if err := DB.Create(info).Error; err != nil {
 			return nil, err

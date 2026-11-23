@@ -383,7 +383,6 @@ func SetApiRouter(router *gin.Engine) {
 			modelSupplyRoute.POST("/pending/attach", controller.AttachPendingUpstreamModel)
 			modelSupplyRoute.POST("/pending/ignore", controller.IgnorePendingUpstreamModel)
 			modelSupplyRoute.POST("/batch", controller.BatchModelSupplies)
-			modelSupplyRoute.POST("/mode", controller.SetModelSupplyMode)
 			modelSupplyRoute.POST("/allocation", controller.SetModelAllocation)
 			modelSupplyRoute.POST("/", controller.CreateModelSupply)
 			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)

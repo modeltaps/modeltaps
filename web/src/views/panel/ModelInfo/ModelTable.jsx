@@ -58,7 +58,7 @@ import {
 } from './modelInfoHelpers';
 import { ModelStatusPill } from './supply/supplyParts';
 import SupplyOrder from './supply/SupplyOrder';
-import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
+import { isPublicModelRow } from './supply/supplyHelpers';
 import { admin } from 'routes/paths';
 import SellDelta from '../Channel/SellDelta';
 
@@ -130,17 +130,14 @@ ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
 
 // Public status and the supplies of a public model on one line: while supplies route requests,
 // their order as provider icons (a click shows the order in full and why); otherwise
-// usable/total. The counts spelled out and the supply mode are in the tooltip; the Supplies tab
+// usable/total. The counts spelled out are in the tooltip; the Supplies tab
 // opens from the cell. Aliases and routing policies have no supplies of their own.
 export function SupplyCell({ row, onOpen }) {
   const { t } = useTranslation();
   if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
   const counts = row.supplyCounts || { total: 0, usable: 0 };
   const partial = counts.usable < counts.total;
-  const tip = [
-    t('modelSupply.countTip', { count: counts.total, usable: counts.usable }),
-    t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)
-  ];
+  const tip = [t('modelSupply.countTip', { count: counts.total, usable: counts.usable })];
   // While supplies route requests, the cell shows who serves the model first, then who next.
   if (row.supplyRouting && row.supplyOrder?.length) {
     return (

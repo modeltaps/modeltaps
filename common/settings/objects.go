@@ -41,7 +41,7 @@ func channelFields() []Setting {
 				{Value: "3", Effect: "Next to a channel of weight 1 at the same priority, takes about 3 / (3 + 1) = 75% of the requests."},
 				{Value: "1", Effect: "The default: channels of one priority share requests equally."},
 			},
-			Related:  []string{"channel.priority", "supply.weight", "SupplyModeDefault"},
+			Related:  []string{"channel.priority", "supply.weight"},
 			Keywords: []string{"load balancing", "share", "split", "traffic"},
 		},
 		{
@@ -207,26 +207,6 @@ func modelFields() []Setting {
 			Docs:     "use/pricing_and_routing.md#the-three-numbers",
 		},
 		{
-			Key: "model.supply_mode", Scope: ScopeModel, Group: "models", Card: "supplies", Field: "supply_mode",
-			Type: TypeEnum, Default: "default",
-			Enum: []EnumValue{
-				{Value: "default", Label: "Follow default", Description: "Use the default supply mode of the platform settings."},
-				{Value: "balance", Label: "Balance", Description: "Supplies of one tier share requests by weight."},
-				{Value: "failover", Label: "Failover", Description: "The heaviest supply of a tier takes every request; the others back it up."},
-			},
-			Label: "Supply mode",
-			Description: "How the supplies of one tier share this model's requests. Tiers are always tried in order; the mode only " +
-				"decides within one. It applies to models whose order is set by hand: a model that follows the call order " +
-				"always shares a tier by weight.",
-			Examples: []Example{
-				{Value: "failover", Effect: "Supplies of weights 3 and 1 in one tier: the weight 3 supply takes every request while it works."},
-				{Value: "balance", Effect: "The same supplies take about 75% and 25% of the requests."},
-			},
-			Related:  []string{"SupplyModeDefault", "model.allocation", "supply.weight"},
-			Keywords: []string{"load balancing", "failover", "primary", "backup"},
-			Docs:     "use/pricing_and_routing.md#which-supply-takes-a-request",
-		},
-		{
 			Key: "model.allocation", Scope: ScopeModel, Group: "models", Card: "supplies", Field: "allocation",
 			Type: TypeEnum, Default: "policy",
 			Enum: []EnumValue{
@@ -241,7 +221,7 @@ func modelFields() []Setting {
 				{Value: "policy", Effect: "Moving a provider up on the Providers page moves it up for this model too."},
 				{Value: "manual", Effect: "This model keeps its order when the call order changes; new channels join below its supplies."},
 			},
-			Related:  []string{"allocation.tiers", "supply.priority", "model.supply_mode"},
+			Related:  []string{"allocation.tiers", "supply.priority", "supply.weight"},
 			Keywords: []string{"allocation policy", "call order", "manual order"},
 		},
 		{
@@ -250,7 +230,7 @@ func modelFields() []Setting {
 			Default: "the channel's priority; a supply added by hand joins below the lowest tier",
 			Label:   "Priority",
 			Description: "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. " +
-				"A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by the supply mode. " +
+				"A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. " +
 				"Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
 			Examples: []Example{
 				{Value: "2", Effect: "Above two supplies at 1: they are used only while this supply fails."},
@@ -264,14 +244,14 @@ func modelFields() []Setting {
 			Key: "supply.weight", Scope: ScopeSupply, Group: "models", Card: "supplies", Field: "weight",
 			Type: TypeInt, Min: num(0), Default: "the channel's weight",
 			Label: "Weight",
-			Description: "This supply's share of its tier: its weight over the tier's total under balance, all of it if heaviest under failover. " +
+			Description: "This supply's share of its tier: its weight over the tier's total. " +
 				"0 counts as 1. Under the call order a provider's weight is split equally " +
 				"between its channels.",
 			Examples: []Example{
-				{Value: "3", Effect: "With a weight 1 supply in its tier: about 75% of the requests under balance, all of them under failover."},
-				{Value: "1", Effect: "Two supplies of weight 1 share a tier 50 / 50 under balance."},
+				{Value: "3", Effect: "With a weight 1 supply in its tier: about 75% of the requests."},
+				{Value: "1", Effect: "Two supplies of weight 1 share a tier 50 / 50. To keep a supply as a backup only, put it in the tier below."},
 			},
-			Related:  []string{"supply.priority", "model.supply_mode", "SupplyModeDefault"},
+			Related:  []string{"supply.priority", "model.allocation"},
 			Keywords: []string{"share", "split", "load balancing", "traffic"},
 		},
 		{

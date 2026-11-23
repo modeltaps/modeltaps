@@ -97,29 +97,6 @@ func EffectiveResolvableKeys() []string {
 }
 
 var effectiveResolvers = map[string]func(objectId string) (*EffectiveSetting, error){
-	// A model's supply mode: its own, or the site default; models on the allocation policy share
-	// a tier by weight.
-	"model.supply_mode": func(name string) (*EffectiveSetting, error) {
-		info := lookupModelInfo(name)
-		if info == nil {
-			return nil, fmt.Errorf("no public model %q", name)
-		}
-		value := routingSupplyMode(info, currentAllocationActive())
-		var chain []SettingSource
-		switch {
-		case currentAllocationActive() && followsPolicy(info):
-			chain = append(chain, SettingSource{Level: "object", Key: "model.allocation", Value: "policy",
-				Reason: "the model follows the allocation policy, whose tiers always share requests by weight"})
-		case info.SupplyMode == SupplyModeBalance || info.SupplyMode == SupplyModeFailover:
-			chain = append(chain, SettingSource{Level: "object", Key: "model.supply_mode", Value: info.SupplyMode,
-				Reason: "set on the model's Supplies tab"})
-		default:
-			chain = append(chain, SettingSource{Level: "object", Key: "model.supply_mode", Value: SupplyModeDefault,
-				Reason: "the model follows the site default"}, siteSource("SupplyModeDefault"))
-		}
-		chain = append(chain, siteSource("SupplyCostOrder"))
-		return &EffectiveSetting{Value: value, Chain: chain}, nil
-	},
 	// A channel's fee rate and where it came from.
 	"channel.fee_rate": func(id string) (*EffectiveSetting, error) {
 		ch, err := channelByIdString(id)
@@ -247,17 +224,12 @@ func SettingOverrides() (map[string]SettingOverride, error) {
 		}
 	}
 	out["ClaudePromptCachingEnabled"] = SettingOverride{Count: n, Scope: string(settings.ScopeChannel)}
-	var models int64
-	if err := DB.Model(&ModelInfo{}).Where("supply_mode IN ?", []string{SupplyModeBalance, SupplyModeFailover}).Count(&models).Error; err != nil {
-		return nil, err
-	}
-	out["SupplyModeDefault"] = SettingOverride{Count: int(models), Scope: string(settings.ScopeModel)}
 	return out, nil
 }
 
 // inheritedSiteSettings are the site settings object fields follow; admins who edit those objects
 // may read them (the rest of the platform settings stay root only).
-var inheritedSiteSettings = map[string]bool{"ClaudePromptCachingEnabled": true, "SupplyModeDefault": true}
+var inheritedSiteSettings = map[string]bool{"ClaudePromptCachingEnabled": true}
 
 // InheritedSiteSetting is the value of a site setting an object field follows, for admins.
 func InheritedSiteSetting(key string) (string, bool) {

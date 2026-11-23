@@ -65,7 +65,6 @@ const ORIGIN = {
   endpoints: '',
   alias_of: '',
   status: 'draft',
-  supply_mode: 'default',
   locked: false
 };
 
@@ -332,8 +331,6 @@ export default function ModelInfoSheet({
   const [baseline, setBaseline] = useState(ORIGIN);
   const [originalModel, setOriginalModel] = useState('');
   const [originalCapabilities, setOriginalCapabilities] = useState('');
-  // The row as last read from the server: the supply mode switch saves it with only that field changed.
-  const [stored, setStored] = useState(null);
   const [modelOptions, setModelOptions] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
   const [errors, setErrors] = useState({});
@@ -383,7 +380,6 @@ export default function ModelInfoSheet({
       setBaseline(initial);
       setOriginalModel('');
       setOriginalCapabilities('');
-      setStored(null);
       return;
     }
     API.get(`/api/model_info/${editId}`)
@@ -397,7 +393,6 @@ export default function ModelInfoSheet({
         if (!data.capabilities) data.capabilities = '';
         if (!data.endpoints) data.endpoints = '';
         if (!data.alias_of) data.alias_of = '';
-        setStored({ ...ORIGIN, ...data });
         data.status = normalizeModelStatus(data.status);
         // 决策 4:编辑已有记录时锁定默认打开,防止改完被下次同步冲掉。
         const loaded = { ...ORIGIN, ...data, locked: true };
@@ -493,20 +488,6 @@ export default function ModelInfoSheet({
     const on = !selectedEndpoints.includes(endpoint);
     const next = ENDPOINT_VALUES.filter((v) => (v === endpoint ? on : selectedEndpoints.includes(v)));
     setField('endpoints', next.length === 0 ? '' : JSON.stringify(next));
-  };
-
-  // Saves the supply mode at once (the Supplies tab saves on every change), leaving any
-  // unsaved profile edits as they are.
-  const changeSupplyMode = async (mode) => {
-    if (!stored) return;
-    const payload = { ...buildCatalogPayload(stored, stored.capabilities), id: editId, supply_mode: mode };
-    const result = await callApi(() => API.put('/api/model_info/', payload));
-    if (!result.ok) return toast.error(result.message);
-    setStored((prev) => ({ ...prev, supply_mode: mode }));
-    setValues((prev) => ({ ...prev, supply_mode: mode }));
-    setBaseline((prev) => ({ ...prev, supply_mode: mode }));
-    toast.success(t('modelSupply.mode.saved'));
-    onSupplyChanged?.();
   };
 
   return (
@@ -757,8 +738,6 @@ export default function ModelInfoSheet({
               <SuppliesPanel
                 model={row.model}
                 catalogId={row.catalogId}
-                supplyMode={values.supply_mode || row.supply_mode}
-                onSupplyModeChange={stored ? changeSupplyMode : undefined}
                 channels={channels}
                 switches={switches}
                 onChanged={onSupplyChanged}

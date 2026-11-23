@@ -1,27 +1,20 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronDown, Loader2, Minus, Network, Plus } from 'lucide-react';
+import { ChevronDown, Loader2, Minus, Network, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { fetchAllChannels } from '../../Channel/channelApi';
-import { batchSupplies, setSupplyModes } from './supplyApi';
-import { SUPPLY_MODES, isPublicModelRow } from './supplyHelpers';
+import { batchSupplies } from './supplyApi';
+import { isPublicModelRow } from './supplyHelpers';
 
-// Batch actions for the selected public models: set their supply mode, or add / remove one
-// channel as a source of all of them. Aliases, routing policies and rows without a catalog entry
+// Batch actions for the selected public models: add or remove one channel as a source of all of
+// them. Aliases, routing policies and rows without a catalog entry
 // are left out, like on the model's own Supplies tab.
 export default function SupplyBatchMenu({ rows, onDone }) {
   const { t } = useTranslation();
@@ -48,12 +41,6 @@ export default function SupplyBatchMenu({ rows, onDone }) {
     }
     return undefined;
   };
-
-  const setMode = (mode) =>
-    run(
-      () => setSupplyModes({ ids: models.map((row) => row.catalogId), mode }),
-      (data) => t('modelSupply.batch.modeDone', { count: data.affected ?? count })
-    );
 
   const open = (next) => {
     setAction(next);
@@ -89,14 +76,6 @@ export default function SupplyBatchMenu({ rows, onDone }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
-          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('modelSupply.batch.modeLabel')}</DropdownMenuLabel>
-          {SUPPLY_MODES.map((mode) => (
-            <DropdownMenuItem key={mode} onClick={() => setMode(mode)}>
-              <Check className="size-4 opacity-0" />
-              {t(`modelSupply.mode.${mode}`)}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => open('add')}>
             <Plus className="size-4" />
             {t('modelSupply.batch.add')}

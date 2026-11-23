@@ -31,8 +31,8 @@ type SupplyPreviewEntry struct {
 	PauseId     int    `json:"pause_id,omitempty"`
 	PauseRule   string `json:"pause_rule,omitempty"`
 	PauseReason string `json:"pause_reason,omitempty"`
-	// Share is the chance this supply takes a request that reaches its tier: by weight among
-	// the tier's available supplies for balance, the heaviest available ones for failover.
+	// Share is the chance this supply takes a request that reaches its tier: by weight among the
+	// tier's available supplies.
 	Share float64 `json:"share"`
 	// Reason says where the supply's position comes from (a SupplyReason* value); PolicyTier is
 	// the allocation policy tier it sits in, counted from 1, when the reason names one.
@@ -68,11 +68,6 @@ type SupplyPreview struct {
 	RequestedModel string `json:"requested_model,omitempty"`
 	Group          string `json:"group,omitempty"`
 	Status         string `json:"status"`
-	// Mode is the mode requests are routed with; OwnMode is what the model stores (balance,
-	// failover, or default to follow DefaultMode, the site default).
-	Mode        string `json:"mode"`
-	OwnMode     string `json:"own_mode"`
-	DefaultMode string `json:"default_mode"`
 	// Active says supplies route requests now (ModelSupplyEnabled); when false the preview
 	// shows what the supply configuration will do once switched on.
 	Active bool `json:"active"`
@@ -83,8 +78,8 @@ type SupplyPreview struct {
 	CostOrder string               `json:"cost_order"`
 	Tiers     []*SupplyPreviewTier `json:"tiers"`
 	// FirstChoice is the supply that takes the next request when that is certain: the only
-	// heaviest available supply of the first reachable tier (failover), or its only available
-	// supply. 0 when the choice is random or nothing is available.
+	// available supply of the first reachable tier. 0 when the choice is random or nothing is
+	// available.
 	FirstChoice int `json:"first_choice,omitempty"`
 	// OutsideGroup counts supplies whose channel is not in Group, left out of the tiers.
 	OutsideGroup int `json:"outside_group"`
@@ -132,8 +127,7 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 	}
 
 	preview := &SupplyPreview{
-		Model: canonical, Group: group, Status: info.Status, Mode: routingSupplyMode(info, allocationInForce()),
-		OwnMode: info.SupplyMode, DefaultMode: EffectiveSupplyMode(""),
+		Model: canonical, Group: group, Status: info.Status,
 		Active: config.ModelSupplyEnabled, Tiers: []*SupplyPreviewTier{},
 	}
 	if allocationInForce() {
@@ -141,9 +135,6 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		if !followsPolicy(info) {
 			preview.Allocation = AllocationManual
 		}
-	}
-	if !IsValidSupplyMode(preview.OwnMode) {
-		preview.OwnMode = SupplyModeDefault
 	}
 	if isAlias {
 		preview.RequestedModel = name
@@ -191,31 +182,15 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		if len(available) == 0 {
 			continue
 		}
-		if preview.Mode == SupplyModeFailover {
-			heaviest := available[0].EffectiveWeight()
-			var tied []*SupplyPreviewEntry
-			for _, entry := range available {
-				if entry.EffectiveWeight() == heaviest {
-					tied = append(tied, entry)
-				}
-			}
-			for _, entry := range tied {
-				entry.Share = 1 / float64(len(tied))
-			}
-			if preview.FirstChoice == 0 && len(tied) == 1 {
-				preview.FirstChoice = tied[0].Id
-			}
-		} else {
-			total := 0
-			for _, entry := range available {
-				total += entry.EffectiveWeight()
-			}
-			for _, entry := range available {
-				entry.Share = float64(entry.EffectiveWeight()) / float64(total)
-			}
-			if preview.FirstChoice == 0 && len(available) == 1 {
-				preview.FirstChoice = available[0].Id
-			}
+		total := 0
+		for _, entry := range available {
+			total += entry.EffectiveWeight()
+		}
+		for _, entry := range available {
+			entry.Share = float64(entry.EffectiveWeight()) / float64(total)
+		}
+		if preview.FirstChoice == 0 && len(available) == 1 {
+			preview.FirstChoice = available[0].Id
 		}
 		// Only the first tier with an available supply takes requests while it stays available.
 		break

@@ -1,6 +1,6 @@
 // Package settings is the catalog of everything an operator configures: every platform setting
 // (the options of the settings page) and the object fields that need explaining (a channel's fee
-// rate, a model's supply mode, a user group's ratio...). One entry says what a setting does, where
+// rate, a supply's weight, a user group's ratio...). One entry says what a setting does, where
 // it lives in the console, its type and range, and gives examples.
 //
 // The catalog is the single source of the English text: the console reads it from the generated

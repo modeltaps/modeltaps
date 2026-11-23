@@ -9,26 +9,7 @@ import (
 
 var (
 	ErrSupplyBatchAction = errors.New("action must be add or remove")
-	ErrModelSupplyMode   = errors.New("invalid supply mode")
 )
-
-// SetModelSupplyMode sets the supply mode of public models by catalog id and returns how many
-// rows changed. Aliases and routing policies have no supply mode and are skipped.
-func SetModelSupplyMode(ids []int, mode string) (int64, error) {
-	if len(ids) == 0 {
-		return 0, nil
-	}
-	if !IsValidSupplyMode(mode) {
-		return 0, ErrModelSupplyMode
-	}
-	result := DB.Model(&ModelInfo{}).Where("id IN ? AND alias_of = ? AND kind = ?", ids, "", "").Update("supply_mode", mode)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	refreshCatalogCaches()
-	reloadSupplies()
-	return result.RowsAffected, nil
-}
 
 // SupplyBatch adds or removes one channel as a supply of several public models.
 type SupplyBatch struct {

@@ -20,7 +20,7 @@ func TestSupplyCostViews(t *testing.T) {
 		"m": {Model: "m", Type: TokensPriceType, Input: 2.5, Output: 15},
 	}}
 	t.Cleanup(func() { PricingInstance = oldPricing })
-	if err := DB.Create(&ModelInfo{Model: "m", Status: ModelStatusPublished, SupplyMode: SupplyModeBalance}).Error; err != nil {
+	if err := DB.Create(&ModelInfo{Model: "m", Status: ModelStatusPublished}).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -98,24 +98,6 @@ func TestSupplyCostViews(t *testing.T) {
 	}
 	if nSummary.CheapestToCatalog <= 1 || !nSummary.CheapestAboveQuote {
 		t.Errorf("only supply above the quote: cheapest %v above %v", nSummary.CheapestToCatalog, nSummary.CheapestAboveQuote)
-	}
-
-	// Failover: the heaviest of the cheapest supplies takes the traffic, the others are backups.
-	DB.Model(&ModelInfo{}).Where("model = ?", "m").Update("supply_mode", SupplyModeFailover)
-	modelInfoCache.Lock()
-	modelInfoCache.loaded = false
-	modelInfoCache.Unlock()
-	DB.Model(&ModelSupply{}).Where("channel_id = ? AND model = ?", aggregator.Id, "m").Update("weight", 9)
-	DB.Model(&ModelSupply{}).Where("channel_id = ?", relay.Id).Update("weight", 5)
-	views, _ = GetModelSupplyViews("m", 0)
-	for _, v := range views {
-		want := SupplyTrafficBackup
-		if v.ChannelName == "relay" {
-			want = SupplyTrafficPrimary
-		}
-		if v.Traffic != want {
-			t.Errorf("failover %s: traffic %q, want %q", v.ChannelName, v.Traffic, want)
-		}
 	}
 }
 

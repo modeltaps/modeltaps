@@ -75,10 +75,12 @@ export function ChannelBatchBar({ selected, onClear, batch, busy, floating = fal
               <Layers className="size-4" />
               {t('channels.batch.groups')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => batch.numbers(selected)}>
-              <SlidersHorizontal className="size-4" />
-              {t('channels.batch.numbers')}
-            </DropdownMenuItem>
+            {batch.numbers && (
+              <DropdownMenuItem onClick={() => batch.numbers(selected)}>
+                <SlidersHorizontal className="size-4" />
+                {t('channels.batch.numbers')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={() => batch.remove(selected)}>
               <Trash2 className="size-4" />
@@ -108,9 +110,11 @@ export function ChannelBatchBar({ selected, onClear, batch, busy, floating = fal
       <ToolButton icon={Layers} disabled={busy} onClick={() => batch.groups(selected)}>
         {t('channels.batch.groups')}
       </ToolButton>
-      <ToolButton icon={SlidersHorizontal} disabled={busy} onClick={() => batch.numbers(selected)}>
-        {t('channels.batch.numbers')}
-      </ToolButton>
+      {batch.numbers && (
+        <ToolButton icon={SlidersHorizontal} disabled={busy} onClick={() => batch.numbers(selected)}>
+          {t('channels.batch.numbers')}
+        </ToolButton>
+      )}
       <ToolButton icon={Trash2} disabled={busy} className="text-destructive hover:text-destructive" onClick={() => batch.remove(selected)}>
         {t('channels.batch.delete')}
       </ToolButton>
@@ -159,10 +163,12 @@ export function TagActionsMenu({ tag, tagActions, busy, onTagGone }) {
           <PowerOff className="size-4" />
           {t('channels.tagActions.disable')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => tagActions.priority(tag)}>
-          <SlidersHorizontal className="size-4" />
-          {t('channels.tagActions.priority')}
-        </DropdownMenuItem>
+        {tagActions.priority && (
+          <DropdownMenuItem onClick={() => tagActions.priority(tag)}>
+            <SlidersHorizontal className="size-4" />
+            {t('channels.tagActions.priority')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive" onClick={() => tagActions.remove(tag, onTagGone)}>
           <Trash2 className="size-4" />

@@ -637,6 +637,7 @@ func postMigrations() []*gormigrate.Migration {
 		migrateLogIOToKeys(),
 		migrateLogIOToOrgSelection(),
 		backfillOfficialOffPeak(),
+		migrateFailoverToTiers(),
 	}
 }
 
@@ -2080,11 +2081,11 @@ func migrateSupplyModeFollowDefault() *gormigrate.Migration {
 			if !tx.Migrator().HasColumn(&ModelInfo{}, "supply_mode") {
 				return nil
 			}
-			return tx.Model(&ModelInfo{}).Where("supply_mode = ? OR supply_mode = ? OR supply_mode IS NULL", SupplyModeBalance, "").
-				Update("supply_mode", SupplyModeDefault).Error
+			return tx.Table("model_info").Where("supply_mode = ? OR supply_mode = ? OR supply_mode IS NULL", "balance", "").
+				Update("supply_mode", "default").Error
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Model(&ModelInfo{}).Where("supply_mode = ?", SupplyModeDefault).Update("supply_mode", SupplyModeBalance).Error
+			return tx.Table("model_info").Where("supply_mode = ?", "default").Update("supply_mode", "balance").Error
 		},
 	}
 }

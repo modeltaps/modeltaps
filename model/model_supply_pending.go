@@ -232,7 +232,7 @@ func AttachPendingUpstreamModel(req PendingAttach) (*PendingAttachResult, error)
 	result := &PendingAttachResult{Model: name, Supplies: []*ModelSupply{}, Skipped: []int{}}
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		if info == nil {
-			created := &ModelInfo{Model: name, Name: name, Status: status, SupplyMode: SupplyModeDefault, Source: ModelInfoSourceManual}
+			created := &ModelInfo{Model: name, Name: name, Status: status, Source: ModelInfoSourceManual}
 			if err := tx.Create(created).Error; err != nil {
 				return err
 			}

@@ -8,53 +8,29 @@ outline: deep
 
 # プラットフォーム設定 · ライン割り当て
 
-## 供給モードとコスト
-
-<a id="SupplyModeDefault"></a>
-
-### 既定の供給モード
-
-キー `SupplyModeDefault` · 型 enum · 既定値 `balance`
-
-場所：プラットフォーム設定 › ライン割り当て › 供給モードとコスト
-
-個別設定のないモデルで、リクエストを受けるルートどうしの分担方法です。優先度が同じ（コスト優先ではコストも同じ）ルートだけが分担します。モデルごとに「ルート」タブで別の方式を選べます。
-
-値：
-
-- `balance` 負荷分散：同じ層の供給が重みに応じてリクエストを分担します。
-- `failover` フェイルオーバー：層のうち最も重い供給がすべてのリクエストを受け、他はその予備になります。
-
-例：
-
-- `balance` 重み 3 と 1 の 2 つの供給が、それぞれ約 75% と 25% のリクエストを受けます。
-- `failover` 重み 3 の供給がすべてのリクエストを受け、重み 1 の供給はそれが失敗している間だけ使われます。
-
-関連する設定：[コストと優先度](./supply.md#SupplyCostOrder) · [供給モード](./objects.md#model-supply_mode)
-
-ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+## ルート振り分けと順序の基準
 
 <a id="SupplyCostOrder"></a>
 
-### コストと優先度
+### 順序の基準
 
 キー `SupplyCostOrder` · 型 enum · 既定値 `priority`
 
-場所：プラットフォーム設定 › ライン割り当て › 供給モードとコスト
+場所：プラットフォーム設定 › ライン割り当て › ルート振り分けと順序の基準
 
-ルートのコスト（チャネルの定価 × (1 + チャネル手数料率)）でルートを前に出すかどうか。ユーザーの支払いは常にカタログ価格 × グループ倍率で、変わるのは自分のコストだけです。コスト優先では、「最低節約率」以上安く、「最低成功率」に達したルートだけが前に出ます。コストが近いルートは優先度と重みで分担し、コスト不明のルートは最後です。
+ルートのコスト（チャネルの定価 × (1 + チャネル手数料率)）でルートを呼び出し順序より前に出すかどうか。ユーザーの支払いは常にカタログ価格 × グループ倍率で、変わるのは自分のコストだけです。「安いものを先に」では、「最低節約率」以上安く、「最低成功率」に達したルートだけが前に出ます。コストが近いルートは呼び出し順序のままで、同じ段は重みで分担し、コスト不明のルートは最後です。
 
 値：
 
-- `priority` 優先度優先：コストは順序に影響せず、優先度と重みで決まります。
-- `cost` コスト優先：明らかに安く安定したルートが、優先度に関係なく先にリクエストを受けます。
+- `priority` 呼び出し順序どおり：プロバイダーページの呼び出し順序で試し、コストで順序は変わりません。
+- `cost` 安いものを先に：明らかに安く安定したルートが呼び出し順序より前に出て、先にリクエストを受けます。
 
 例：
 
 - `priority` gpt-5.1 の Requesty（コスト ×1.05）と公式 API（×1.00）が同じ優先度・重み 3 と 1 なら、約 75% と 25% を受けます。
 - `cost` コスト ×0.80 の中継が成功率 95% を保つ間は gpt-5.1 のリクエストを受け、優先度の高い Requesty が予備になります。成功率が下がると Requesty が引き継ぎます。
 
-関連する設定：[最低節約率](./supply.md#SupplyCostMinSavingPercent) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent) · [既定の供給モード](./supply.md#SupplyModeDefault) · [手数料率](./objects.md#channel-fee_rate) · [優先度](./objects.md#channel-priority)
+関連する設定：[最低節約率](./supply.md#SupplyCostMinSavingPercent) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent) · [手数料率](./objects.md#channel-fee_rate) · [優先度](./objects.md#channel-priority)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -64,7 +40,7 @@ outline: deep
 
 キー `SupplyCostMinSavingPercent` · 型 percent · 単位 % · 範囲 0–99 · 既定値 `5`
 
-場所：プラットフォーム設定 › ライン割り当て › 供給モードとコスト
+場所：プラットフォーム設定 › ライン割り当て › ルート振り分けと順序の基準
 
 コスト優先で、あるルートが別のルートより前に出るために必要な安さ（高い方のコストに対する割合）。差がこれ以内なら同じコストとみなし、優先度と重みで分担します。わずかに安いだけのルートがモデルの全トラフィックを取ることを防ぎます。0 なら 0.1% を超えて安ければ前に出ます。
 
@@ -73,7 +49,7 @@ outline: deep
 - `5` OpenRouter（手数料 5.5%）と Requesty（手数料 5%）は同じコスト扱い。コスト ×0.90 の中継が両方より前に出ます。
 - `0` Requesty（×1.05）が OpenRouter（×1.055）より前に出ます。
 
-関連する設定：[コストと優先度](./supply.md#SupplyCostOrder) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent)
+関連する設定：[順序の基準](./supply.md#SupplyCostOrder) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -83,7 +59,7 @@ outline: deep
 
 キー `SupplyCostMinSuccessPercent` · 型 percent · 単位 % · 範囲 0–100 · 既定値 `95`
 
-場所：プラットフォーム設定 › ライン割り当て › 供給モードとコスト
+場所：プラットフォーム設定 › ライン割り当て › ルート振り分けと順序の基準
 
 コスト優先で、安さを理由に前に出るために、現在と直前の 1 時間で必要な成功率。これを下回る安いルートはコスト不明として扱われ、正常なルートの後ろに回り、成功率が戻ると前に戻ります。この期間の試行が 20 回未満のルートは判定しません。0 でチェックしません。また、Vercel AI Gateway のモデルのホストがホスト順序に入るために必要な直近 1 日の稼働率でもあります（コストと優先度の設定に関係なく）。
 
@@ -92,7 +68,7 @@ outline: deep
 - `95` 直近 100 回のうち 12 回失敗した割引リセラーは優先されなくなり、次の正常なルートが引き継ぎます。
 - `0` 最安ルートは失敗回数に関係なく常に先頭です。外せるのは一時停止ルールだけです。
 
-関連する設定：[コストと優先度](./supply.md#SupplyCostOrder) · [最低節約率](./supply.md#SupplyCostMinSavingPercent) · [カスタム一時停止ルール](./gateway.md#PauseRules)
+関連する設定：[順序の基準](./supply.md#SupplyCostOrder) · [最低節約率](./supply.md#SupplyCostMinSavingPercent) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -102,16 +78,16 @@ outline: deep
 
 キー `ModelSupplyEnabled` · 型 bool · 既定値 `false` · ほとんど変更しない
 
-場所：プラットフォーム設定 › ライン割り当て › 供給モードとコスト
+場所：プラットフォーム設定 › ライン割り当て › ルート振り分けと順序の基準
 
-リクエストをチャネルのモデル一覧とモデルマッピングではなく、公開モデルごとの供給で振り分けます。オンにすると、まずチャネルのモデルとモデルマッピングを供給に移行します（まだないものだけ）。チャネルが提供していたモデルはそのまま使えます。オンの間は公開モデルで課金し、公開済みのモデルだけを一覧に出し、プロバイダーページでチャネルの呼び出し順を並べられます。リクエストの行き先は振り分け方式、コスト順、新モデル受け入れルール、一時停止ルールで決まります。新規インストールでは最初からオンです。オフに戻すとすぐにチャネルのモデル一覧に戻り、供給は残ります。
+リクエストをチャネルのモデル一覧とモデルマッピングではなく、公開モデルごとの供給で振り分けます。オンにすると、まずチャネルのモデルとモデルマッピングを供給に移行します（まだないものだけ）。チャネルが提供していたモデルはそのまま使えます。オンの間は公開モデルで課金し、公開済みのモデルだけを一覧に出し、プロバイダーページでチャネルの呼び出し順を並べられます。リクエストの行き先は呼び出し順序、順序の基準、新モデル受け入れルール、一時停止ルールで決まります。新規インストールでは最初からオンです。オフに戻すとすぐにチャネルのモデル一覧に戻り、供給は残ります。
 
 例：
 
 - `false` リクエストは各チャネルのモデルとモデルマッピングに従います。供給のページは変更内容をプレビューするだけです。
 - `true` claude-sonnet-4-5 へのリクエストは、その公開モデルの供給へ優先度とコスト順に送られます。
 
-関連する設定：[既定の供給モード](./supply.md#SupplyModeDefault) · [コストと優先度](./supply.md#SupplyCostOrder) · [上流の新モデルの取り込みルール](./supply.md#SupplyIntakeRules) · [カスタム一時停止ルール](./gateway.md#PauseRules)
+関連する設定：[順序の基準](./supply.md#SupplyCostOrder) · [上流の新モデルの取り込みルール](./supply.md#SupplyIntakeRules) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 ガイド：[use/supply_routing.md](../use/supply_routing.md)
 
@@ -132,7 +108,7 @@ outline: deep
 - `[{"name":"Previews wait","patterns":["*-preview*","*-exp*"],"action":"pending"},{"name":"Chat joins","endpoints":["chat","responses"],"action":"enable","placement":"auto"},{"name":"Rest waits","action":"pending"}]` 組み込みルール：gpt-5-preview はレビュー待ち、新しいチャットモデルはすぐ受け（提供済みのチャネルの後ろ）、画像モデルはレビュー待ちです。
 - `[{"name":"Claude joins","families":["claude-*"],"action":"enable","placement":"last"},{"name":"Rest skipped","action":"skip"}]` 新しい Claude モデルはそのモデルの他の供給の後ろですぐ受け、それ以外の新モデルは追加せず「新しい上流モデル」に残ります。
 
-関連する設定：[供給でルーティング](./supply.md#ModelSupplyEnabled) · [既定の供給モード](./supply.md#SupplyModeDefault)
+関連する設定：[供給でルーティング](./supply.md#ModelSupplyEnabled) · [順序の基準](./supply.md#SupplyCostOrder)
 
 ## セッションアフィニティ
 

@@ -42,7 +42,7 @@ Run the dry run again after each fix until the report shows only changes you wan
 
 ## 3. Migrate and switch on
 
-Turn on **Route by supplies** under Platform admin → Gateway settings → Allocation → Supply mode and cost. Before you save, the switch shows how many supplies will be created and how many models would have no usable supply after the switch. Saving migrates first (only what is still missing), then switches on. The API does the same:
+Turn on **Route by supplies** under Platform admin → Supply allocation → Supply routing and order. Before you save, the switch shows how many supplies will be created and how many models would have no usable supply after the switch. Saving migrates first (only what is still missing), then switches on. The API does the same:
 
 ```js
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });

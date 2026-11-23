@@ -1661,49 +1661,6 @@
       ]
     },
     {
-      "key": "SupplyModeDefault",
-      "scope": "site",
-      "group": "supply",
-      "card": "supply-mode",
-      "type": "enum",
-      "enum": [
-        {
-          "value": "balance",
-          "label": "Balance",
-          "description": "Supplies of one tier share requests by weight."
-        },
-        {
-          "value": "failover",
-          "label": "Failover",
-          "description": "The heaviest supply of a tier takes every request; the others back it up."
-        }
-      ],
-      "label": "Default supply mode",
-      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.",
-      "examples": [
-        {
-          "value": "balance",
-          "effect": "Two supplies with weights 3 and 1 take about 75% and 25% of the requests."
-        },
-        {
-          "value": "failover",
-          "effect": "The supply with weight 3 takes every request; the one with weight 1 is used only while it fails."
-        }
-      ],
-      "related": [
-        "SupplyCostOrder",
-        "model.supply_mode"
-      ],
-      "keywords": [
-        "load balancing",
-        "weight",
-        "fallback",
-        "primary",
-        "backup"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
       "key": "SupplyCostOrder",
       "scope": "site",
       "group": "supply",
@@ -1712,17 +1669,17 @@
       "enum": [
         {
           "value": "priority",
-          "label": "Priority first",
-          "description": "Cost does not order supplies: priorities and weights decide."
+          "label": "Call order",
+          "description": "Supplies are tried in the call order of the Providers page; cost does not move them."
         },
         {
           "value": "cost",
-          "label": "Cost first",
-          "description": "Supplies that are clearly cheaper and serve well take a model's requests whatever their priority."
+          "label": "Cheaper first",
+          "description": "Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order."
         }
       ],
-      "label": "Cost and priority",
-      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.",
+      "label": "Order by",
+      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs keep the call order and share a tier by weight, and supplies of unknown cost come last.",
       "examples": [
         {
           "value": "priority",
@@ -1736,7 +1693,6 @@
       "related": [
         "SupplyCostMinSavingPercent",
         "SupplyCostMinSuccessPercent",
-        "SupplyModeDefault",
         "channel.fee_rate",
         "channel.priority"
       ],
@@ -1823,7 +1779,7 @@
       "card": "supply-mode",
       "type": "bool",
       "label": "Route by supplies",
-      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the supply mode, cost order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
+      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
       "examples": [
         {
           "value": "false",
@@ -1835,7 +1791,6 @@
         }
       ],
       "related": [
-        "SupplyModeDefault",
         "SupplyCostOrder",
         "SupplyIntakeRules",
         "PauseRules"
@@ -1869,7 +1824,7 @@
       ],
       "related": [
         "ModelSupplyEnabled",
-        "SupplyModeDefault"
+        "SupplyCostOrder"
       ],
       "keywords": [
         "new models",
@@ -4080,8 +4035,7 @@
       ],
       "related": [
         "channel.priority",
-        "supply.weight",
-        "SupplyModeDefault"
+        "supply.weight"
       ],
       "keywords": [
         "load balancing",
@@ -4425,56 +4379,6 @@
       "docs": "use/pricing_and_routing.md#the-three-numbers"
     },
     {
-      "key": "model.supply_mode",
-      "scope": "model",
-      "group": "models",
-      "card": "supplies",
-      "field": "supply_mode",
-      "type": "enum",
-      "enum": [
-        {
-          "value": "default",
-          "label": "Follow default",
-          "description": "Use the default supply mode of the platform settings."
-        },
-        {
-          "value": "balance",
-          "label": "Balance",
-          "description": "Supplies of one tier share requests by weight."
-        },
-        {
-          "value": "failover",
-          "label": "Failover",
-          "description": "The heaviest supply of a tier takes every request; the others back it up."
-        }
-      ],
-      "default": "default",
-      "label": "Supply mode",
-      "description": "How the supplies of one tier share this model's requests. Tiers are always tried in order; the mode only decides within one. It applies to models whose order is set by hand: a model that follows the call order always shares a tier by weight.",
-      "examples": [
-        {
-          "value": "failover",
-          "effect": "Supplies of weights 3 and 1 in one tier: the weight 3 supply takes every request while it works."
-        },
-        {
-          "value": "balance",
-          "effect": "The same supplies take about 75% and 25% of the requests."
-        }
-      ],
-      "related": [
-        "SupplyModeDefault",
-        "model.allocation",
-        "supply.weight"
-      ],
-      "keywords": [
-        "load balancing",
-        "failover",
-        "primary",
-        "backup"
-      ],
-      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
-    },
-    {
       "key": "model.allocation",
       "scope": "model",
       "group": "models",
@@ -4509,7 +4413,7 @@
       "related": [
         "allocation.tiers",
         "supply.priority",
-        "model.supply_mode"
+        "supply.weight"
       ],
       "keywords": [
         "allocation policy",
@@ -4526,7 +4430,7 @@
       "type": "int",
       "default": "the channel's priority; a supply added by hand joins below the lowest tier",
       "label": "Priority",
-      "description": "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by the supply mode. Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
+      "description": "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
       "examples": [
         {
           "value": "2",
@@ -4560,21 +4464,20 @@
       "min": 0,
       "default": "the channel's weight",
       "label": "Weight",
-      "description": "This supply's share of its tier: its weight over the tier's total under balance, all of it if heaviest under failover. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.",
+      "description": "This supply's share of its tier: its weight over the tier's total. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.",
       "examples": [
         {
           "value": "3",
-          "effect": "With a weight 1 supply in its tier: about 75% of the requests under balance, all of them under failover."
+          "effect": "With a weight 1 supply in its tier: about 75% of the requests."
         },
         {
           "value": "1",
-          "effect": "Two supplies of weight 1 share a tier 50 / 50 under balance."
+          "effect": "Two supplies of weight 1 share a tier 50 / 50. To keep a supply as a backup only, put it in the tier below."
         }
       ],
       "related": [
         "supply.priority",
-        "model.supply_mode",
-        "SupplyModeDefault"
+        "model.allocation"
       ],
       "keywords": [
         "share",

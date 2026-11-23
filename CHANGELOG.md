@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+
+The failover supply mode is gone: a tier now always shares its requests by weight, and a supply
+that should only back up another goes in the tier below. Models set by hand that used failover
+(their own choice or the site default) are rewritten on upgrade so they route as before: the
+heaviest supplies of a tier stay in it and each lighter weight moves to a tier of its own right
+below. Models that follow the call order already shared their tiers by weight and do not change.
+The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint are removed.
+
+### Changed
+
+- The providers page names the call order in tiers: "Join the tier above" and "Own tier"
+  replace sharing with the channel above, and a channel's share of its tier is typed as a
+  percentage instead of a weight.
+- The order-by choice (call order, or cheaper first) sits above the providers table as well as
+  in the settings, so it is in view where the order is set. Root changes it there; other admins
+  see it.
+- While supply routing is on, the providers page no longer offers the channels' own priority and
+  weight in the batch and tag actions; the call order decides.
+- The supply allocation settings start with the routing switch and the order-by choice, say what
+  does not apply while routing is off, and show the intake rules one line each until you edit them.
+
+### Removed
+
+- The supply mode (balance or failover) on the settings page, on a model's Supplies tab and in
+  the model list's batch actions.
+
 ## [0.7.4] - 2026-11-21
 
 ### Upgrading from 0.7.3

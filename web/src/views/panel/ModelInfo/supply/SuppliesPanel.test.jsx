@@ -80,13 +80,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const renderPanel = (props = {}) =>
-  render(
-    createElement(
-      MemoryRouter,
-      null,
-      createElement(SuppliesPanel, { model: 'gpt-a', supplyMode: 'balance', onSupplyModeChange: vi.fn(), channels: [], ...props })
-    )
-  );
+  render(createElement(MemoryRouter, null, createElement(SuppliesPanel, { model: 'gpt-a', channels: [], ...props })));
 
 describe('SuppliesPanel', () => {
   it('lists the supplies by tier with the state from the preview', async () => {
@@ -166,14 +160,6 @@ describe('SuppliesPanel', () => {
         join_last: false
       })
     );
-  });
-
-  it('changes the supply mode through the callback', async () => {
-    const onSupplyModeChange = vi.fn().mockResolvedValue();
-    renderPanel({ onSupplyModeChange });
-    await waitFor(() => expect(screen.getAllByTestId('supply-row')).toHaveLength(2));
-    fireEvent.click(screen.getByRole('radio', { name: i18n.t('modelSupply.mode.failover') }));
-    expect(onSupplyModeChange).toHaveBeenCalledWith('failover');
   });
 
   it('shows the note while supply routing is off', async () => {

@@ -318,10 +318,6 @@ var ChannelTestIntervalMinutes = 10
 // published models. Off until the supply migration has run.
 var ModelSupplyEnabled = false
 
-// SupplyModeDefault is how a public model that follows the default picks a supply within one
-// priority tier: "balance" (by weight) or "failover" (the heaviest takes every request).
-var SupplyModeDefault = "balance"
-
 // SupplyCostOrder decides whether a supply's cost reorders a model's supplies:
 // "priority" (default): it does not; priorities and weights decide. "cost": supplies cheaper by at
 // least SupplyCostMinSavingPercent, and healthy enough (SupplyCostMinSuccessPercent), take the

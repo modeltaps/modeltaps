@@ -8,53 +8,29 @@ outline: deep
 
 # Platform settings · Supply allocation
 
-## Supply mode and cost
-
-<a id="SupplyModeDefault"></a>
-
-### Default supply mode
-
-Key `SupplyModeDefault` · Type enum · Default `balance`
-
-Where: Platform settings › Supply allocation › Supply mode and cost
-
-How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.
-
-Values:
-
-- `balance` Balance: Supplies of one tier share requests by weight.
-- `failover` Failover: The heaviest supply of a tier takes every request; the others back it up.
-
-Examples:
-
-- `balance` Two supplies with weights 3 and 1 take about 75% and 25% of the requests.
-- `failover` The supply with weight 3 takes every request; the one with weight 1 is used only while it fails.
-
-See also: [Cost and priority](./supply.md#SupplyCostOrder) · [Supply mode](./objects.md#model-supply_mode)
-
-Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+## Supply routing and order
 
 <a id="SupplyCostOrder"></a>
 
-### Cost and priority
+### Order by
 
 Key `SupplyCostOrder` · Type enum · Default `priority`
 
-Where: Platform settings › Supply allocation › Supply mode and cost
+Where: Platform settings › Supply allocation › Supply routing and order
 
-Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.
+Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs keep the call order and share a tier by weight, and supplies of unknown cost come last.
 
 Values:
 
-- `priority` Priority first: Cost does not order supplies: priorities and weights decide.
-- `cost` Cost first: Supplies that are clearly cheaper and serve well take a model's requests whatever their priority.
+- `priority` Call order: Supplies are tried in the call order of the Providers page; cost does not move them.
+- `cost` Cheaper first: Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order.
 
 Examples:
 
 - `priority` Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests.
 - `cost` A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back.
 
-See also: [Minimum saving](./supply.md#SupplyCostMinSavingPercent) · [Minimum success rate](./supply.md#SupplyCostMinSuccessPercent) · [Default supply mode](./supply.md#SupplyModeDefault) · [Fee rate](./objects.md#channel-fee_rate) · [Priority](./objects.md#channel-priority)
+See also: [Minimum saving](./supply.md#SupplyCostMinSavingPercent) · [Minimum success rate](./supply.md#SupplyCostMinSuccessPercent) · [Fee rate](./objects.md#channel-fee_rate) · [Priority](./objects.md#channel-priority)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -64,7 +40,7 @@ Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_
 
 Key `SupplyCostMinSavingPercent` · Type percent · Unit % · Range 0–99 · Default `5`
 
-Where: Platform settings › Supply allocation › Supply mode and cost
+Where: Platform settings › Supply allocation › Supply routing and order
 
 With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.
 
@@ -73,7 +49,7 @@ Examples:
 - `5` OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both.
 - `0` Requesty (x1.05) is put ahead of OpenRouter (x1.055).
 
-See also: [Cost and priority](./supply.md#SupplyCostOrder) · [Minimum success rate](./supply.md#SupplyCostMinSuccessPercent)
+See also: [Order by](./supply.md#SupplyCostOrder) · [Minimum success rate](./supply.md#SupplyCostMinSuccessPercent)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -83,7 +59,7 @@ Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_
 
 Key `SupplyCostMinSuccessPercent` · Type percent · Unit % · Range 0–100 · Default `95`
 
-Where: Platform settings › Supply allocation › Supply mode and cost
+Where: Platform settings › Supply allocation › Supply routing and order
 
 With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway model needs to be in the order of hosts the channel asks for, whichever cost order is set.
 
@@ -92,7 +68,7 @@ Examples:
 - `95` A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them.
 - `0` The cheapest supply always leads, however often it fails; only pauses keep it out.
 
-See also: [Cost and priority](./supply.md#SupplyCostOrder) · [Minimum saving](./supply.md#SupplyCostMinSavingPercent) · [Custom pause rules](./gateway.md#PauseRules)
+See also: [Order by](./supply.md#SupplyCostOrder) · [Minimum saving](./supply.md#SupplyCostMinSavingPercent) · [Custom pause rules](./gateway.md#PauseRules)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -102,16 +78,16 @@ Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_
 
 Key `ModelSupplyEnabled` · Type bool · Default `false` · rarely changed
 
-Where: Platform settings › Supply allocation › Supply mode and cost
+Where: Platform settings › Supply allocation › Supply routing and order
 
-Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the supply mode, cost order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.
+Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.
 
 Examples:
 
 - `false` Requests follow each channel's models and model mapping; the supply pages only preview what would change.
 - `true` A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost.
 
-See also: [Default supply mode](./supply.md#SupplyModeDefault) · [Cost and priority](./supply.md#SupplyCostOrder) · [Intake rules for new upstream models](./supply.md#SupplyIntakeRules) · [Custom pause rules](./gateway.md#PauseRules)
+See also: [Order by](./supply.md#SupplyCostOrder) · [Intake rules for new upstream models](./supply.md#SupplyIntakeRules) · [Custom pause rules](./gateway.md#PauseRules)
 
 Guide: [use/supply_routing.md](../use/supply_routing.md)
 
@@ -132,7 +108,7 @@ Examples:
 - `[{"name":"Previews wait","patterns":["*-preview*","*-exp*"],"action":"pending"},{"name":"Chat joins","endpoints":["chat","responses"],"action":"enable","placement":"auto"},{"name":"Rest waits","action":"pending"}]` The built-in rules: gpt-5-preview waits for review, a new chat model routes at once (behind the channels that already supply it), an image model waits for review.
 - `[{"name":"Claude joins","families":["claude-*"],"action":"enable","placement":"last"},{"name":"Rest skipped","action":"skip"}]` A new Claude model routes at once after the model's other supplies; any other new model is not added and stays in the list of new upstream models.
 
-See also: [Route by supplies](./supply.md#ModelSupplyEnabled) · [Default supply mode](./supply.md#SupplyModeDefault)
+See also: [Route by supplies](./supply.md#ModelSupplyEnabled) · [Order by](./supply.md#SupplyCostOrder)
 
 ## Session affinity
 

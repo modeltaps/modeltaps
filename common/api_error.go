@@ -320,7 +320,6 @@ const (
 	APICodeModelCapabilitiesInvalid     = "model_capabilities_invalid"
 	APICodeModelEndpointsInvalid        = "model_endpoints_invalid"
 	APICodeModelStatusInvalid           = "model_status_invalid"
-	APICodeModelSupplyModeInvalid       = "model_supply_mode_invalid"
 	APICodeModelSupplyModelNotFound     = "model_supply_model_not_found"
 	APICodeModelSupplyModelNotPublic    = "model_supply_model_not_public"
 	APICodeModelSupplyChannelNotFound   = "model_supply_channel_not_found"

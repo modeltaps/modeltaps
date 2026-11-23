@@ -330,7 +330,7 @@ func allocationContext(supplies []*ModelSupply) (map[int]*Channel, map[string]*M
 	}
 	if len(modelNames) > 0 {
 		var list []*ModelInfo
-		if err := DB.Select("model", "allocation", "supply_mode").Where("model IN ?", modelNames).Find(&list).Error; err != nil {
+		if err := DB.Select("model", "allocation").Where("model IN ?", modelNames).Find(&list).Error; err != nil {
 			return nil, nil, err
 		}
 		for _, info := range list {
@@ -478,7 +478,7 @@ func EnsureDefaultAllocationPolicy() error {
 		return err
 	}
 	var infos []*ModelInfo
-	if err := DB.Select("model", "allocation", "supply_mode").Find(&infos).Error; err != nil {
+	if err := DB.Select("model", "allocation").Find(&infos).Error; err != nil {
 		return err
 	}
 	tiers, manual := buildDefaultAllocation(channels, supplies, infos)
@@ -525,16 +525,14 @@ func buildDefaultAllocation(channels []*Channel, supplies []*ModelSupply, infos 
 		byModel[s.Model] = append(byModel[s.Model], s)
 	}
 
-	// Models whose supplies do not all follow their channels, or that pick the heaviest supply
-	// of a shared tier, keep their own numbers.
+	// Models whose supplies do not all follow their channels keep their own numbers.
 	manualSet := map[string]bool{}
 	for name, list := range byModel {
 		info := infoByModel[name]
 		if info == nil {
 			continue
 		}
-		if info.Allocation == AllocationManual || !suppliesFollowChannels(list, byId) ||
-			(EffectiveSupplyMode(info.SupplyMode) == SupplyModeFailover && sharesTier(list, byId)) {
+		if info.Allocation == AllocationManual || !suppliesFollowChannels(list, byId) {
 			manualSet[name] = true
 		}
 	}
@@ -589,19 +587,6 @@ func suppliesFollowChannels(list []*ModelSupply, channels map[int]*Channel) bool
 		}
 	}
 	return true
-}
-
-func sharesTier(list []*ModelSupply, channels map[int]*Channel) bool {
-	count := map[int64]int{}
-	for _, s := range list {
-		if ch := channels[s.ChannelId]; ch != nil && s.Enabled && ch.Status == config.ChannelStatusEnabled {
-			count[s.Priority]++
-			if count[s.Priority] > 1 {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func tiersFromChannels(channels []*Channel, split map[string]bool) [][]AllocationEntry {
@@ -820,18 +805,20 @@ type AllocationProviderChannel struct {
 type AllocationOverview struct {
 	// SupplyRouting is false while channels' model lists still route requests: the policy then
 	// has no effect.
-	SupplyRouting bool                  `json:"supply_routing"`
-	Tiers         [][]AllocationEntry   `json:"tiers"`
-	Providers     []*AllocationProvider `json:"providers"`
-	PolicyModels  int64                 `json:"policy_models"`
-	ManualModels  int64                 `json:"manual_models"`
-	UpdatedAt     int64                 `json:"updated_at"`
+	SupplyRouting bool `json:"supply_routing"`
+	// CostOrder is SupplyCostOrder: whether cheaper supplies are tried ahead of the call order.
+	CostOrder    string                `json:"cost_order"`
+	Tiers        [][]AllocationEntry   `json:"tiers"`
+	Providers    []*AllocationProvider `json:"providers"`
+	PolicyModels int64                 `json:"policy_models"`
+	ManualModels int64                 `json:"manual_models"`
+	UpdatedAt    int64                 `json:"updated_at"`
 }
 
 // GetAllocationOverview reads the default policy (creating it first when supplies route
 // requests), the providers behind every channel and how many public models follow the policy.
 func GetAllocationOverview() (*AllocationOverview, error) {
-	overview := &AllocationOverview{SupplyRouting: config.ModelSupplyEnabled, Tiers: [][]AllocationEntry{}, Providers: []*AllocationProvider{}}
+	overview := &AllocationOverview{SupplyRouting: config.ModelSupplyEnabled, CostOrder: config.SupplyCostOrder, Tiers: [][]AllocationEntry{}, Providers: []*AllocationProvider{}}
 	if config.ModelSupplyEnabled {
 		if err := EnsureDefaultAllocationPolicy(); err != nil {
 			return nil, err

@@ -1882,7 +1882,6 @@
     "model_capabilities_invalid": "Unknown model capability",
     "model_endpoints_invalid": "Unknown model endpoint",
     "model_status_invalid": "Unknown model status; use disabled, enabled or retired",
-    "model_supply_mode_invalid": "Unknown supply mode; use balance or failover",
     "model_supply_model_not_found": "The public model does not exist",
     "model_supply_model_not_public": "Supplies can only be added to public models, not to aliases or routing policies",
     "model_supply_channel_not_found": "The channel does not exist",
@@ -3037,30 +3036,35 @@
       "allProviders": "All providers"
     },
     "order": {
-      "column": "Order",
-      "shareColumn": "Share",
+      "column": "Tier",
+      "shareColumn": "Share of tier",
       "up": "Move earlier",
       "down": "Move later",
-      "share": "Share with the one above",
-      "unshare": "Stop sharing",
-      "weightOf": "Weight of {{name}}",
+      "share": "Join the tier above",
+      "unshare": "Own tier",
       "drag": "Drag to reorder",
-      "positionShort": "#{{n}}",
-      "sharesWith": "shares with {{names}}",
+      "positionShort": "Tier {{n}}",
+      "sharesWith": "same tier as {{names}}",
       "nameSep": ", ",
       "sharedTag": "shared",
-      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight",
-      "noCommonModel": "These channels offer no model in common, so they cannot share; it now comes right after",
+      "groupWhy": "These {{count}} channels are in one tier and offer {{models}} models in common, which they share by percentage",
+      "noCommonModel": "These channels offer no model in common, so they cannot be in one tier; it now comes right after",
       "dropHint": {
         "before": "Move here",
         "after": "Move here",
-        "join": "Share with this group"
-      }
+        "join": "Join this tier"
+      },
+      "percentOf": "Share of {{name}} in its tier",
+      "howItWorks": "Tried from tier 1 down; a tier is used only when every channel above it is unavailable. Channels of one tier share its traffic by percentage.",
+      "orderBy": "Order by",
+      "orderBySaved": "Order saved",
+      "cheaperFirstNote": "Cheaper supplies are tried first; this order decides only between similar prices.",
+      "cheaperFirstSettings": "Saving and success thresholds ›"
     },
     "newMenu": {
       "inUse": "In use"
     },
-    "orderHint": "Tried top to bottom; the next is used only when the one before is unavailable. Channels with the same number serve the same models and share traffic by weight.",
+    "orderHint": "Tried from tier 1 down; a tier is used only when every channel above it is unavailable. Channels of one tier serve the same models and share traffic by percentage.",
     "attention_one": "{{count}} needs attention",
     "attention_other": "{{count}} need attention",
     "issueTag": {
@@ -3078,9 +3082,9 @@
     },
     "head": {
       "drift": "Models in use that the upstream dropped or renamed (their requests fail), and models it added. Dropped models nothing is served through appear only on the channel’s models tab.",
-      "order": "Lower numbers are tried first; channels with the same number share traffic",
-      "share": "Weight and traffic share within the group",
-      "shareNone": "Shares with no other channel",
+      "order": "Tier 1 is tried first; channels of one tier share traffic",
+      "share": "Share of the tier's traffic",
+      "shareNone": "Alone in its tier",
       "priorityWeight": "Higher priority is tried first; equal priority splits by weight",
       "requests": "Requests",
       "requestsHint": "Requests and trend over {{range}}",
@@ -3379,7 +3383,6 @@
     },
     "batch": {
       "menu": "Supplies",
-      "modeLabel": "Within a tier",
       "add": "Add a source…",
       "remove": "Remove a source…",
       "addTitle": "Add a source to {{count}} models",
@@ -3389,19 +3392,7 @@
       "pick": "Choose a channel",
       "confirmAdd": "Add",
       "confirmRemove": "Remove",
-      "done": "{{changed}} changed, {{skipped}} skipped",
-      "modeDone": "Mode updated for {{count}} models"
-    },
-    "mode": {
-      "label": "Within a tier",
-      "default": "Follow default",
-      "defaultHint": "Follows the default mode in platform settings, currently \"{{mode}}\".",
-      "balance": "Balance",
-      "failover": "Failover",
-      "balanceHint": "Requests are split across the supplies of a tier by weight.",
-      "failoverHint": "The supply with the highest weight in a tier takes every request; the others are its backups.",
-      "saved": "Supply mode saved",
-      "siteDefaultLink": "Site default ↗"
+      "done": "{{changed}} changed, {{skipped}} skipped"
     },
     "tier": {
       "only": "One tier",
@@ -3619,7 +3610,7 @@
         },
         "supply": {
           "label": "Supply allocation",
-          "description": "Which supply serves a request: supply mode, intake, affinity and routing"
+          "description": "Which supply serves a request: routing and order, affinity, intake and routing policies"
         },
         "gateway": {
           "label": "Gateway",
@@ -3847,15 +3838,18 @@
           "hint": "Existing organizations are not affected"
         },
         "supply-mode": {
-          "title": "Supply mode and cost",
-          "description": "Whether requests route by supplies, how supplies in one tier share requests, and whether a supply's cost orders them",
-          "hint": "A single model can pick another mode under Supplies on the models page",
+          "title": "Supply routing and order",
+          "description": "Whether requests route by supplies, and whether cheaper supplies come ahead of the call order",
+          "hint": "The call order is set on the providers page; a single model can keep its own under Supplies",
           "migrateChecking": "Checking what moves over to supplies…",
           "migrateNote": "Saving first turns the channels' models into {{supplies}} supplies.",
           "migrateLost": "{{count}} models would have no usable supply after the switch.",
           "migrateNothing": "Saving turns it on; every channel model already has its supply.",
           "migrateUnknown": "Saving first turns the channels' models into supplies (the preview could not be read).",
-          "offNote": "Saving goes back to the channels' model lists right away; the supplies are kept."
+          "offNote": "Saving goes back to the channels' model lists right away; the supplies are kept.",
+          "orderNote": "Requests follow the call order of the providers page: tried from tier 1 down, a tier used only when every channel above it is unavailable; channels of one tier share it by percentage.",
+          "openProviders": "Set the order on the providers page ›",
+          "routingOff": "Off: requests follow the channels' model lists and model mappings. The call order, the order-by setting and the intake rules apply once it is on."
         },
         "supply-pause-rules": {
           "title": "Supply pause rules",
@@ -3878,7 +3872,9 @@
         "supply-intake-rules": {
           "title": "Intake rules for new upstream models",
           "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
-          "hint": "A channel can use rules of its own under Monitor"
+          "hint": "A channel can use rules of its own under Monitor",
+          "routingOff": "Supply routing is off: these rules still add supplies to channels, but they affect requests only once it is on.",
+          "edit": "Edit rules"
         },
         "pricing": {
           "title": "Pricing",

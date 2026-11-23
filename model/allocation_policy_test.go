@@ -210,15 +210,9 @@ func TestEnsureDefaultAllocationPolicyKeepsRouting(t *testing.T) {
 	custom := makePublicModel(t, "custom")
 	makeSupply(t, "custom", mainCh, 99, 3)
 	makeSupply(t, "custom", backup, 10, 1)
-	failover := makePublicModel(t, "failover")
-	if err := DB.Model(failover).Update("supply_mode", SupplyModeFailover).Error; err != nil {
-		t.Fatal(err)
-	}
-	makeSupply(t, "failover", mainCh, 10, 3)
-	makeSupply(t, "failover", backup, 10, 1)
 
 	// Routing as it was, from the stored supply numbers.
-	names := []string{"both-keys", "one-key", "openai", "custom", "failover"}
+	names := []string{"both-keys", "one-key", "openai", "custom"}
 	before := map[string][]map[int]float64{}
 	for _, name := range names {
 		before[name] = storedShares(t, name)
@@ -236,7 +230,7 @@ func TestEnsureDefaultAllocationPolicyKeepsRouting(t *testing.T) {
 	}
 	var manual []string
 	DB.Model(&ModelInfo{}).Where("allocation = ?", AllocationManual).Order("model").Pluck("model", &manual)
-	if !slices.Equal(manual, []string{"custom", "failover"}) {
+	if !slices.Equal(manual, []string{"custom"}) {
 		t.Fatalf("manual models = %v", manual)
 	}
 	if custom.Id == 0 {
@@ -289,11 +283,6 @@ func TestSaveDefaultAllocationPolicyRoutes(t *testing.T) {
 	if err := EnsureDefaultAllocationPolicy(); err != nil {
 		t.Fatal(err)
 	}
-	// A failover site default does not apply to models on the policy.
-	oldDefault := config.SupplyModeDefault
-	config.SupplyModeDefault = SupplyModeFailover
-	t.Cleanup(func() { config.SupplyModeDefault = oldDefault })
-
 	if _, err := SaveDefaultAllocationPolicy([][]AllocationEntry{
 		{{Provider: "62:", Weight: 70}, {Provider: "1:api.venice.ai", Weight: 30}},
 		{{Provider: "1:router.requesty.ai", Weight: 1}},
@@ -304,9 +293,6 @@ func TestSaveDefaultAllocationPolicyRoutes(t *testing.T) {
 	want := []map[int]float64{{vercel.Id: 0.7, venice.Id: 0.3}, {requesty.Id: 1}}
 	if got := routingShares(t, "shared"); !sameShares(got, want) {
 		t.Fatalf("shared routes %v, want %v", got, want)
-	}
-	if supplyModeOf("shared") != SupplyModeBalance {
-		t.Fatal("a model on the policy should share its tier by weight")
 	}
 	if got := routingShares(t, "pinned"); !sameShares(got, []map[int]float64{{venice.Id: 1}, {vercel.Id: 1}}) {
 		t.Fatalf("manual model moved: %v", got)

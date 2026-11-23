@@ -27,7 +27,7 @@ outline: deep
 - `10` 同じグループで同じモデルを提供する優先度 0 のチャネルより先に試されます。
 - `0` 既定値。優先度 -1 の予備チャネルは、優先度 0 のチャネルがすべて失敗したときだけ使われます。
 
-関連する設定：[重み](./objects.md#channel-weight) · [優先度](./objects.md#supply-priority) · [コストと優先度](./supply.md#SupplyCostOrder)
+関連する設定：[重み](./objects.md#channel-weight) · [優先度](./objects.md#supply-priority) · [順序の基準](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ outline: deep
 - `3` 同じ優先度で重み 1 のチャネルと並ぶと、約 3 ÷ (3 + 1) = 75% のリクエストを受けます。
 - `1` 既定値。同じ優先度のチャネルはリクエストを均等に分けます。
 
-関連する設定：[優先度](./objects.md#channel-priority) · [重み](./objects.md#supply-weight) · [既定の供給モード](./supply.md#SupplyModeDefault)
+関連する設定：[優先度](./objects.md#channel-priority) · [重み](./objects.md#supply-weight)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ outline: deep
 - `3` Vercel AI Gateway のカード払い：$100 分のクレジットに $3.00 の手数料。
 - `0` 定価で課金される公式ベンダー API。
 
-関連する設定：[決済コスト率](./billing.md#PaymentCostPercent) · [コストと優先度](./supply.md#SupplyCostOrder) · [グループ倍率](./objects.md#user_group-ratio)
+関連する設定：[決済コスト率](./billing.md#PaymentCostPercent) · [順序の基準](./supply.md#SupplyCostOrder) · [グループ倍率](./objects.md#user_group-ratio)
 
 ガイド：[use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -231,31 +231,6 @@ outline: deep
 
 ガイド：[use/pricing_and_routing.md#the-three-numbers](../use/pricing_and_routing.md#the-three-numbers)
 
-<a id="model-supply_mode"></a>
-
-### 供給モード
-
-キー `model.supply_mode` · 型 enum · 既定値 default
-
-場所：Models › supplies
-
-同じ段の供給がこのモデルのリクエストをどう分け合うかです。段は常に順に試され、モードは 1 つの段の中だけを決めます。順序を個別設定しているモデルにだけ効き、呼び出し順序に従うモデルは段の中を常に重みで分けます。
-
-値：
-
-- `default` 既定に従う：プラットフォーム設定の既定の供給モードを使います。
-- `balance` 負荷分散：同じ段の供給が重みでリクエストを分け合います。
-- `failover` フェイルオーバー：段で最も重い供給がすべてのリクエストを受け、残りは予備になります。
-
-例：
-
-- `failover` 同じ段に重み 3 と 1 の供給：重み 3 の供給が動いている間はすべてのリクエストを受けます。
-- `balance` 同じ供給が約 75% と 25% のリクエストを受けます。
-
-関連する設定：[既定の供給モード](./supply.md#SupplyModeDefault) · [供給の順序](./objects.md#model-allocation) · [重み](./objects.md#supply-weight)
-
-ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
-
 <a id="model-allocation"></a>
 
 ### 供給の順序
@@ -276,7 +251,7 @@ outline: deep
 - `policy` プロバイダーページでプロバイダーを上に移すと、このモデルでも上に移ります。
 - `manual` 呼び出し順序が変わってもこのモデルの順序は変わらず、新しいチャネルは既存の供給の下に入ります。
 
-関連する設定：[呼び出し順序](./objects.md#allocation-tiers) · [優先度](./objects.md#supply-priority) · [供給モード](./objects.md#model-supply_mode)
+関連する設定：[呼び出し順序](./objects.md#allocation-tiers) · [優先度](./objects.md#supply-priority) · [重み](./objects.md#supply-weight)
 
 ## 供給
 
@@ -288,14 +263,14 @@ outline: deep
 
 場所：Models › supplies
 
-モデルの供給の中でのこの供給の段です。最上段が先にリクエストを受け、下の段は上の供給がすべて使えないときだけ使われます。同じ優先度の供給が 1 つの段になり、供給モードで分け合います。呼び出し順序のときはポリシーが設定し、自分の値を持つ供給はチャネルに追従しなくなります。
+モデルの供給の中でのこの供給の段です。最上段が先にリクエストを受け、下の段は上の供給がすべて使えないときだけ使われます。同じ優先度の供給が 1 つの段になり、重みで分け合います。呼び出し順序のときはポリシーが設定し、自分の値を持つ供給はチャネルに追従しなくなります。
 
 例：
 
 - `2` 優先度 1 の 2 つの供給の上に置かれ、それらはこの供給が失敗したときだけ使われます。
 - `1` 優先度 1 の別の供給と 1 つの段になり、その段のリクエストを分け合います。
 
-関連する設定：[重み](./objects.md#supply-weight) · [供給の順序](./objects.md#model-allocation) · [コストと優先度](./supply.md#SupplyCostOrder)
+関連する設定：[重み](./objects.md#supply-weight) · [供給の順序](./objects.md#model-allocation) · [順序の基準](./supply.md#SupplyCostOrder)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -307,14 +282,14 @@ outline: deep
 
 場所：Models › supplies
 
-段の中でのこの供給の取り分です。負荷分散では 自分の重み ÷ 段の合計 を受け、フェイルオーバーでは最も重い供給がすべてを受けます。0 は 1 として扱います。呼び出し順序のときは、プロバイダーの重みがそのチャネルに均等に分けられます。
+段の中でのこの供給の取り分で、自分の重み ÷ 段の合計 を受けます。0 は 1 として扱います。呼び出し順序のときは、プロバイダーの重みがそのチャネルに均等に分けられます。
 
 例：
 
-- `3` 段に重み 1 の供給があると、負荷分散では約 75%、フェイルオーバーではすべてのリクエストを受けます。
-- `1` 重み 1 の 2 つの供給は負荷分散で 50 / 50 に分けます。
+- `3` 段に重み 1 の供給があると、約 75% のリクエストを受けます。
+- `1` 重み 1 の 2 つの供給は 50 / 50 に分けます。予備にしたい供給は下の段に置きます。
 
-関連する設定：[優先度](./objects.md#supply-priority) · [供給モード](./objects.md#model-supply_mode) · [既定の供給モード](./supply.md#SupplyModeDefault)
+関連する設定：[優先度](./objects.md#supply-priority) · [供給の順序](./objects.md#model-allocation)
 
 <a id="supply-enabled"></a>
 
@@ -362,7 +337,7 @@ outline: deep
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` 公式 Anthropic API が先、チャネル 7 はそれが失敗したときだけ使われます。
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` チャネル 3 と 5 が最初の位置を共有し、約 75% と 25% のリクエストを受けます。
 
-関連する設定：[供給の順序](./objects.md#model-allocation) · [優先度](./objects.md#supply-priority) · [コストと優先度](./supply.md#SupplyCostOrder)
+関連する設定：[供給の順序](./objects.md#model-allocation) · [優先度](./objects.md#supply-priority) · [順序の基準](./supply.md#SupplyCostOrder)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

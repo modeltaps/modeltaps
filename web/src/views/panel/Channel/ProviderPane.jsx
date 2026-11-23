@@ -400,8 +400,8 @@ ChannelMenu.propTypes = {
   orderActions: PropTypes.object
 };
 
-// Weight of a channel in a shared position, saved when the field loses focus or on Enter.
-function WeightInput({ id, name, value, onSave }) {
+// A channel's share of its tier in percent, saved when the field loses focus or on Enter.
+function PercentInput({ id, name, value, onSave }) {
   const { t } = useTranslation();
   const [text, setText] = useState(String(value));
   const [synced, setSynced] = useState(value);
@@ -410,24 +410,27 @@ function WeightInput({ id, name, value, onSave }) {
     setText(String(value));
   }
   const commit = () => {
-    const n = Math.max(1, Math.round(Number(text)) || 1);
+    const n = Math.min(99, Math.max(1, Math.round(Number(text)) || 1));
     setText(String(n));
     if (n !== value) onSave(id, n);
   };
   return (
-    <Input
-      aria-label={t('channels.order.weightOf', { name })}
-      inputMode="numeric"
-      value={text}
-      onChange={(e) => setText(e.target.value.replace(/\D/g, ''))}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-      className="h-7 w-12 rounded-md px-2 text-right tabular-nums"
-    />
+    <span className="inline-flex items-center gap-1">
+      <Input
+        aria-label={t('channels.order.percentOf', { name })}
+        inputMode="numeric"
+        value={text}
+        onChange={(e) => setText(e.target.value.replace(/\D/g, ''))}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        className="h-7 w-12 rounded-md px-2 text-right tabular-nums"
+      />
+      <span className="text-xs text-muted-foreground">%</span>
+    </span>
   );
 }
 
-WeightInput.propTypes = {
+PercentInput.propTypes = {
   id: PropTypes.number.isRequired,
   name: PropTypes.string,
   value: PropTypes.number.isRequired,
@@ -462,7 +465,8 @@ export default function ProviderPane({
   columns,
   order = null,
   orderActions = null,
-  leading = null
+  leading = null,
+  orderBar = null
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -893,11 +897,10 @@ export default function ProviderPane({
                         {place && place.share !== null && place.share !== undefined && (
                           <span className="inline-flex items-center gap-2">
                             {orderActions ? (
-                              <WeightInput id={c.id} name={c.name} value={place.weight} onSave={orderActions.weight} />
+                              <PercentInput id={c.id} name={c.name} value={place.share} onSave={orderActions.percent} />
                             ) : (
-                              <span className="tabular-nums">{place.weight}</span>
+                              <span className="tabular-nums">{place.share}%</span>
                             )}
-                            <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{place.share}%</span>
                           </span>
                         )}
                         {!(place && place.share !== null && place.share !== undefined) && <Muted title={t('channels.head.shareNone')} />}
@@ -1132,6 +1135,7 @@ export default function ProviderPane({
             )}
           </>
         )}
+        {orderBar}
       </div>
       {phone ? list : table}
 
@@ -1156,6 +1160,7 @@ export default function ProviderPane({
 ProviderPane.propTypes = {
   type: PropTypes.number.isRequired,
   leading: PropTypes.node,
+  orderBar: PropTypes.node,
   order: PropTypes.object,
   orderActions: PropTypes.object,
   channels: PropTypes.array.isRequired,

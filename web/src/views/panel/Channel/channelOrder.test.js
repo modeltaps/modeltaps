@@ -10,6 +10,7 @@ import {
   orderFromPolicy,
   orderInfo,
   orderToTiers,
+  setSharePercent,
   setWeight,
   shareWithAbove,
   stopSharing
@@ -72,6 +73,17 @@ describe('order edits', () => {
     expect(canMoveStep(shared, 1, 'up')).toBe(false);
     expect(setWeight(shared, 2, '3')[0].weights[2]).toBe(3);
     expect(base[0].ids).toEqual([1]); // input untouched
+  });
+
+  it('sets a share as a percentage of its position', () => {
+    const three = shareWithAbove(shareWithAbove(base, 2), 3); // 1, 2, 3 at weight 1 each
+    const set = setSharePercent(three, 1, 70)[0].weights;
+    expect(set).toEqual({ 1: 70, 2: 15, 3: 15 });
+    // The others keep their split of what is left.
+    expect(setSharePercent(setWeight(three, 2, 3), 1, 50)[0].weights).toEqual({ 1: 50, 2: 37, 3: 13 });
+    // Every channel keeps at least 1%; a channel alone cannot change its 100%.
+    expect(setSharePercent(three, 1, 100)[0].weights).toEqual({ 1: 98, 2: 1, 3: 1 });
+    expect(setSharePercent(base, 1, 40)).toBe(base);
   });
 
   it('works out shares only between channels with a model in common', () => {

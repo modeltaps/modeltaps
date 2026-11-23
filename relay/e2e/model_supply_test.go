@@ -97,17 +97,17 @@ func TestSupplyPriorityOverridesChannelPriority(t *testing.T) {
 	}
 }
 
-// Within one tier, failover takes the heaviest supply every time; balance spreads by weight.
-func TestSupplyModesWithinTier(t *testing.T) {
+// Supplies of one tier share requests by weight; a supply in the tier below is only a backup.
+func TestSupplyTierSharesByWeight(t *testing.T) {
 	for _, tc := range []struct {
-		mode             string
-		lightWeight      uint
+		name             string
+		lightPriority    int64
 		wantLightTraffic bool
 	}{
-		{model.SupplyModeFailover, 1, false},
-		{model.SupplyModeBalance, 5, true},
+		{"same tier", 10, true},
+		{"tier below", 0, false},
 	} {
-		t.Run(tc.mode, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			// Identical requests share a session; affinity would pin them all to the first pick.
 			setAndRestore(t, &config.SessionAffinityEnabled, false)
 			light := NewFakeProvider(t)
@@ -119,10 +119,10 @@ func TestSupplyModesWithinTier(t *testing.T) {
 				{Name: "heavy", BaseURL: heavy.Server.URL},
 			}})
 			useSupplies(t,
-				[]model.ModelInfo{{Model: "gpt-4o-mini", Status: model.ModelStatusPublished, SupplyMode: tc.mode}},
+				[]model.ModelInfo{{Model: "gpt-4o-mini", Status: model.ModelStatusPublished}},
 				[]model.ModelSupply{
-					{Model: "gpt-4o-mini", ChannelId: h.Channels[0].Id, UpstreamModel: "gpt-4o-mini", Weight: tc.lightWeight, Enabled: true},
-					{Model: "gpt-4o-mini", ChannelId: h.Channels[1].Id, UpstreamModel: "gpt-4o-mini", Weight: 5, Enabled: true},
+					{Model: "gpt-4o-mini", ChannelId: h.Channels[0].Id, UpstreamModel: "gpt-4o-mini", Priority: tc.lightPriority, Weight: 5, Enabled: true},
+					{Model: "gpt-4o-mini", ChannelId: h.Channels[1].Id, UpstreamModel: "gpt-4o-mini", Priority: 10, Weight: 5, Enabled: true},
 				})
 			for i := 0; i < 20; i++ {
 				if w := h.Post("/v1/chat/completions", chatFor("gpt-4o-mini")); w.Code != http.StatusOK {

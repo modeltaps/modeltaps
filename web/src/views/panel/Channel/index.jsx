@@ -40,11 +40,13 @@ import {
   orderFromPolicy,
   orderInfo,
   orderToTiers,
-  setWeight,
+  setSharePercent,
   shareWithAbove,
   stopSharing
 } from './channelOrder';
 import { admin } from 'routes/paths';
+import { useIsRoot } from 'utils/common';
+import OrderBar from './OrderBar';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
 
@@ -92,6 +94,9 @@ export default function Channel() {
   // { tiers, providers } of the allocation policy, read while supplies route requests.
   const [allocation, setAllocation] = useState(null);
   const [orderGroups, setOrderGroups] = useState(null);
+  // SupplyCostOrder: whether cheaper supplies are tried ahead of the call order. Only root saves it.
+  const [costOrder, setCostOrder] = useState('priority');
+  const isRoot = useIsRoot();
   const [rangeKey, setRangeKey] = useState('24h');
   const [metrics, setMetrics] = useState({ loading: true, rows: [], start: 0, end: 0 });
   const [dismissed, setDismissed] = useState(loadDismissed);
@@ -122,6 +127,7 @@ export default function Channel() {
         const on = Boolean(res.success && res.data?.supply_routing);
         setSupplyRouting(on);
         setAllocation(on ? res.data : null);
+        if (on) setCostOrder(res.data.cost_order === 'cost' ? 'cost' : 'priority');
       })
       .catch(() => setSupplyRouting(false));
   }, [reload]);
@@ -163,6 +169,21 @@ export default function Channel() {
       setOrderGroups(null);
     }
   };
+  const changeCostOrder = async (value) => {
+    const previous = costOrder;
+    setCostOrder(value);
+    try {
+      const res = await API.put('/api/option/', { key: 'SupplyCostOrder', value });
+      if (!res.data?.success) {
+        setCostOrder(previous);
+        toast.error(res.data?.message);
+        return;
+      }
+      toast.success(t('channels.order.orderBySaved'));
+    } catch {
+      setCostOrder(previous);
+    }
+  };
   const orderActions = order
     ? {
         step: (id, dir) => saveOrder(moveStep(order.groups, id, dir)),
@@ -174,7 +195,7 @@ export default function Channel() {
           saveOrder(next);
         },
         unshare: (id) => saveOrder(stopSharing(order.groups, id)),
-        weight: (id, w) => saveOrder(setWeight(order.groups, id, w)),
+        percent: (id, p) => saveOrder(setSharePercent(order.groups, id, p)),
         drop: (id, beforeId) => saveOrder(moveBefore(order.groups, id, beforeId)),
         after: (id, afterId) => saveOrder(moveAfter(order.groups, id, afterId)),
         join: (id, targetId) => {
@@ -563,8 +584,10 @@ export default function Channel() {
           key={`${selectedType}|${query}`}
           filters={filters}
           onFiltersChange={setFilters}
-          batch={batch}
-          tagActions={tagActions}
+          // While supplies route, the call order decides, so the channels' own priority and weight
+          // are not offered here (they still apply once routing goes back to the channels).
+          batch={supplyRouting ? { ...batch, numbers: null } : batch}
+          tagActions={supplyRouting ? { ...tagActions, priority: null } : tagActions}
           batchBusy={batchBusy}
           type={selectedType}
           channels={selectedChannels}
@@ -589,6 +612,7 @@ export default function Channel() {
           testingIds={testingIds}
           order={order}
           orderActions={query.trim() ? null : orderActions}
+          orderBar={order ? <OrderBar costOrder={costOrder} canEdit={isRoot} onChange={changeCostOrder} /> : null}
           leading={
             <ProviderStrip
               groups={visibleGroups}

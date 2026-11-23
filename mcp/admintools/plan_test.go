@@ -12,7 +12,7 @@ func TestPlanChanges(t *testing.T) {
 		{Key: "RetryTimes", Value: "4", Reason: "four channels"},
 		{Key: "RetryTimes", Value: "-1"},
 		{Key: "SessionAffinityStrict", Value: "False"},
-		{Key: "SupplyModeDefault", Value: "round-robin"},
+		{Key: "SupplyCostOrder", Value: "round-robin"},
 		{Key: "PasswordLoginEnabled", Value: "false"},
 		{Key: "PaymentUSDRate", Value: "7"},
 		{Key: "GitHubClientSecret", Value: "x"},

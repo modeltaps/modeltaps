@@ -27,7 +27,7 @@ Examples:
 - `10` Tried before every channel at 0 that serves the same model in the same group.
 - `0` The default. A backup at -1 is reached only while every channel at 0 fails.
 
-See also: [Weight](./objects.md#channel-weight) · [Priority](./objects.md#supply-priority) · [Cost and priority](./supply.md#SupplyCostOrder)
+See also: [Weight](./objects.md#channel-weight) · [Priority](./objects.md#supply-priority) · [Order by](./supply.md#SupplyCostOrder)
 
 <a id="channel-weight"></a>
 
@@ -44,7 +44,7 @@ Examples:
 - `3` Next to a channel of weight 1 at the same priority, takes about 3 / (3 + 1) = 75% of the requests.
 - `1` The default: channels of one priority share requests equally.
 
-See also: [Priority](./objects.md#channel-priority) · [Weight](./objects.md#supply-weight) · [Default supply mode](./supply.md#SupplyModeDefault)
+See also: [Priority](./objects.md#channel-priority) · [Weight](./objects.md#supply-weight)
 
 <a id="channel-cost_ratio"></a>
 
@@ -81,7 +81,7 @@ Examples:
 - `3` Vercel AI Gateway card payments: a $3.00 processing fee on $100 of credit.
 - `0` An official vendor API billed at list price.
 
-See also: [Payment cost](./billing.md#PaymentCostPercent) · [Cost and priority](./supply.md#SupplyCostOrder) · [Group ratio](./objects.md#user_group-ratio)
+See also: [Payment cost](./billing.md#PaymentCostPercent) · [Order by](./supply.md#SupplyCostOrder) · [Group ratio](./objects.md#user_group-ratio)
 
 Guide: [use/pricing_and_routing.md#channel-fee-rates](../use/pricing_and_routing.md#channel-fee-rates)
 
@@ -231,31 +231,6 @@ See also: [Group ratio](./objects.md#user_group-ratio) · [Cost ratio](./objects
 
 Guide: [use/pricing_and_routing.md#the-three-numbers](../use/pricing_and_routing.md#the-three-numbers)
 
-<a id="model-supply_mode"></a>
-
-### Supply mode
-
-Key `model.supply_mode` · Type enum · Default default
-
-Where: Models › supplies
-
-How the supplies of one tier share this model's requests. Tiers are always tried in order; the mode only decides within one. It applies to models whose order is set by hand: a model that follows the call order always shares a tier by weight.
-
-Values:
-
-- `default` Follow default: Use the default supply mode of the platform settings.
-- `balance` Balance: Supplies of one tier share requests by weight.
-- `failover` Failover: The heaviest supply of a tier takes every request; the others back it up.
-
-Examples:
-
-- `failover` Supplies of weights 3 and 1 in one tier: the weight 3 supply takes every request while it works.
-- `balance` The same supplies take about 75% and 25% of the requests.
-
-See also: [Default supply mode](./supply.md#SupplyModeDefault) · [Supply order](./objects.md#model-allocation) · [Weight](./objects.md#supply-weight)
-
-Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
-
 <a id="model-allocation"></a>
 
 ### Supply order
@@ -276,7 +251,7 @@ Examples:
 - `policy` Moving a provider up on the Providers page moves it up for this model too.
 - `manual` This model keeps its order when the call order changes; new channels join below its supplies.
 
-See also: [Call order](./objects.md#allocation-tiers) · [Priority](./objects.md#supply-priority) · [Supply mode](./objects.md#model-supply_mode)
+See also: [Call order](./objects.md#allocation-tiers) · [Priority](./objects.md#supply-priority) · [Weight](./objects.md#supply-weight)
 
 ## Supply
 
@@ -288,14 +263,14 @@ Key `supply.priority` · Type int · Default the channel's priority; a supply ad
 
 Where: Models › supplies
 
-This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by the supply mode. Under the call order the policy sets it; a supply with its own number no longer follows its channel.
+This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; a supply with its own number no longer follows its channel.
 
 Examples:
 
 - `2` Above two supplies at 1: they are used only while this supply fails.
 - `1` Next to another supply at 1, the two form one tier and share its requests.
 
-See also: [Weight](./objects.md#supply-weight) · [Supply order](./objects.md#model-allocation) · [Cost and priority](./supply.md#SupplyCostOrder)
+See also: [Weight](./objects.md#supply-weight) · [Supply order](./objects.md#model-allocation) · [Order by](./supply.md#SupplyCostOrder)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -307,14 +282,14 @@ Key `supply.weight` · Type int · Range 0– · Default the channel's weight
 
 Where: Models › supplies
 
-This supply's share of its tier: its weight over the tier's total under balance, all of it if heaviest under failover. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.
+This supply's share of its tier: its weight over the tier's total. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.
 
 Examples:
 
-- `3` With a weight 1 supply in its tier: about 75% of the requests under balance, all of them under failover.
-- `1` Two supplies of weight 1 share a tier 50 / 50 under balance.
+- `3` With a weight 1 supply in its tier: about 75% of the requests.
+- `1` Two supplies of weight 1 share a tier 50 / 50. To keep a supply as a backup only, put it in the tier below.
 
-See also: [Priority](./objects.md#supply-priority) · [Supply mode](./objects.md#model-supply_mode) · [Default supply mode](./supply.md#SupplyModeDefault)
+See also: [Priority](./objects.md#supply-priority) · [Supply order](./objects.md#model-allocation)
 
 <a id="supply-enabled"></a>
 
@@ -362,7 +337,7 @@ Examples:
 - `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]` The official Anthropic API first; channel 7 only while it fails.
 - `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]` Channels 3 and 5 share the first position: about 75% and 25% of the requests.
 
-See also: [Supply order](./objects.md#model-allocation) · [Priority](./objects.md#supply-priority) · [Cost and priority](./supply.md#SupplyCostOrder)
+See also: [Supply order](./objects.md#model-allocation) · [Priority](./objects.md#supply-priority) · [Order by](./supply.md#SupplyCostOrder)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

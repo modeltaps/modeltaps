@@ -68,7 +68,7 @@ func previewStates(p *SupplyPreview) string {
 
 func TestPreviewModelSupply(t *testing.T) {
 	usePreviewTestDB(t)
-	if err := DB.Create(&ModelInfo{Model: "m", Status: ModelStatusPublished, SupplyMode: SupplyModeFailover}).Error; err != nil {
+	if err := DB.Create(&ModelInfo{Model: "m", Status: ModelStatusPublished}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := DB.Create(&ModelInfo{Model: "m-alias", AliasOf: "m"}).Error; err != nil {
@@ -109,7 +109,7 @@ func TestPreviewModelSupply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Model != "m" || p.RequestedModel != "m-alias" || p.Mode != SupplyModeFailover || p.Status != ModelStatusPublished {
+	if p.Model != "m" || p.RequestedModel != "m-alias" || p.Status != ModelStatusPublished {
 		t.Fatalf("preview header = %+v", p)
 	}
 	// The top tier: the drained channel is the heaviest but paused, so the three weight-1
@@ -127,18 +127,14 @@ func TestPreviewModelSupply(t *testing.T) {
 		t.Fatalf("paused entry = %+v", paused)
 	}
 
-	// The primary goes away too: the backup tier takes over, failover picks its heaviest.
+	// The primary goes away too: the backup tier takes over and shares by weight.
 	if _, err := SavePause(&SupplyPause{ChannelId: primary.Id, Until: now + 60, Seconds: 60, Rule: "manual"}); err != nil {
 		t.Fatal(err)
 	}
 	p, _ = PreviewModelSupply("m", "default")
-	if p.FirstChoice != firstBackup.Id || p.Tiers[1].Supplies[0].Share != 1 {
-		t.Fatalf("after pausing the primary: first choice %d, tiers %s", p.FirstChoice, previewStates(p))
+	if p.Tiers[1].Supplies[0].Id != firstBackup.Id {
+		t.Fatalf("after pausing the primary: tiers %s", previewStates(p))
 	}
-
-	// Balance spreads the backup tier by weight.
-	DB.Model(&ModelInfo{}).Where("model = ?", "m").Update("supply_mode", SupplyModeBalance)
-	p, _ = PreviewModelSupply("m", "default")
 	if got := previewStates(p); got != "[p10 drained:paused:0.00 primary:paused:0.00 testing:awaiting_test:0.00 cooling:cooling_down:0.00]"+
 		"[p0 backup-a:available:0.75 backup-b:available:0.25 off:channel_disabled:0.00 switched-off:disabled:0.00]" || p.FirstChoice != 0 {
 		t.Fatalf("balance tiers %s, first choice %d", got, p.FirstChoice)

@@ -78,9 +78,6 @@ export async function fetchSupplySwitches() {
 // becoming supplies ({ supplies_planned, routing_differences, … }).
 export const previewSupplyMigration = () => API.post('/api/model_supply/migrate', { dry_run: true }).then(body);
 
-// Sets the supply mode ('default', 'balance' or 'failover') of several public models by catalog id.
-export const setSupplyModes = ({ ids, mode }) => API.post('/api/model_supply/mode', { ids, mode }).then(body);
-
 // Confirms every supply of a channel waiting for review (held by the price check or an intake rule).
 export const confirmChannelPending = (channelId) => API.post('/api/model_supply/confirm_pending', { channel_id: channelId }).then(body);
 

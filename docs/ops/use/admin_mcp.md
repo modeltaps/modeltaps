@@ -35,12 +35,12 @@ AI 助手可以通过 MCP 帮你查站点的设置：有哪些设置、各自做
 |---|---|
 | `settings_search` | 按关键词（设置名、名称、说明、近义词）找设置，可按对象（`scope`）、分组、只看已修改筛选。平台设置附当前值；密钥只说已设置或未设置。 |
 | `settings_describe` | 一项或几项设置的完整说明：类型、单位、范围、取值、说明、示例、相关设置、指南页和修改它的控制台链接，以及当前值和默认值。 |
-| `settings_effective` | 设置实际生效的值和来源。`model.supply_mode`、`channel.fee_rate`、`channel.prompt_caching`、`user_group.ratio`、`token.group` 要给 `object_id`（模型名、渠道 id、分组标识、密钥 id）。 |
+| `settings_effective` | 设置实际生效的值和来源。`channel.fee_rate`、`channel.prompt_caching`、`user_group.ratio`、`token.group` 要给 `object_id`（模型名、渠道 id、分组标识、密钥 id）。 |
 | `settings_docs` | 英文运维文档的段落，含设置参考。 |
 
 ## 示例
 
-- 「gpt-5.1 为什么走 Requesty？」→ `settings_effective` 查 `model.supply_mode`（`gpt-5.1`），再 `settings_describe` 看 `SupplyCostOrder`。
+- 「gpt-5.1 为什么走 Requesty？」→ `settings_describe` 看 `SupplyCostOrder`，再 `settings_effective` 查 Requesty 渠道的 `channel.fee_rate`。
 - 「我们改过哪些默认值？」→ `settings_search` 带 `modified_only: true`。
 - 「怎样比官方价高 12% 卖？」→ `settings_docs` 搜 "margin group ratio"，再 `settings_describe` 看 `user_group.ratio` 和 `PaymentCostPercent`。
 

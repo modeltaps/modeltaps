@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { settingHref } from '@/components/settings/SettingHelp';
 import { Link } from 'react-router';
 import {
   CheckCheck,
@@ -53,12 +52,10 @@ import {
 } from './supplyApi';
 import {
   PAUSE_DURATIONS,
-  SUPPLY_MODES,
   channelGroups,
   defaultNewPriority,
   followsChannel,
   moveSupply,
-  normalizeSupplyMode,
   parseSupplyForm,
   previewEntryState,
   previewOutcome,
@@ -76,33 +73,6 @@ import { usd } from '../../Channel/channelPrices';
 import { admin } from 'routes/paths';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
-
-// Switch for the supply mode (follow the default, balance, failover), saved as soon as it changes.
-function ModeSwitch({ value, onChange, disabled }) {
-  const { t } = useTranslation();
-  return (
-    <div role="radiogroup" aria-label={t('modelSupply.mode.label')} className="inline-flex rounded-lg bg-control p-0.5">
-      {SUPPLY_MODES.map((mode) => (
-        <button
-          key={mode}
-          type="button"
-          role="radio"
-          aria-checked={value === mode}
-          disabled={disabled}
-          onClick={() => value !== mode && onChange(mode)}
-          className={cn(
-            'h-7 rounded-md px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
-            value === mode ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          {t(`modelSupply.mode.${mode}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-ModeSwitch.propTypes = { value: PropTypes.string, onChange: PropTypes.func.isRequired, disabled: PropTypes.bool };
 
 function NumberCell({ value, onChange, label, className }) {
   return (
@@ -626,8 +596,8 @@ SupplyRow.propTypes = {
 };
 
 // "Supplies" tab of the model panel: which channels serve this public model, in priority tiers.
-// Every change is saved right away; the supply mode switch saves the model row.
-export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
+// Every change is saved right away.
+export default function SuppliesPanel({ model, catalogId, channels = [], switches = null, onChanged }) {
   const { t } = useTranslation();
   // `preview` is every supply in order with its state; `groupPreview` the same for a request
   // from `group` only. Both come from the preview API.
@@ -639,10 +609,8 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
   const [group, setGroup] = useState('');
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(0);
-  const [modeSaving, setModeSaving] = useState(false);
   const [allocationSaving, setAllocationSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const mode = normalizeSupplyMode(supplyMode);
 
   const requestId = useRef(0);
   const load = useCallback(async () => {
@@ -676,10 +644,9 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
     listUserGroups().then(setGroups);
   }, []);
 
-  // The mode changes the shares, so the preview is read again with it.
   useEffect(() => {
     load();
-  }, [load, mode]);
+  }, [load]);
 
   const changeGroup = (next) => {
     setGroupPreview(null);
@@ -810,15 +777,6 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
     }
   };
 
-  const changeMode = async (next) => {
-    setModeSaving(true);
-    try {
-      await onSupplyModeChange(next);
-    } finally {
-      setModeSaving(false);
-    }
-  };
-
   const tierLabel = (index) => {
     if (tiers.length === 1) return t('modelSupply.tier.only');
     if (index === 0) return t('modelSupply.tier.first');
@@ -857,12 +815,6 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
         </p>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        {allocation !== 'policy' && (
-          <>
-            <span className="text-[13px] text-muted-foreground">{t('modelSupply.mode.label')}</span>
-            <ModeSwitch value={mode} onChange={changeMode} disabled={modeSaving || !onSupplyModeChange} />
-          </>
-        )}
         <span className="flex-1" />
         {!adding && (
           <Button variant="outline" size="sm" className="rounded-[10px]" onClick={() => setAdding(true)} disabled={supplies === null}>
@@ -871,20 +823,6 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
           </Button>
         )}
       </div>
-      {allocation !== 'policy' && (
-        <p className="-mt-2 text-xs text-muted-foreground">
-          {mode === 'default'
-            ? t('modelSupply.mode.defaultHint', {
-                mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
-              })
-            : t(`modelSupply.mode.${mode}Hint`)}{' '}
-          {/* The site default this model follows or overrides, one click away. */}
-          <Link to={settingHref('SupplyModeDefault')} className="text-foreground underline underline-offset-2 hover:text-primary">
-            {t('modelSupply.mode.siteDefaultLink')}
-          </Link>
-        </p>
-      )}
-
       <SupplySwitchNote switches={switches} active={preview?.active} />
 
       {supplies && supplies.length > 0 && (
@@ -1056,8 +994,6 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
 SuppliesPanel.propTypes = {
   model: PropTypes.string.isRequired,
   catalogId: PropTypes.number,
-  supplyMode: PropTypes.string,
-  onSupplyModeChange: PropTypes.func,
   channels: PropTypes.array,
   switches: PropTypes.object,
   onChanged: PropTypes.func

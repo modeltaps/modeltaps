@@ -214,7 +214,7 @@ describe('model supply options', () => {
     expect(cardById('supply-mode')).toMatchObject({
       groupId: 'supply',
       kind: 'form',
-      keys: ['ModelSupplyEnabled', 'SupplyModeDefault', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent']
+      keys: ['ModelSupplyEnabled', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent']
     });
   });
 

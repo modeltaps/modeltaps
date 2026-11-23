@@ -119,18 +119,12 @@ export const PLATFORM_GROUPS = [
   },
   {
     id: 'supply',
-    // Which supply serves a request: the supply mode and cost order, intake rules, session
-    // affinity and automatic routing.
+    // Which supply serves a request: the routing switch and the order-by setting (the call order
+    // itself is on the providers page), session affinity, intake rules and automatic routing.
     cards: [
-      card('supply-mode', 'form', [
-        'ModelSupplyEnabled',
-        'SupplyModeDefault',
-        'SupplyCostOrder',
-        'SupplyCostMinSavingPercent',
-        'SupplyCostMinSuccessPercent'
-      ]),
-      card('supply-intake-rules', 'form', ['SupplyIntakeRules']),
+      card('supply-mode', 'form', ['ModelSupplyEnabled', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent']),
       card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
+      card('supply-intake-rules', 'form', ['SupplyIntakeRules']),
       card('auto-routing', 'form', [
         'RoutingDecisionBillingEnabled',
         'UserRoutingPolicyEnabled',

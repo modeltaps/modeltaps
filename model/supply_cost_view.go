@@ -132,15 +132,13 @@ func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice
 func ptrFloat(v float64) *float64 { return &v }
 
 // markSupplyTraffic sets each view's Traffic: within a model, the cheapest available supplies of
-// the first priority tier with one take the requests (all of it by weight with balance, the
-// heaviest with failover); dearer supplies of that tier and available supplies of the tiers below
-// are backups.
+// the first priority tier with one share the requests by weight; dearer supplies of that tier and
+// available supplies of the tiers below are backups.
 func markSupplyTraffic(views []*ModelSupplyView) {
 	byModel := map[string][]*ModelSupplyView{}
 	for _, v := range views {
 		byModel[v.Model] = append(byModel[v.Model], v)
 	}
-	allocation := allocationInForce()
 	now := time.Now().Unix()
 	for name, list := range byModel {
 		var available []*ModelSupplyView
@@ -155,10 +153,6 @@ func markSupplyTraffic(views []*ModelSupplyView) {
 		sort.SliceStable(available, func(i, j int) bool {
 			return available[i].EffectiveWeight() > available[j].EffectiveWeight()
 		})
-		failover := false
-		if info := lookupModelInfo(name); info != nil {
-			failover = routingSupplyMode(info, allocation) == SupplyModeFailover
-		}
 		// The first tier the router tries takes the requests (supply_cost_tier.go).
 		prio := make([]int64, len(available))
 		costs := make([]float64, len(available))
@@ -179,17 +173,10 @@ func markSupplyTraffic(views []*ModelSupplyView) {
 				v.DearerBackup = v.Priority >= top
 			}
 		}
-		heaviest := tier[0].EffectiveWeight()
 		for _, v := range tier {
-			switch {
-			case len(tier) == 1:
+			v.Traffic = SupplyTrafficBalanced
+			if len(tier) == 1 {
 				v.Traffic = SupplyTrafficPrimary
-			case failover && v.EffectiveWeight() < heaviest:
-				v.Traffic = SupplyTrafficBackup
-			case failover:
-				v.Traffic = SupplyTrafficPrimary
-			default:
-				v.Traffic = SupplyTrafficBalanced
 			}
 		}
 	}

@@ -35,12 +35,12 @@ AI アシスタントは MCP を通じてサイトの設定を調べられます
 |---|---|
 | `settings_search` | 語句（キー、名前、説明、キーワード）に合う設定。オブジェクト（`scope`）、グループ、変更済みのみで絞り込めます。プラットフォーム設定には現在の値が付き、シークレットは設定済みか未設定かだけを返します。 |
 | `settings_describe` | 1 つ以上の設定の詳細：型、単位、範囲、値、説明、例、関連する設定、ガイドのページ、変更するコンソールの URL、現在の値と既定値。 |
-| `settings_effective` | 設定が実際に有効になる値とその出所。`model.supply_mode`、`channel.fee_rate`、`channel.prompt_caching`、`user_group.ratio`、`token.group` には `object_id`（モデル名、チャネル ID、グループ識別子、キー ID）を指定します。 |
+| `settings_effective` | 設定が実際に有効になる値とその出所。`channel.fee_rate`、`channel.prompt_caching`、`user_group.ratio`、`token.group` には `object_id`（モデル名、チャネル ID、グループ識別子、キー ID）を指定します。 |
 | `settings_docs` | 英語の運用ドキュメントのセクション（設定リファレンスを含む）。 |
 
 ## 例
 
-- 「gpt-5.1 はなぜ Requesty に行くのか？」→ `settings_effective` で `model.supply_mode`（`gpt-5.1`）、次に `settings_describe` で `SupplyCostOrder`。
+- 「gpt-5.1 はなぜ Requesty に行くのか？」→ `settings_describe` で `SupplyCostOrder`、次に `settings_effective` で Requesty チャネルの `channel.fee_rate`。
 - 「既定値から何を変えたか？」→ `settings_search` に `modified_only: true`。
 - 「公式価格より 12% 高く売るには？」→ `settings_docs` で "margin group ratio"、次に `settings_describe` で `user_group.ratio` と `PaymentCostPercent`。
 

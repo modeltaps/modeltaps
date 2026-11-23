@@ -448,11 +448,11 @@ func putModelInfo(t *testing.T, body string) *httptest.ResponseRecorder {
 	return w
 }
 
-// The console saves catalog rows whole and does not know about status or supply_mode yet: a
-// save without them keeps the stored values, and unknown values are refused.
-func TestUpdateModelInfoKeepsSupplyFields(t *testing.T) {
+// The console saves catalog rows whole and does not know about status yet: a save without it
+// keeps the stored value, and an unknown value is refused.
+func TestUpdateModelInfoKeepsStatus(t *testing.T) {
 	setupModelInfoVisibilityDB(t)
-	row := &model.ModelInfo{Model: "gpt-5", Status: model.ModelStatusPublished, SupplyMode: model.SupplyModeFailover}
+	row := &model.ModelInfo{Model: "gpt-5", Status: model.ModelStatusPublished}
 	if err := model.DB.Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -462,17 +462,13 @@ func TestUpdateModelInfoKeepsSupplyFields(t *testing.T) {
 		t.Fatalf("save failed: %s", w.Body.String())
 	}
 	saved, _ := model.GetModelInfo(row.Id)
-	if saved.Status != model.ModelStatusPublished || saved.SupplyMode != model.SupplyModeFailover || saved.Description != "edited" {
-		t.Fatalf("saved = status %q mode %q description %q", saved.Status, saved.SupplyMode, saved.Description)
+	if saved.Status != model.ModelStatusPublished || saved.Description != "edited" {
+		t.Fatalf("saved = status %q description %q", saved.Status, saved.Description)
 	}
 
-	for _, body := range []string{
-		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","status":"live"}`,
-		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","supply_mode":"random"}`,
-	} {
-		if w := putModelInfo(t, body); w.Code != http.StatusBadRequest {
-			t.Errorf("%s: status %d, want 400 (%s)", body, w.Code, w.Body.String())
-		}
+	body := `{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","status":"live"}`
+	if w := putModelInfo(t, body); w.Code != http.StatusBadRequest {
+		t.Errorf("%s: status %d, want 400 (%s)", body, w.Code, w.Body.String())
 	}
 }
 

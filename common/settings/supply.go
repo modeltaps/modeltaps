@@ -7,39 +7,21 @@ func supply() []Setting {
 	return []Setting{
 		// ---------------------------------------------------------------- supply-mode
 		{
-			Key: "SupplyModeDefault", Scope: ScopeSite, Group: "supply", Card: "supply-mode", Type: TypeEnum,
-			Enum: []EnumValue{
-				{Value: "balance", Label: "Balance", Description: "Supplies of one tier share requests by weight."},
-				{Value: "failover", Label: "Failover", Description: "The heaviest supply of a tier takes every request; the others back it up."},
-			},
-			Label: "Default supply mode",
-			Description: "How the supplies that take a model's requests share them, for models that follow the default. " +
-				"Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own " +
-				"mode on its Supplies tab.",
-			Examples: []Example{
-				{Value: "balance", Effect: "Two supplies with weights 3 and 1 take about 75% and 25% of the requests."},
-				{Value: "failover", Effect: "The supply with weight 3 takes every request; the one with weight 1 is used only while it fails."},
-			},
-			Related:  []string{"SupplyCostOrder", "model.supply_mode"},
-			Keywords: []string{"load balancing", "weight", "fallback", "primary", "backup"},
-			Docs:     "use/pricing_and_routing.md#which-supply-takes-a-request",
-		},
-		{
 			Key: "SupplyCostOrder", Scope: ScopeSite, Group: "supply", Card: "supply-mode", Type: TypeEnum,
 			Enum: []EnumValue{
-				{Value: "priority", Label: "Priority first", Description: "Cost does not order supplies: priorities and weights decide."},
-				{Value: "cost", Label: "Cost first", Description: "Supplies that are clearly cheaper and serve well take a model's requests whatever their priority."},
+				{Value: "priority", Label: "Call order", Description: "Supplies are tried in the call order of the Providers page; cost does not move them."},
+				{Value: "cost", Label: "Cheaper first", Description: "Supplies that are clearly cheaper and serve well take a model's requests ahead of the call order."},
 			},
-			Label: "Cost and priority",
-			Description: "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the " +
-				"catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be " +
-				"cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by " +
-				"priority and weight, and supplies of unknown cost come last.",
+			Label: "Order by",
+			Description: "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead of the call order. " +
+				"Users pay the catalog price times their group ratio either way; only your cost changes. With cheaper first, a " +
+				"supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs " +
+				"keep the call order and share a tier by weight, and supplies of unknown cost come last.",
 			Examples: []Example{
 				{Value: "priority", Effect: "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."},
 				{Value: "cost", Effect: "A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back."},
 			},
-			Related:  []string{"SupplyCostMinSavingPercent", "SupplyCostMinSuccessPercent", "SupplyModeDefault", "channel.fee_rate", "channel.priority"},
+			Related:  []string{"SupplyCostMinSavingPercent", "SupplyCostMinSuccessPercent", "channel.fee_rate", "channel.priority"},
 			Keywords: []string{"cheapest", "cost routing", "price routing", "lowest cost"},
 			Docs:     "use/pricing_and_routing.md#which-supply-takes-a-request",
 		},
@@ -82,14 +64,14 @@ func supply() []Setting {
 			Description: "Requests are routed through each public model's supplies instead of the channels' model lists and " +
 				"model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is " +
 				"still missing), so every model a channel serves keeps working. While on, requests are billed by the public " +
-				"model, only published models are listed, the providers page orders the channels, and the supply mode, cost " +
-				"order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning " +
+				"model, only published models are listed, the providers page orders the channels, and the call order, the " +
+				"order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning " +
 				"it off goes back to the channels' model lists at once and keeps the supplies.",
 			Examples: []Example{
 				{Value: "false", Effect: "Requests follow each channel's models and model mapping; the supply pages only preview what would change."},
 				{Value: "true", Effect: "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."},
 			},
-			Related:  []string{"SupplyModeDefault", "SupplyCostOrder", "SupplyIntakeRules", "PauseRules"},
+			Related:  []string{"SupplyCostOrder", "SupplyIntakeRules", "PauseRules"},
 			Keywords: []string{"supply routing", "migration", "public model", "model supplies"},
 			Advanced: true,
 			Docs:     "use/supply_routing.md",
@@ -117,7 +99,7 @@ func supply() []Setting {
 					Effect: "A new Claude model routes at once after the model's other supplies; any other new model is not added and stays in the list of new upstream models.",
 				},
 			},
-			Related:  []string{"ModelSupplyEnabled", "SupplyModeDefault"},
+			Related:  []string{"ModelSupplyEnabled", "SupplyCostOrder"},
 			Keywords: []string{"new models", "drift", "auto add", "review", "upstream models"},
 		},
 

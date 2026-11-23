@@ -127,6 +127,32 @@ export function setWeight(groups, id, weight) {
   return next;
 }
 
+// Gives a channel `percent` of its position's traffic; the other channels of the position keep their
+// split of the rest. Weights are stored as whole numbers summing to 100, so what was typed is what
+// is saved. A channel alone in its position always takes all of it.
+export function setSharePercent(groups, id, percent) {
+  const gi = indexOf(groups, id);
+  if (gi < 0 || groups[gi].ids.length < 2) return groups;
+  const g = groups[gi];
+  const others = g.ids.filter((x) => x !== id);
+  const p = Math.min(100 - others.length, Math.max(1, Math.round(Number(percent)) || 1));
+  const rest = 100 - p;
+  const otherTotal = others.reduce((sum, x) => sum + (g.weights[x] || 1), 0);
+  const next = clone(groups);
+  const weights = { [id]: p };
+  // Largest remainder, so the others add up to exactly `rest` and none drops below 1.
+  const raw = others.map((x) => ({ x, v: ((g.weights[x] || 1) / otherTotal) * (rest - others.length) }));
+  let left = rest - others.length - raw.reduce((sum, r) => sum + Math.floor(r.v), 0);
+  [...raw]
+    .sort((a, b) => b.v - Math.floor(b.v) - (a.v - Math.floor(a.v)))
+    .forEach((r) => {
+      weights[r.x] = 1 + Math.floor(r.v) + (left > 0 ? 1 : 0);
+      left -= 1;
+    });
+  next[gi].weights = weights;
+  return next;
+}
+
 // Per channel, how it is shown: { number, rank, clusterSize, clusterFirst, index, size, weight,
 // share, peers }. Channels of one position only compete for the models they have in common, so a
 // position falls apart into clusters of channels linked by a common model; each cluster gets the

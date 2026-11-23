@@ -404,14 +404,11 @@ func UpdateModelInfo(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusBadRequest, err)
 		return
 	}
-	// The row is saved whole, so a client that does not send status or supply_mode (the console
-	// before the models page) keeps the stored values instead of blanking them.
+	// The row is saved whole, so a client that does not send status (the console before the
+	// models page) keeps the stored value instead of blanking it.
 	if current, err := model.GetModelInfo(modelInfo.Id); err == nil {
 		if modelInfo.Status == "" {
 			modelInfo.Status = current.Status
-		}
-		if modelInfo.SupplyMode == "" {
-			modelInfo.SupplyMode = current.SupplyMode
 		}
 	}
 	if !validModelSupplyFields(c, &modelInfo) {
@@ -491,15 +488,11 @@ func DeleteModelInfo(c *gin.Context) {
 	})
 }
 
-// validModelSupplyFields checks status and supply_mode when set and answers the request when one
-// is unknown. Empty values take the column defaults (draft, balance) on create.
+// validModelSupplyFields checks status when set and answers the request when it is unknown. An
+// empty status takes the column default (draft) on create.
 func validModelSupplyFields(c *gin.Context, info *model.ModelInfo) bool {
 	if info.Status != "" && !model.IsValidModelStatus(info.Status) {
 		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelStatusInvalid, "invalid status", nil)
-		return false
-	}
-	if info.SupplyMode != "" && !model.IsValidSupplyMode(info.SupplyMode) {
-		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelSupplyModeInvalid, "invalid supply_mode", nil)
 		return false
 	}
 	return true

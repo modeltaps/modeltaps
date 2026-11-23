@@ -8,53 +8,29 @@ outline: deep
 
 # 平台设置 · 线路分配
 
-## 分流方式与成本
-
-<a id="SupplyModeDefault"></a>
-
-### 默认分流方式
-
-设置名 `SupplyModeDefault` · 类型 enum · 默认值 `balance`
-
-位置：平台设置 › 线路分配 › 分流方式与成本
-
-没有单独设置的模型，承接请求的线路之间怎么分担。只有优先级相同（成本优先时还要成本相同）的线路才会分担；单个模型可以在它的「线路」页签里另选。
-
-取值：
-
-- `balance` 负载均衡：同一档的线路按权重分担请求。
-- `failover` 主备：同一档权重最高的线路承接全部请求，其余作为备用。
-
-示例：
-
-- `balance` 权重 3 和 1 的两条线路，分别承接约 75% 和 25% 的请求。
-- `failover` 权重 3 的线路承接全部请求，权重 1 的只在它出错时才用。
-
-相关设置：[成本与优先级](./supply.md#SupplyCostOrder) · [分流方式](./objects.md#model-supply_mode)
-
-指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+## 线路路由与排序依据
 
 <a id="SupplyCostOrder"></a>
 
-### 成本与优先级
+### 排序依据
 
 设置名 `SupplyCostOrder` · 类型 enum · 默认值 `priority`
 
-位置：平台设置 › 线路分配 › 分流方式与成本
+位置：平台设置 › 线路分配 › 线路路由与排序依据
 
-线路成本（渠道标价 × (1 + 渠道费率)）能不能把线路往前排。用户付的价格都是目录价 × 分组倍率，只影响你的成本。成本优先时，线路要便宜到「最低节省」并达到「最低成功率」才会被往前排；成本接近的按优先级和权重分担，成本未知的排最后。
+线路成本（渠道标价 × (1 + 渠道费率)）能不能把线路排到调用顺序前面。用户付的价格都是目录价 × 分组倍率，只影响你的成本。选「便宜的先用」时，线路要便宜到「最低节省」并达到「最低成功率」才会往前排；成本接近的保持调用顺序、同一档按权重分担，成本未知的排最后。
 
 取值：
 
-- `priority` 优先级优先：成本不参与排序，由优先级和权重决定。
-- `cost` 成本优先：明显更便宜且运行稳定的线路先承接请求，不管优先级。
+- `priority` 按调用顺序：按供应商页的调用顺序尝试，成本不改变顺序。
+- `cost` 便宜的先用：明显更便宜且运行稳定的线路排到调用顺序前面，先承接请求。
 
 示例：
 
 - `priority` gpt-5.1 的 Requesty（成本 ×1.05）和官方 API（×1.00）同一优先级、权重 3 和 1，分别承接约 75% 和 25% 的请求。
 - `cost` 成本 ×0.80 的中转在成功率保持 95% 时承接 gpt-5.1 的请求，优先级更高的 Requesty 兜底；成功率掉下去后 Requesty 接回。
 
-相关设置：[最低节省](./supply.md#SupplyCostMinSavingPercent) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent) · [默认分流方式](./supply.md#SupplyModeDefault) · [渠道费率](./objects.md#channel-fee_rate) · [优先级](./objects.md#channel-priority)
+相关设置：[最低节省](./supply.md#SupplyCostMinSavingPercent) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent) · [渠道费率](./objects.md#channel-fee_rate) · [优先级](./objects.md#channel-priority)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -64,7 +40,7 @@ outline: deep
 
 设置名 `SupplyCostMinSavingPercent` · 类型 percent · 单位 % · 范围 0–99 · 默认值 `5`
 
-位置：平台设置 › 线路分配 › 分流方式与成本
+位置：平台设置 › 线路分配 › 线路路由与排序依据
 
 成本优先时，一条线路要比另一条便宜多少（按较贵那条的百分比）才排到它前面。差距在此以内算同价，按优先级和权重分担，免得便宜一点点的线路拿走一个模型的全部流量。0 表示便宜超过 0.1% 就往前排。
 
@@ -73,7 +49,7 @@ outline: deep
 - `5` OpenRouter（费率 5.5%）和 Requesty（费率 5%）算同价；成本 ×0.90 的中转排在两者前面。
 - `0` Requesty（×1.05）排在 OpenRouter（×1.055）前面。
 
-相关设置：[成本与优先级](./supply.md#SupplyCostOrder) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent)
+相关设置：[排序依据](./supply.md#SupplyCostOrder) · [最低成功率](./supply.md#SupplyCostMinSuccessPercent)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -83,7 +59,7 @@ outline: deep
 
 设置名 `SupplyCostMinSuccessPercent` · 类型 percent · 单位 % · 范围 0–100 · 默认值 `95`
 
-位置：平台设置 › 线路分配 › 分流方式与成本
+位置：平台设置 › 线路分配 › 线路路由与排序依据
 
 成本优先时，线路在本小时和上一小时里要达到的成功率，才会因为便宜被往前排。低于它的便宜线路按成本未知处理，排在运行正常的线路后面，成功率恢复后再回到前面。这段时间里请求不到 20 次的线路不做判断。0 表示不检查。它同时是 Vercel AI Gateway 模型的托管商进入托管商顺序所需的近一天可用率，不论成本与优先级怎么设。
 
@@ -92,7 +68,7 @@ outline: deep
 - `95` 最近 100 次失败了 12 次的折扣转售商不再优先承接请求，由下一条正常的线路接手。
 - `0` 最便宜的线路总是排第一，不管失败多少次；只有暂停规则能把它拿掉。
 
-相关设置：[成本与优先级](./supply.md#SupplyCostOrder) · [最低节省](./supply.md#SupplyCostMinSavingPercent) · [自定义暂停规则](./gateway.md#PauseRules)
+相关设置：[排序依据](./supply.md#SupplyCostOrder) · [最低节省](./supply.md#SupplyCostMinSavingPercent) · [自定义暂停规则](./gateway.md#PauseRules)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -102,16 +78,16 @@ outline: deep
 
 设置名 `ModelSupplyEnabled` · 类型 bool · 默认值 `false` · 很少需要改
 
-位置：平台设置 › 线路分配 › 分流方式与成本
+位置：平台设置 › 线路分配 › 线路路由与排序依据
 
-请求按每个公开模型的线路分配，而不是按渠道的模型列表和模型映射。打开时会先把渠道的模型和模型映射迁移成线路（只补还没有的），渠道原来提供的模型都照常可用。打开后请求按公开模型计费，只列出已发布的模型，供应商页可以排渠道的调用顺序，请求去哪由分流方式、成本顺序、新模型接入规则和暂停规则决定。新装实例默认打开。关回去会立刻回到渠道的模型列表，线路保留。
+请求按每个公开模型的线路分配，而不是按渠道的模型列表和模型映射。打开时会先把渠道的模型和模型映射迁移成线路（只补还没有的），渠道原来提供的模型都照常可用。打开后请求按公开模型计费，只列出已发布的模型，供应商页可以排渠道的调用顺序，请求去哪由调用顺序、排序依据、新模型接入规则和暂停规则决定。新装实例默认打开。关回去会立刻回到渠道的模型列表，线路保留。
 
 示例：
 
 - `false` 请求按各渠道的模型和模型映射路由；线路相关页面只预览打开后会怎样。
 - `true` claude-sonnet-4-5 的请求发往这个公开模型的线路，按优先级和成本排序。
 
-相关设置：[默认分流方式](./supply.md#SupplyModeDefault) · [成本与优先级](./supply.md#SupplyCostOrder) · [上游新模型接入规则](./supply.md#SupplyIntakeRules) · [自定义暂停规则](./gateway.md#PauseRules)
+相关设置：[排序依据](./supply.md#SupplyCostOrder) · [上游新模型接入规则](./supply.md#SupplyIntakeRules) · [自定义暂停规则](./gateway.md#PauseRules)
 
 指南：[use/supply_routing.md](../use/supply_routing.md)
 
@@ -132,7 +108,7 @@ outline: deep
 - `[{"name":"Previews wait","patterns":["*-preview*","*-exp*"],"action":"pending"},{"name":"Chat joins","endpoints":["chat","responses"],"action":"enable","placement":"auto"},{"name":"Rest waits","action":"pending"}]` 内置规则：gpt-5-preview 等待审核，新的对话模型立即承接请求（排在已提供它的渠道后面），图片模型等待审核。
 - `[{"name":"Claude joins","families":["claude-*"],"action":"enable","placement":"last"},{"name":"Rest skipped","action":"skip"}]` 新的 Claude 模型立即承接请求，排在该模型其他线路之后；其他新模型不加入，留在「新上游模型」列表里。
 
-相关设置：[按线路路由](./supply.md#ModelSupplyEnabled) · [默认分流方式](./supply.md#SupplyModeDefault)
+相关设置：[按线路路由](./supply.md#ModelSupplyEnabled) · [排序依据](./supply.md#SupplyCostOrder)
 
 ## 会话亲和
 

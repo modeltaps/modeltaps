@@ -238,7 +238,7 @@ func TestPreviewModelSupplyHandler(t *testing.T) {
 	}
 	_, resp := callGet(t, PreviewModelSupply, "/api/model_supply/preview?model=m&group=default")
 	data, _ := resp["data"].(map[string]any)
-	if resp["success"] != true || data["model"] != "m" || data["status"] != "draft" || data["mode"] != "balance" {
+	if resp["success"] != true || data["model"] != "m" || data["status"] != "draft" {
 		t.Fatalf("preview = %v", resp)
 	}
 	if tiers, _ := data["tiers"].([]any); tiers == nil || len(tiers) != 0 {

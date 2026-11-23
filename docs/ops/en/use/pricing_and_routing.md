@@ -36,9 +36,8 @@ The **payment cost** is what taking a payment costs you (card fees, currency con
 | What-if preview | Same card: type a default group ratio to try (not saved) | — |
 | Channel list prices | **Channels** → a channel → Prices (synced from the upstream); relays without a price list: Advanced → Cost ratio | `channel_prices`, `cost_ratio` |
 | Channel fee rate | **Channels** → a channel → Advanced → Fee rate, or Top-up records | `fee_rate`, `fee_note` |
-| How a tier shares requests | **Platform settings → Gateway → Allocation → Supply mode and cost** → In one tier; per model on its Supplies tab | `SupplyModeDefault`, model supply mode |
-| Cost vs. priority | Same card → Cost and priority | `SupplyCostOrder` |
-| Tier order | **Platform settings → Gateway → Allocation** → allocation policy; or a model's Supplies tab for manual models | allocation policy, supply priority |
+| Call order | **Providers** page: drag channels into tiers; channels of one tier share it by percentage. A single model can keep its own order on its Supplies tab | allocation policy, supply priority and weight |
+| Order by | Top of the **Providers** page, or **Platform settings → Supply allocation → Supply routing and order** | `SupplyCostOrder` |
 
 Every setting above, with its type, range and more examples, is in the [settings reference](../settings/index.md). An AI assistant can look them up through the [admin MCP](./admin_mcp.md).
 
@@ -61,14 +60,14 @@ Record your real top-ups under **Channels → Advanced → Top-up records**: the
 
 ## Which supply takes a request
 
-1. Priorities (from the allocation policy, or a manual model's own numbers) order the supplies.
-2. With **cost first**, cost orders them too (see below).
-3. Within the supplies that take requests, the supply mode decides: **balance** shares requests by weight, **failover** sends everything to the heaviest.
+1. The call order puts the supplies in tiers (from the providers page, or the own numbers of a model set by hand).
+2. With order by **cheaper first**, cost orders them too (see below).
+3. Supplies of one tier share requests by weight. To keep a supply as a backup only, put it in the tier below.
 
-**Cost and priority** (`SupplyCostOrder`) decides whether cost takes part:
+**Order by** (`SupplyCostOrder`) decides whether cost takes part:
 
-- **Priority first** (default): cost does not order supplies. Supplies of one priority share requests by the supply mode; a cheaper one does not take them all. Choose it when a priority means something besides cost, such as quality, speed or a provider you trust.
-- **Cost first**: the cheapest supplies of a model take the requests whatever their priority. A dearer supply is reached only when every cheaper one is unavailable, and supplies whose cost is unknown come last. Two guards keep a cheap but unreliable supply from taking the traffic on price alone:
+- **Call order** (default): cost does not order supplies. Supplies of one tier share requests by weight; a cheaper one does not take them all. Choose it when the order means something besides cost, such as quality, speed or a provider you trust.
+- **Cheaper first**: the cheapest supplies of a model take the requests whatever the call order. A dearer supply is reached only when every cheaper one is unavailable, and supplies whose cost is unknown come last. Two guards keep a cheap but unreliable supply from taking the traffic on price alone:
   - **Minimum saving** (`SupplyCostMinSavingPercent`, default 5%): a supply must be this much cheaper than another to go ahead of it. Closer costs count as the same and share by priority and weight.
   - **Minimum success rate** (`SupplyCostMinSuccessPercent`, default 95%): a supply below this success rate over the current and the previous hour is ordered as if its cost were unknown, behind the supplies that serve well, until it recovers. A supply with fewer than 20 attempts is not judged.
 
@@ -82,7 +81,7 @@ On Vercel AI Gateway many open models are hosted by several providers at differe
 
 1. The vendor's own hosting first (Alibaba for Qwen, Z.ai for GLM).
 2. Other hosts must qualify: serving, up at least the **minimum success rate** over the last day, full precision, a context no shorter than the model's, prompt caching when the vendor caches, and a price no lower than 30% of the vendor's. Qualifying hosts follow, cheapest first.
-3. With **cost first**, qualifying hosts cheaper than the vendor by the **minimum saving** go ahead of it. A vendor that is down or up too little goes after the qualifying hosts.
+3. With **cheaper first**, qualifying hosts cheaper than the vendor by the **minimum saving** go ahead of it. A vendor that is down or up too little goes after the qualifying hosts.
 
 When a host up the order is unavailable, Vercel still moves to the next, so requests do not fail for it. The channel's cost is the first host's price, and the price details list the order. A model whose vendor Vercel does not list is left to Vercel's routing at its listed price. The order is refreshed with the prices (at startup, daily, and when the channel is saved).
 
@@ -180,19 +179,19 @@ You paid **$103.00** for **$100.00** of AI credit. Add a top-up record with paid
 
 ### 3. Two supplies of one priority
 
-`glm-5.2` is supplied by Vercel (cost ×1.03) and Requesty (cost ×1.05) at the same priority, in balance mode, with weights 3 and 1.
+`glm-5.2` is supplied by Vercel (cost ×1.03) and Requesty (cost ×1.05) in one tier, with weights 3 and 1.
 
-- **Priority first**: Vercel takes about 75% of the requests and Requesty about 25%.
-- **Cost first**: they are 2% apart, within the 5% minimum saving, so they count as the same cost and still share 75 / 25. With the minimum saving at 0, every request goes to Vercel, and Requesty takes requests only while Vercel is paused or failing.
+- **Call order**: Vercel takes about 75% of the requests and Requesty about 25%.
+- **Cheaper first**: they are 2% apart, within the 5% minimum saving, so they count as the same cost and still share 75 / 25. With the minimum saving at 0, every request goes to Vercel, and Requesty takes requests only while Vercel is paused or failing.
 
 A default-group user pays the same price either way.
 
-### 4. Cost first across priorities
+### 4. Cheaper first across tiers
 
-`gpt-5.1` is supplied by Requesty at the top priority (cost ×1.05) and by a discount relay one priority lower (cost ×0.80).
+`gpt-5.1` is supplied by Requesty in tier 1 (cost ×1.05) and by a discount relay in tier 2 (cost ×0.80).
 
-- **Priority first**: Requesty takes the requests, and the relay is the backup.
-- **Cost first**: the relay is 24% cheaper and takes the requests; Requesty is the backup, marked dearer. When the relay fails 10% of its requests over the last two hours, it is below the 95% success rate and Requesty takes the requests back until the relay recovers.
+- **Call order**: Requesty takes the requests, and the relay is the backup.
+- **Cheaper first**: the relay is 24% cheaper and takes the requests; Requesty is the backup, marked dearer. When the relay fails 10% of its requests over the last two hours, it is below the 95% success rate and Requesty takes the requests back until the relay recovers.
 
 ### 5. A VIP discount that loses money
 

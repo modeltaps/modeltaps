@@ -4,8 +4,6 @@ import { admin } from 'routes/paths';
 // easy to test.
 
 export const MODEL_STATUSES = ['draft', 'published', 'retired'];
-// 'default' follows the site-wide default mode; the other two are the model's own choice.
-export const SUPPLY_MODES = ['default', 'balance', 'failover'];
 
 // Manual pause lengths offered on a supply row, in seconds.
 export const PAUSE_DURATIONS = [1800, 3600, 6 * 3600, 24 * 3600];
@@ -13,17 +11,13 @@ export const PAUSE_DURATIONS = [1800, 3600, 6 * 3600, 24 * 3600];
 const CHANNEL_STATUS_ENABLED = 1;
 
 // A public model is a catalog row that is neither an alias nor a routing policy: only these
-// rows can have supplies, a status and a supply mode.
+// rows can have supplies and a status.
 export function isPublicModelRow(row) {
   return Boolean(row && row.catalogId > 0 && !row.alias_of && !row.kind);
 }
 
 export function normalizeModelStatus(status) {
   return MODEL_STATUSES.includes(status) ? status : 'draft';
-}
-
-export function normalizeSupplyMode(mode) {
-  return SUPPLY_MODES.includes(mode) ? mode : 'default';
 }
 
 function parseMapping(raw) {
@@ -78,7 +72,7 @@ export function supplyCandidates(channels = [], supplies = [], model = '') {
 }
 
 // Supplies grouped into priority tiers, highest priority first; within a tier by weight
-// (highest first) and then id, the order failover mode tries them in.
+// (highest first) and then id.
 export function groupTiers(supplies = []) {
   const byPriority = new Map();
   supplies.forEach((s) => {
