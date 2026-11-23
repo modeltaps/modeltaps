@@ -48,8 +48,8 @@ func supply() []Setting {
 			Description: "With cost first, the success rate a supply needs over the current and the previous hour to be put " +
 				"ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that " +
 				"serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns " +
-				"the check off. It is also the uptime over the last day a host of a Vercel AI Gateway " +
-				"model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
+				"the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or " +
+				"OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
 			Examples: []Example{
 				{Value: "95", Effect: "A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them."},
 				{Value: "0", Effect: "The cheapest supply always leads, however often it fails; only pauses keep it out."},

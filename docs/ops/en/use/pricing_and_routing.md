@@ -87,6 +87,17 @@ When a host up the order is unavailable, Vercel still moves to the next, so requ
 
 Vercel tells us with every request which host served it and what it charged: the host is kept in the log details as **Served by host**, and the charge as the upstream cost. The cost and margin figures use that charge (with the channel's fee) instead of an estimate from the price list, so the cost stays right when Vercel falls back to another host.
 
+### Hosts on OpenRouter
+
+OpenRouter also serves a model from many hosts, and the price `/models` lists is often the cheapest one: mostly a heavily quantized small host or a short promotion, far below what most hosts charge. A cost taken from the list is too low, and by default OpenRouter spreads requests over the hosts by price and health, so the charge is not known in advance. The price sync reads every endpoint of each model and orders them by the Vercel rules, and every request carries the order (`provider.order`, naming exact endpoints such as `z-ai/fp8`). Where it differs from Vercel:
+
+- Precision: no lower than the precision the vendor's own endpoint states (full weights when it does not say); hosts that do not state theirs stay in.
+- Models the vendor does not host on OpenRouter are ordered too: the median-priced endpoint among those stating the most precise weights is the yardstick, the same checks apply, and qualifying endpoints are ordered cheapest first.
+- Endpoints at a flex, priority or other non-standard tier are left out.
+- An order the channel's OpenRouter provider settings already give for the model is kept.
+
+The channel's cost is again the first endpoint's price, and OpenRouter still moves to the next endpoint when one up the order is unavailable.
+
 ## When a supply fails
 
 What happens depends on what the upstream said, not on the failure alone:

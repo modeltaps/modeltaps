@@ -29,6 +29,7 @@ func (p *OpenRouterProvider) claudeProvider() *claude.ClaudeProvider {
 	provider := &claude.ClaudeProvider{BaseProvider: p.BaseProvider, BearerAuth: true}
 	provider.Config = getClaudeConfig()
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
+	provider.Requester.RequestHook = p.Requester.RequestHook
 
 	// The message id is the generation id: look the generation up afterwards for the provider
 	// that served it and what it cost. Everything the lookup needs is read here, on the handler's

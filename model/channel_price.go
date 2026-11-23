@@ -37,7 +37,8 @@ type ChannelPrice struct {
 	Kind string `json:"kind,omitempty" gorm:"type:varchar(16);default:''"`
 	// ProviderOrder is the comma-separated order of hosting providers the channel asks the
 	// upstream to try for the model, for gateways that route one model to several hosts (Vercel
-	// AI Gateway); the prices above are the first one's. "" leaves the choice to the upstream.
+	// AI Gateway provider names, OpenRouter endpoint slugs); the prices above are the first one's.
+	// "" leaves the choice to the upstream.
 	ProviderOrder string `json:"provider_order,omitempty" gorm:"type:varchar(512);default:''"`
 	SyncedAt      int64  `json:"synced_at,omitempty"`
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
@@ -81,7 +82,7 @@ func (p *OpenRouterProvider) GetModelPriceList() ([]*model.Price, error) {
 
 // GetModelPriceSync 同 GetModelPriceList，并返回价格换算不了的模型（供同步结果列出）。
 func (p *OpenRouterProvider) GetModelPriceSync() ([]*model.Price, []model.UnconvertiblePrice, error) {
-	resp, err := p.fetchOpenRouterModels()
+	resp, err := p.fetchPricedModels()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -236,9 +237,10 @@ func buildOpenRouterModelInfos(resp *modelPricingResponse) []*model.ModelInfo {
 }
 
 // GetChannelPrices implements base.ChannelPriceListInterface: the prices OpenRouter lists for
-// every model, in USD, for the channel's own price list.
+// every model, in USD, for the channel's own price list; a model served by several endpoints gets
+// the price of the first endpoint the channel asks for, and that order (fetchPricedModels).
 func (p *OpenRouterProvider) GetChannelPrices() ([]*model.ChannelPrice, error) {
-	resp, err := p.fetchOpenRouterModels()
+	resp, err := p.fetchPricedModels()
 	if err != nil {
 		return nil, err
 	}
@@ -266,6 +268,9 @@ func buildOpenRouterChannelPrices(resp *modelPricingResponse) []*model.ChannelPr
 			Image:      parseUSD(m.Pricing.Image),
 			Request:    parseUSD(m.Pricing.Request),
 			Kind:       model.ModelKindFromOutputModalities(m.Architecture.OutputModalities),
+		}
+		if len(m.hostOrder) > 0 {
+			price.ProviderOrder = strings.Join(m.hostOrder, ",")
 		}
 		pr := m.Pricing
 		if pr.Prompt == "" && pr.Completion == "" && pr.Request == "" && pr.Image == "" && pr.InputCacheRead == "" && pr.InputCacheWrite == "" {

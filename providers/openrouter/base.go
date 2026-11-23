@@ -15,13 +15,15 @@ type OpenRouterProviderFactory struct{}
 // 创建 OpenRouterProvider
 // https://openrouter.ai/docs/api-reference/overview
 func (f OpenRouterProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
-
+	req := requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle)
+	// The order of endpoints kept with each model's price goes with every request (hosts.go).
+	req.RequestHook = hostOrderHook(channel)
 	return &OpenRouterProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
 				Config:    getConfig(),
 				Channel:   channel,
-				Requester: requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle),
+				Requester: req,
 			},
 
 			ReasoningHandler:     true,

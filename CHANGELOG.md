@@ -74,6 +74,16 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
 - The supply mode (balance or failover) on the settings page, on a model's Supplies tab and in
   the model list's batch actions.
 
+### Fixed
+
+- OpenRouter channels no longer take a model's listed price as its cost. That price is often a
+  heavily quantized host or a short promotion far below what most hosts charge, while OpenRouter
+  spreads requests over all of them. The price sync now reads each model's endpoints and orders
+  them the way it does for Vercel AI Gateway (the vendor's own endpoint first, then qualifying
+  endpoints cheapest first), requests carry that order as `provider.order`, and the channel's
+  cost is the first endpoint's price. Models the vendor does not host there are ordered against
+  the median-priced endpoint.
+
 ## [0.7.4] - 2026-11-21
 
 ### Upgrading from 0.7.3

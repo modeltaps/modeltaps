@@ -48,6 +48,10 @@ type modelWithPricing struct {
 	// Created 上架时间（Unix 秒）；ExpirationDate 公布的下架日期（"2026-11-11"），未公布为 null。
 	Created        int64  `json:"created"`
 	ExpirationDate string `json:"expiration_date"`
+
+	// hostOrder is the order of endpoints the channel asks for (planHosts); the token prices
+	// above are then the first endpoint's. Not part of the listing.
+	hostOrder []string
 }
 
 type modelPricingResponse struct {
