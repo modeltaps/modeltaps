@@ -294,16 +294,15 @@ function ModelCell({ row, vendor }) {
   return (
     <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
       <VendorIcon vendor={vendor} model={row.model} />
-      {/* The column takes the table's spare width. The subtitle gives way first; the name only
-          truncates once the subtitle is gone. */}
+      {/* The column takes the table's spare width. The subtitle gives way first; the name is only
+          cut (in the middle, so the variant at its end stays) once the subtitle is gone. */}
       <RowControl className="min-w-0 shrink">
         <button
           type="button"
-          className="max-w-full truncate font-mono text-[13px] font-medium hover:underline"
-          title={row.model}
+          className="flex max-w-full min-w-0 font-mono text-[13px] font-medium hover:underline"
           onClick={() => copy(row.model, t('modelInfoPage.model'))}
         >
-          {row.model}
+          <MiddleTruncate text={row.model} />
         </button>
       </RowControl>
       {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
@@ -538,8 +537,9 @@ export default function ModelTable({
       {
         id: 'model',
         header: t('modelInfoPage.model'),
-        // Takes whatever the other columns leave; they size to their content.
-        meta: { className: GROW_COLUMN, dim: true },
+        // Takes whatever the other columns leave; they size to their content. Wide enough for a
+        // typical full name (about 30 mono characters) before the middle of a long one is cut.
+        meta: { className: cn(GROW_COLUMN, 'min-w-[20rem]'), dim: true },
         cell: (c) => <ModelCell row={c.row.original} vendor={vendors[c.row.original.vendor_id]} />
       },
       {

@@ -787,6 +787,7 @@
     "selected": "已选 {{count}} 项",
     "selectedOf": "已选 {{count}}",
     "clearSelection": "取消选择",
+    "selectAllMatching": "选中全部 {{count}} 项",
     "clearFilters": "清除筛选",
     "emptyTitle": "暂无数据",
     "noMatchTitle": "没有匹配的结果",

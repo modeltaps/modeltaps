@@ -21,12 +21,12 @@ export const MODEL_COLUMNS = [
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
   { id: 'model_kind', labelKey: 'modelInfoPage.modelKind' },
   { id: 'capabilities', labelKey: 'modelInfoPage.capabilities' },
-  { id: 'released_at', labelKey: 'modelInfoPage.releasedAt' },
+  { id: 'released_at', labelKey: 'modelInfoPage.releasedAt', defaultHidden: true },
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints', defaultHidden: true },
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
   { id: 'price', labelKey: 'modelInfoPage.price' },
-  { id: 'vs_sell', labelKey: 'modelsPage.cheapestVsSell' },
+  { id: 'vs_sell', labelKey: 'modelsPage.cheapestVsSell', defaultHidden: true },
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
   { id: 'visible', labelKey: 'modelsPage.visibleToUsers', fixed: true },
   { id: 'vendor', labelKey: 'modelInfoPage.vendor', defaultHidden: true },
@@ -41,10 +41,15 @@ export const MODEL_COLUMNS = [
   { id: 'actions', fixed: true }
 ];
 
-// The column picker's storage key (v4: the capabilities column shows by default, next to the
-// type); the old keys are cleaned up.
-export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v4';
-export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns', 'model-catalog-columns-v2', 'model-catalog-columns-v3'];
+// The column picker's storage key (v5: release date and cheapest-vs-sell start hidden so the full
+// model name fits on a laptop screen); the old keys are cleaned up.
+export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v5';
+export const LEGACY_COLUMN_STORAGE_KEYS = [
+  'model-catalog-columns',
+  'model-catalog-columns-v2',
+  'model-catalog-columns-v3',
+  'model-catalog-columns-v4'
+];
 
 const CHANNEL_STATUS_ENABLED = 1;
 

@@ -8,10 +8,18 @@ import { Button } from '@/components/ui/button';
 // ==============================|| LIST PAGE — BATCH BAR ||============================== //
 // 勾选后替换工具栏:「已选 N 项」+ 动作按钮 + 取消选择。count 为 0 时不渲染。
 // `floating` pins it to the bottom of the screen (phones), where the thumb reaches it.
+// `total` + `onSelectAll`: when fewer than all matching rows are picked (a page's "select all"
+// only takes that page), a link offers to select every row the filters match.
 
-export default function BatchBar({ count, actions, onClear, floating = false, className }) {
+export default function BatchBar({ count, actions, onClear, floating = false, className, total, onSelectAll }) {
   const { t } = useTranslation();
   if (!count || count <= 0) return null;
+  const selectAll =
+    onSelectAll && total > count ? (
+      <Button type="button" variant="link" size="sm" className="h-auto shrink-0 px-1 py-0" onClick={onSelectAll}>
+        {t('listPage.selectAllMatching', { count: total })}
+      </Button>
+    ) : null;
   const clear = (
     <Button
       type="button"
@@ -37,7 +45,8 @@ export default function BatchBar({ count, actions, onClear, floating = false, cl
         )}
       >
         {clear}
-        <span className="mr-auto whitespace-nowrap text-sm font-medium tabular-nums">{t('listPage.selected', { count })}</span>
+        <span className="whitespace-nowrap text-sm font-medium tabular-nums">{t('listPage.selected', { count })}</span>
+        <span className="mr-auto">{selectAll}</span>
         <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
       </div>
     );
@@ -49,6 +58,7 @@ export default function BatchBar({ count, actions, onClear, floating = false, cl
       className={cn('flex min-h-[3.75rem] flex-wrap items-center gap-2 py-3', className)}
     >
       <span className="mr-1 text-sm font-medium tabular-nums">{t('listPage.selected', { count })}</span>
+      {selectAll}
       {actions}
       {clear}
     </div>
@@ -60,5 +70,7 @@ BatchBar.propTypes = {
   actions: PropTypes.node,
   onClear: PropTypes.func.isRequired,
   floating: PropTypes.bool,
-  className: PropTypes.string
+  className: PropTypes.string,
+  total: PropTypes.number,
+  onSelectAll: PropTypes.func
 };

@@ -774,6 +774,7 @@
     "selected": "{{count}} selected",
     "selectedOf": "{{count}} selected",
     "clearSelection": "Clear selection",
+    "selectAllMatching": "Select all {{count}} matching",
     "clearFilters": "Clear filters",
     "emptyTitle": "Nothing here yet",
     "noMatchTitle": "No matching results",

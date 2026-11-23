@@ -469,6 +469,9 @@ export default function ModelInfo() {
     [pageRows]
   );
 
+  // Every row the current filters match, across pages (the header checkbox only takes the page).
+  const selectAllFiltered = useCallback(() => setSelectedKeys(new Set(filtered.map((row) => row.key))), [filtered]);
+
   // 隐藏开关只作用于目录行;选中的无目录行模型不参与批量隐藏。
   const selectedCatalogIds = useMemo(
     () => rows.filter((row) => row.catalogId > 0 && selectedKeys.has(row.key)).map((row) => row.catalogId),
@@ -955,6 +958,8 @@ export default function ModelInfo() {
                     <BatchBar
                       count={selectedKeys.size}
                       onClear={() => setSelectedKeys(new Set())}
+                      total={filtered.length}
+                      onSelectAll={selectAllFiltered}
                       className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
                       actions={batchActions}
                     />
@@ -994,7 +999,16 @@ export default function ModelInfo() {
           </div>
         </>
       )}
-      {narrow && selectMode && <BatchBar count={selectedKeys.size} onClear={exitSelectMode} floating actions={phoneBatchActions} />}
+      {narrow && selectMode && (
+        <BatchBar
+          count={selectedKeys.size}
+          onClear={exitSelectMode}
+          floating
+          total={filtered.length}
+          onSelectAll={selectAllFiltered}
+          actions={phoneBatchActions}
+        />
+      )}
       {narrow && (
         <FilterSheet
           open={filterSheetOpen}

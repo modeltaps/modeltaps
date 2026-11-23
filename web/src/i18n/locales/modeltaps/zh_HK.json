@@ -787,6 +787,7 @@
     "selected": "已選 {{count}} 項",
     "selectedOf": "已選 {{count}}",
     "clearSelection": "取消選擇",
+    "selectAllMatching": "選取全部 {{count}} 項",
     "clearFilters": "清除篩選",
     "emptyTitle": "暫無數據",
     "noMatchTitle": "沒有符合的結果",
