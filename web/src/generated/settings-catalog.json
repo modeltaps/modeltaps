@@ -333,12 +333,12 @@
           "label": "English"
         },
         {
-          "value": "zh_CN",
-          "label": "Chinese"
-        },
-        {
           "value": "ja_JP",
           "label": "Japanese"
+        },
+        {
+          "value": "zh_CN",
+          "label": "Chinese"
         }
       ],
       "label": "Default language",

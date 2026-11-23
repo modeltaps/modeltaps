@@ -1,9 +1,10 @@
 import LANGUAGES from './languages.json';
 
 // ==============================|| I18N — THE CONSOLE'S LANGUAGES ||============================== //
-// languages.json is the one list of languages, read by the server too (common/lang): English
-// first, each with its code (locale file names), own name, short label, BCP47 tag for identity
-// providers, the browser tags that mean it, and the language a missing text falls back to.
+// languages.json is the one list of languages, read by the server too (common/lang), in the order
+// the pickers show it: by ISO 639-1 code (en, ja, zh), which also keeps English first. Each entry
+// has its code (locale file names), own name, short label, BCP47 tag for identity providers, the
+// browser tags that mean it, and the language a missing text falls back to.
 // Adding a language: an entry here, locales/<code>.json and locales/modeltaps/<code>.json, and the
 // server's email texts (common/stmp/locales/<code>.json). See CONTRIBUTING.md.
 

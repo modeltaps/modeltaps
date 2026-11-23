@@ -158,8 +158,8 @@ func init() {
 			Key: "DefaultLanguage", Scope: ScopeSite, Group: "site", Card: "site-language", Type: TypeEnum,
 			Enum: []EnumValue{
 				{Value: "en_US", Label: "English"},
-				{Value: "zh_CN", Label: "Chinese"},
 				{Value: "ja_JP", Label: "Japanese"},
+				{Value: "zh_CN", Label: "Chinese"},
 			},
 			Label: "Default language",
 			Description: "The language emails and the home page use when a person's language is unknown. " +

@@ -1,5 +1,5 @@
 [
   { "code": "en_US", "name": "English", "short": "EN", "country": "US", "bcp47": "en", "match": ["en"] },
-  { "code": "zh_CN", "name": "中文", "short": "中", "country": "CN", "bcp47": "zh-CN", "match": ["zh"] },
-  { "code": "ja_JP", "name": "日本語", "short": "日", "country": "JP", "bcp47": "ja", "match": ["ja"] }
+  { "code": "ja_JP", "name": "日本語", "short": "日", "country": "JP", "bcp47": "ja", "match": ["ja"] },
+  { "code": "zh_CN", "name": "中文", "short": "中", "country": "CN", "bcp47": "zh-CN", "match": ["zh"] }
 ]

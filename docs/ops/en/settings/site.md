@@ -224,8 +224,8 @@ The language emails and the home page use when a person's language is unknown. U
 Values:
 
 - `en_US` English
-- `zh_CN` Chinese
 - `ja_JP` Japanese
+- `zh_CN` Chinese
 
 See also: [Email templates](./mail.md#MailTemplates)
 

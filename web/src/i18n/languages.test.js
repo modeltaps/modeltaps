@@ -21,6 +21,11 @@ describe('languages.json', () => {
     }
   });
 
+  it('lists the languages by their ISO 639-1 code', () => {
+    const codes = LANGUAGES.map((l) => l.bcp47.split('-')[0]);
+    expect(codes).toEqual([...codes].sort());
+  });
+
   it('every language has its translation files', () => {
     for (const { code } of LANGUAGES) {
       expect(upstreamFiles[`./locales/${code}.json`], `locales/${code}.json`).toBeTruthy();

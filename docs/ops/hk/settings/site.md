@@ -224,8 +224,8 @@ Billing API 返回呼叫方 API Key 的額度，而不是用戶餘額。指的�
 取值：
 
 - `en_US` 英語
-- `zh_CN` 中文
 - `ja_JP` 日語
+- `zh_CN` 中文
 
 相關設定：[郵件範本](./mail.md#MailTemplates)
 
