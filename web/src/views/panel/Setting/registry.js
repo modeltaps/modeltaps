@@ -120,16 +120,12 @@ export const PLATFORM_GROUPS = [
   {
     id: 'supply',
     // Which supply serves a request: the routing switch and the order-by setting (the call order
-    // itself is on the providers page), session affinity, intake rules and automatic routing.
+    // itself is on the providers page), session affinity and intake rules. The routing policy
+    // settings live on the routing policies page.
     cards: [
       card('supply-mode', 'form', ['ModelSupplyEnabled', 'SupplyCostOrder', 'SupplyCostMinSavingPercent', 'SupplyCostMinSuccessPercent']),
       card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
-      card('supply-intake-rules', 'form', ['SupplyIntakeRules']),
-      card('auto-routing', 'form', [
-        // The per-user and per-organization policy caps are set on the routing policies page.
-        'RoutingDecisionBillingEnabled',
-        'UserRoutingPolicyEnabled'
-      ])
+      card('supply-intake-rules', 'form', ['SupplyIntakeRules'])
     ]
   },
   {
@@ -304,6 +300,8 @@ const HIGHLIGHT_ALIASES = { 'brand-icon': 'branding', chat: 'builtin-chat', 'cha
 
 // The invite code table left the settings for a page of its own.
 export const INVITE_CODE_URL = admin.inviteCodes();
+// The routing policy settings card left for the routing policies page.
+const ROUTING_HIGHLIGHTS = new Set(['auto-routing']);
 const INVITE_SECTIONS = new Set(['invite']);
 const INVITE_HIGHLIGHTS = new Set(['invite-code']);
 
@@ -317,6 +315,7 @@ export function resolveSettingsTarget({ section, tab, highlight, isRoot = false 
   const legacyTab = !section && tab ? LEGACY_TABS[tab] || tab : null;
   const requested = (section && tab && MOVED_TABS[`${section}:${tab}`]) || section || legacyTab;
   if (INVITE_SECTIONS.has(requested) || INVITE_HIGHLIGHTS.has(highlight)) return INVITE_CODE_URL;
+  if (ROUTING_HIGHLIGHTS.has(highlight)) return `${admin.routing()}?highlight=RoutingDecisionBillingEnabled`;
 
   const anchor = HIGHLIGHT_ALIASES[highlight] || highlight || null;
   // A highlight names a card, or an option key (a field of a card).

@@ -22,7 +22,7 @@ import { ROW_OPENS, rowOpenProps, RowControl, Segmented, useObjectRoute } from '
 import { PageEmptyState } from '@/components/list-page';
 import { showError, showSuccess, useIsRoot } from 'utils/common';
 import RoutingPolicyPanel from './RoutingPolicyPanel';
-import RoutingLimits from './RoutingLimits';
+import RoutingSettings from './RoutingSettings';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
 import PolicyCallName from './PolicyCallName';
@@ -58,8 +58,8 @@ export default function RoutingPolicy() {
       api={SCOPE_APIS[scope]}
       filter={filter}
       intro={SCOPE_INTROS[scope] ? t(SCOPE_INTROS[scope]) : null}
-      // How many policies users and organizations may create: root only, on the platform console.
-      actions={isRoot ? <RoutingLimits /> : null}
+      // The platform settings of routing policies: root only, on the platform console.
+      actions={isRoot ? <RoutingSettings /> : null}
     />
   );
 }

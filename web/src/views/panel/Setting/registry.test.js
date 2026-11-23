@@ -8,7 +8,8 @@ import { describePauseRule, pauseRulesError, pauseRulesText } from './cards/paus
 import { INVITE_CODE_URL, PLATFORM_GROUPS, cardById, cardKeys, resolveSettingsTarget, visibleGroups } from './registry';
 
 // Every option key the platform settings pages could save before the regrouping (the theme
-// pages and their cards). Each must still belong to exactly one card.
+// pages and their cards). Each must still belong to exactly one card; the routing policy
+// settings moved to the routing policies page and are left out.
 const LEGACY_OPTION_KEYS = [
   'About',
   'AccountSystem',
@@ -107,7 +108,6 @@ const LEGACY_OPTION_KEYS = [
   'RetryCooldownSeconds',
   'RetryTimeOut',
   'RetryTimes',
-  'RoutingDecisionBillingEnabled',
   'SMTPAccount',
   'SMTPFrom',
   'SMTPPort',
@@ -191,12 +191,11 @@ describe('platform settings registry', () => {
 });
 
 describe('auto routing options', () => {
-  it('the supply allocation auto routing card saves the billing and own policy switches', () => {
-    expect(cardById('auto-routing')).toMatchObject({
-      groupId: 'supply',
-      kind: 'form',
-      keys: ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled']
-    });
+  it('the routing policy settings left the settings page for the routing policies page', () => {
+    expect(cardById('auto-routing')).toBeNull();
+    expect(resolveSettingsTarget({ section: 'supply', highlight: 'auto-routing' })).toBe(
+      '/panel/admin/routing?highlight=RoutingDecisionBillingEnabled'
+    );
   });
 });
 

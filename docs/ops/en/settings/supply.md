@@ -153,7 +153,7 @@ Examples:
 
 See also: [Keep each session on one channel](./supply.md#SessionAffinityEnabled)
 
-## Routing policies
+## Policy settings
 
 <a id="RoutingDecisionBillingEnabled"></a>
 
@@ -161,9 +161,9 @@ See also: [Keep each session on one channel](./supply.md#SessionAffinityEnabled)
 
 Key `RoutingDecisionBillingEnabled` · Type bool · Default `true`
 
-Where: Platform settings › Supply allocation › Routing policies
+Where: Routing policy › Policy settings
 
-Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. It is charged once per session, as a log entry of its own. When off, the decision still runs, but the site pays for it and no consume log is written.
+Bills the decision call (the call an auto routing policy makes to its decision model to pick the target model) to the caller: the tokens it uses at the decision model's catalog price times the caller's group ratio, once per session, as a consume log of its own. There is no fixed fee to set; the decision model's price applies. When off, the decision still runs, but the platform pays for it and no consume log is written.
 
 See also: [Own routing policies](./supply.md#UserRoutingPolicyEnabled)
 
@@ -173,13 +173,11 @@ See also: [Own routing policies](./supply.md#UserRoutingPolicyEnabled)
 
 Key `UserRoutingPolicyEnabled` · Type bool · Default `true`
 
-Where: Platform settings › Supply allocation › Routing policies
+Where: Routing policy › Policy settings
 
 Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.
 
 See also: [Policies per user](./supply.md#PersonalRoutingPolicyMaxCount) · [Policies per organization](./supply.md#OrganizationRoutingPolicyMaxCount)
-
-## Own policy limits
 
 <a id="PersonalRoutingPolicyMaxCount"></a>
 
@@ -187,7 +185,7 @@ See also: [Policies per user](./supply.md#PersonalRoutingPolicyMaxCount) · [Pol
 
 Key `PersonalRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Routing policy › Own policy limits
+Where: Routing policy › Policy settings
 
 How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 
@@ -204,7 +202,7 @@ See also: [Own routing policies](./supply.md#UserRoutingPolicyEnabled) · [Polic
 
 Key `OrganizationRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
-Where: Routing policy › Own policy limits
+Where: Routing policy › Policy settings
 
 How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
 

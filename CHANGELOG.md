@@ -38,9 +38,12 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   from the rules as they stand, unsaved edits included. Typing a model name marks the rule that
   decides it and says what happens; `POST /api/supply_pause/intake_rules/preview` does the same.
 
-- The caps on how many routing policies a user and an organization can create moved to the routing
-  policies page ("Own policy limits"), next to the policies they limit; the supply allocation
-  settings show them with a link there. Search and the settings reference lead to the new place.
+- The routing policy settings moved from the supply allocation settings to the routing policies
+  page ("Policy settings"): whether the decision call is billed to the caller, whether users and
+  organizations can create their own policies, and how many. The supply allocation page now covers
+  supplies only. Search, help links and the settings reference lead to the new place, and older
+  links to the removed card open the dialog. The decision call billing help says what is billed:
+  the decision model's usage at its catalog price, once per session, with no fixed fee to set.
 - A setting's `?` help opens as a floating panel instead of inside the row, so nothing below it
   moves.
 - The order-by choices are named "Call order first" and "Lowest cost".

@@ -24,7 +24,6 @@ import { BillingRulesCard, InviteRewardCard, QuotaCard, QuotaResetCard } from '.
 import { PricingCard } from './cards/PricingCard';
 import { InvoiceCard, PaymentGatewaysCard, PaymentSettingsCard } from './cards/PaymentCards';
 import {
-  AutoRoutingCard,
   ChannelAutoCard,
   ErrorHandlingCard,
   ImageProxyCard,
@@ -93,7 +92,6 @@ const CARD_COMPONENTS = {
   'prompt-limits': PromptLimitsCard,
   'image-proxy': ImageProxyCard,
   'image-storage': ImageStorageCard,
-  'auto-routing': AutoRoutingCard,
   'log-consume': LogConsumeCard,
   'log-io': LogIOCard,
   safety: SafetyCard,

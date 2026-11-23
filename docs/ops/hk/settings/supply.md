@@ -153,7 +153,7 @@ outline: deep
 
 相關設定：[同一會話固定到一個渠道](./supply.md#SessionAffinityEnabled)
 
-## 路由策略
+## 策略設定
 
 <a id="RoutingDecisionBillingEnabled"></a>
 
@@ -161,9 +161,9 @@ outline: deep
 
 設定名 `RoutingDecisionBillingEnabled` · 類型 bool · 預設值 `true`
 
-位置：平台設定 › 線路分配 › 路由策略
+位置：路由策略 › 策略設定
 
-自動路由策略為選擇模型而發起的呼叫，按決策模型的價格向呼叫方計費。每個會話計費一次，並單獨記錄一條日誌。關閉後決策仍正常進行，但費用由站點承擔，且不寫入消費日誌。
+向調用方收取決策調用的費用。決策調用是自動路由策略為選出目標模型而對決策模型發起的調用，按其實際用量 × 決策模型的目錄價 × 調用方分組倍率計費，每個會話計費一次，並單獨記一條消費日誌。無需單獨設定費用，按決策模型的價格計算。關閉後決策仍會執行，費用由平台承擔，且不記錄消費日誌。
 
 相關設定：[允許自建路由策略](./supply.md#UserRoutingPolicyEnabled)
 
@@ -173,13 +173,11 @@ outline: deep
 
 設定名 `UserRoutingPolicyEnabled` · 類型 bool · 預設值 `true`
 
-位置：平台設定 › 線路分配 › 路由策略
+位置：路由策略 › 策略設定
 
 允許用戶和組織建立自己的路由策略，透過 policy/<名字> 呼叫。用戶在工作台「路由策略」中建立個人策略，組織 Owner / Admin 建立組織策略；自建策略在其所屬的 API Key 上覆蓋同名的平台策略。關閉後自建策略保留但不再生效，僅解析平台策略。
 
 相關設定：[每個用戶的策略上限](./supply.md#PersonalRoutingPolicyMaxCount) · [每個組織的策略上限](./supply.md#OrganizationRoutingPolicyMaxCount)
-
-## 自建策略上限
 
 <a id="PersonalRoutingPolicyMaxCount"></a>
 
@@ -187,7 +185,7 @@ outline: deep
 
 設定名 `PersonalRoutingPolicyMaxCount` · 類型 int · 範圍 0– · 預設值 `20`
 
-位置：路由策略 › 自建策略上限
+位置：路由策略 › 策略設定
 
 單個用戶可建立的個人路由策略數量上限。調低上限時已有策略保留，僅拒絕新建。0 表示不限。
 
@@ -204,7 +202,7 @@ outline: deep
 
 設定名 `OrganizationRoutingPolicyMaxCount` · 類型 int · 範圍 0– · 預設值 `20`
 
-位置：路由策略 › 自建策略上限
+位置：路由策略 › 策略設定
 
 單個組織可建立的路由策略數量上限。調低上限時已有策略保留，僅拒絕新建。0 表示不限。
 

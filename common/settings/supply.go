@@ -140,16 +140,17 @@ func supply() []Setting {
 
 		// ---------------------------------------------------------------- auto-routing
 		{
-			Key: "RoutingDecisionBillingEnabled", Scope: ScopeSite, Group: "supply", Card: "auto-routing", Type: TypeBool,
+			Key: "RoutingDecisionBillingEnabled", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeBool,
 			Label: "Charge the decision call",
-			Description: "Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. " +
-				"It is charged once per session, as a log entry of its own. When off, the decision still runs, but the " +
-				"site pays for it and no consume log is written.",
+			Description: "Bills the decision call (the call an auto routing policy makes to its decision model to pick the target " +
+				"model) to the caller: the tokens it uses at the decision model's catalog price times the caller's group ratio, " +
+				"once per session, as a consume log of its own. There is no fixed fee to set; the decision model's price " +
+				"applies. When off, the decision still runs, but the platform pays for it and no consume log is written.",
 			Related:  []string{"UserRoutingPolicyEnabled"},
 			Keywords: []string{"auto routing", "decision model", "classifier", "billing", "policy"},
 		},
 		{
-			Key: "UserRoutingPolicyEnabled", Scope: ScopeSite, Group: "supply", Card: "auto-routing", Type: TypeBool,
+			Key: "UserRoutingPolicyEnabled", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeBool,
 			Label: "Own routing policies",
 			Description: "Users and organizations can create routing policies of their own, called as policy/<name>. Users create " +
 				"personal policies under Routing policies in the workbench, organization owners and admins organization policies; " +
@@ -159,7 +160,7 @@ func supply() []Setting {
 			Keywords: []string{"routing policy", "policy/", "self-service", "organization policy"},
 		},
 		{
-			Key: "PersonalRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-limits", Page: "routing-policies", Type: TypeInt, Min: num(0),
+			Key: "PersonalRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per user",
 			Description: "How many personal routing policies one user can create. Policies a user already has are kept when the " +
 				"cap is lowered; only new ones are refused. 0 sets no limit.",
@@ -171,7 +172,7 @@ func supply() []Setting {
 			Keywords: []string{"limit", "quota", "max policies"},
 		},
 		{
-			Key: "OrganizationRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-limits", Page: "routing-policies", Type: TypeInt, Min: num(0),
+			Key: "OrganizationRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per organization",
 			Description: "How many routing policies one organization can create. Policies it already has are kept when the cap " +
 				"is lowered; only new ones are refused. 0 sets no limit.",

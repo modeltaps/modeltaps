@@ -3612,7 +3612,7 @@
         },
         "supply": {
           "label": "Supply allocation",
-          "description": "How requests are assigned to supplies: routing and order, session affinity, intake rules and routing policies"
+          "description": "How requests are assigned to supplies: routing and order, session affinity and intake rules"
         },
         "gateway": {
           "label": "Gateway",
@@ -3791,11 +3791,6 @@
           "description": "Where generated images are uploaded so requests that ask for an image URL get one",
           "hint": "Applies at once, no restart"
         },
-        "auto-routing": {
-          "title": "Routing policies",
-          "description": "How decision calls are billed and whether organizations manage their own policies; platform policies are managed on the routing policies page.",
-          "hint": "Add and edit policies on the routing policies page"
-        },
         "log-consume": {
           "title": "Consume logs",
           "description": "Usage records of every request and how long they are kept",
@@ -3889,11 +3884,12 @@
           "title": "Modified settings",
           "description": "Every setting that differs from its default, with a way back"
         },
-        "routing-limits": {
-          "title": "Own policy limits",
-          "description": "The most routing policies a user and an organization can create. 0 means no limit.",
-          "summary": "{{user}} per user · {{org}} per organization",
-          "open": "Change on the routing policies page ›"
+        "routing-settings": {
+          "title": "Policy settings",
+          "description": "Platform settings of routing policies: how decision calls are billed, and whether users and organizations can create policies of their own.",
+          "billing": "Billing",
+          "own": "Own policies",
+          "saved": "Policy settings saved"
         }
       },
       "actions": {

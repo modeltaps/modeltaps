@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, ListChecks, Pin, Plus, Route, Search, Waypoints, X } from 'lucide-react';
+import { ChevronRight, ListChecks, Pin, Plus, Route, Search, X } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ import { settingEnumLabel, settingLabel } from '@/components/settings/catalog';
 import { Segmented } from '@/components/objects';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
-import { admin } from 'routes/paths';
 import { IntakeRuleBoard, intakeRuleName, intakeRulesJSON, parseIntakeRules } from 'views/panel/ModelInfo/supply/IntakeRules';
 import { fetchIntakeRules, previewIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/supply/supplyApi';
 
@@ -718,49 +716,6 @@ export function ImageProxyCard({ ctx }) {
           secret={secrets?.CFWorkerImageKey}
         />
       </div>
-    </OptionCard>
-  );
-}
-
-// Policies live on the auto routing page; this card keeps the billing switch for decision calls
-// and whether organizations may manage their own policies (组织 → 自动路由), with a cap per
-// organization.
-export function AutoRoutingCard({ ctx }) {
-  const { t } = useTranslation();
-  const { inputs } = ctx;
-  return (
-    <OptionCard
-      ctx={ctx}
-      id="auto-routing"
-      title={<CardTitle icon={Waypoints} id="auto-routing" />}
-      description={
-        <>
-          {cardText(t, 'auto-routing', 'description')}{' '}
-          <Link to={admin.routing()} className="text-primary hover:underline">
-            {t('settingsUi.platform.actions.openRouting')}
-          </Link>
-        </>
-      }
-    >
-      <OptionList>
-        <ToggleRow id="RoutingDecisionBillingEnabled" description="" {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')} />
-        <ToggleRow id="UserRoutingPolicyEnabled" description="" {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')} />
-        {/* The caps moved to the routing policies page, next to the policies they limit. */}
-        <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <span className="text-sm font-medium">{cardText(t, 'routing-limits', 'title')}</span>
-          <span className="flex min-w-0 items-center gap-3 text-[13px]">
-            <span className="truncate text-muted-foreground">
-              {t('settingsUi.platform.cards.routing-limits.summary', {
-                user: inputs.PersonalRoutingPolicyMaxCount || '0',
-                org: inputs.OrganizationRoutingPolicyMaxCount || '0'
-              })}
-            </span>
-            <Link to={`${admin.routing()}?highlight=PersonalRoutingPolicyMaxCount`} className="shrink-0 text-primary hover:underline">
-              {cardText(t, 'routing-limits', 'open')}
-            </Link>
-          </span>
-        </div>
-      </OptionList>
     </OptionCard>
   );
 }
