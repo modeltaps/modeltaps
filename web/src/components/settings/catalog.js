@@ -53,7 +53,7 @@ export function settingSearchTiers(t, key) {
   return {
     primary: [settingLabel(t, key), entry.label],
     secondary: [entry.key, ...(entry.keywords || []), ...(Array.isArray(translated) ? translated : [])],
-    tertiary: [settingDescription(t, key), entry.description]
+    tertiary: [plainText(settingDescription(t, key)), plainText(entry.description)]
   };
 }
 
@@ -66,6 +66,10 @@ export function settingSearchText(t, key) {
 // The first sentence of a description: what shows under a field; the rest goes into its help.
 // A sentence ends at 。！？ or at . ! ? followed by a space (so 1.12 and e.g. do not end one).
 const ABBREVIATIONS = /(?:^|\s)(?:e\.g|i\.e|vs|etc)\.$/i;
+
+// Catalog descriptions may mark their key words as **bold** (also Markdown in the generated
+// reference docs). plainText drops the marks, for search and anything shown as plain text.
+export const plainText = (text) => String(text ?? '').replace(/\*\*(.+?)\*\*/g, '$1');
 
 export function splitFirstSentence(text) {
   const value = String(text || '').trim();

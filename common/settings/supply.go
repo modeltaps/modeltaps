@@ -142,10 +142,14 @@ func supply() []Setting {
 		{
 			Key: "RoutingDecisionBillingEnabled", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeBool,
 			Label: "Charge the decision call",
-			Description: "Bills the decision call (the call an auto routing policy makes to its decision model to pick the target " +
-				"model) to the caller: the tokens it uses at the decision model's catalog price times the caller's group ratio, " +
-				"once per session, as a consume log of its own. There is no fixed fee to set; the decision model's price " +
-				"applies. When off, the decision still runs, but the platform pays for it and no consume log is written.",
+			Description: "When on, **the caller pays for the decision call**, the call a routing policy makes to pick the target " +
+				"model. Fee = usage × **the catalog price of the policy's decision model** × the caller's group ratio, " +
+				"**charged once per session** as a consume log of its own; there is no fee to set. When off, the decision " +
+				"still runs and **the platform pays for it**, with no consume log.",
+			Examples: []Example{
+				{Value: "true", Effect: "A policy whose decision model is gpt-5-mini: the caller pays gpt-5-mini's price for the decision, once per session, besides the request itself."},
+				{Value: "false", Effect: "The same decision costs the caller nothing; the platform pays the upstream for it."},
+			},
 			Related:  []string{"UserRoutingPolicyEnabled"},
 			Keywords: []string{"auto routing", "decision model", "classifier", "billing", "policy"},
 		},

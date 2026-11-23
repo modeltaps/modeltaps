@@ -42,8 +42,10 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   page ("Policy settings"): whether the decision call is billed to the caller, whether users and
   organizations can create their own policies, and how many. The supply allocation page now covers
   supplies only. Search, help links and the settings reference lead to the new place, and older
-  links to the removed card open the dialog. The decision call billing help says what is billed:
-  the decision model's usage at its catalog price, once per session, with no fixed fee to set.
+  links to the removed card open the dialog. The decision call billing switch says where the fee comes
+  from (each policy's decision model, once per session), and its help puts the key points in bold.
+- Setting descriptions can mark key words as bold (`**...**`), shown bold in the help and the
+  generated reference and left out of search.
 - A setting's `?` help opens as a floating panel instead of inside the row, so nothing below it
   moves.
 - The order-by choices are named "Call order first" and "Lowest cost".

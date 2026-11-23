@@ -10,16 +10,16 @@ import { NumberField } from '@/components/ui/number-field';
 import { Dialog, DialogContent, DialogBody, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { OptionList } from '@/components/settings/cards';
-import { InlineRow } from '../Setting/parts';
+import { InlineRow, ToggleRow } from '../Setting/parts';
+import { Emphasis } from '@/components/settings/SettingHelp';
 
 // The platform settings of routing policies (root only), next to the policies they govern:
 // whether the decision call is billed to the caller, and whether users and organizations may
 // create policies of their own and how many. Links to any of them (the settings catalog, older
 // settings page links) open this dialog with ?highlight=<key>.
-const BILLING_KEYS = ['RoutingDecisionBillingEnabled'];
 const OWN_SWITCH = 'UserRoutingPolicyEnabled';
 const LIMIT_KEYS = ['PersonalRoutingPolicyMaxCount', 'OrganizationRoutingPolicyMaxCount'];
-export const ROUTING_SETTING_KEYS = [...BILLING_KEYS, OWN_SWITCH, ...LIMIT_KEYS];
+export const ROUTING_SETTING_KEYS = ['RoutingDecisionBillingEnabled', OWN_SWITCH, ...LIMIT_KEYS];
 
 const asText = (v) => (v === undefined || v === null ? '' : String(v));
 const card = (t, part) => t(`settingsUi.platform.cards.routing-settings.${part}`);
@@ -109,7 +109,16 @@ export default function RoutingSettings() {
           <DialogBody className="space-y-5">
             <section className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground">{card(t, 'billing')}</h3>
-              <OptionList>{BILLING_KEYS.map(toggle)}</OptionList>
+              <OptionList>
+                {/* The one thing to know about this switch: where the fee comes from. */}
+                <ToggleRow
+                  id="RoutingDecisionBillingEnabled"
+                  description={<Emphasis text={card(t, 'billingSource')} />}
+                  checked={values.RoutingDecisionBillingEnabled === 'true'}
+                  disabled={!origin}
+                  onCheckedChange={(v) => set('RoutingDecisionBillingEnabled', v ? 'true' : 'false')}
+                />
+              </OptionList>
             </section>
             <section className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground">{card(t, 'own')}</h3>
@@ -145,4 +154,3 @@ export default function RoutingSettings() {
     </>
   );
 }
-

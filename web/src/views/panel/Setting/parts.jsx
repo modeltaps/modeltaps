@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { OBJECT_PAGES, catalogEntry, settingDescription, settingLabel, splitFirstSentence } from '@/components/settings/catalog';
 import { Link } from 'react-router';
-import { ModifiedDot, SettingHelpBody, SettingHelpToggle, hasMoreHelp } from '@/components/settings/SettingHelp';
+import { Emphasis, ModifiedDot, SettingHelpBody, SettingHelpToggle, hasMoreHelp } from '@/components/settings/SettingHelp';
 
 // Shared data layer + field helpers for the platform settings cards.
 // All option keys map 1:1 to the `/api/option/` API.
@@ -165,6 +165,10 @@ export const SettingsMetaContext = createContext(null);
 // first sentence of the description under the field, and the rest in the help its `?` opens.
 // `id` is the option key. With a description of the card's own, the help holds the whole
 // catalog description. `modified` holds the default when the stored value differs from it.
+// A catalog sentence with its **key words** in bold; empty stays empty, so rows without a
+// description keep their one-line layout.
+const emphasized = (text) => (text ? <Emphasis text={text} /> : text);
+
 export function useSettingCopy(id, label, description) {
   const { t } = useTranslation();
   const meta = useContext(SettingsMetaContext);
@@ -173,7 +177,7 @@ export function useSettingCopy(id, label, description) {
   const full = description !== undefined;
   return {
     label: label ?? settingLabel(t, id),
-    description: description ?? splitFirstSentence(settingDescription(t, id)).first,
+    description: description ?? emphasized(splitFirstSentence(settingDescription(t, id)).first),
     help: hasMoreHelp(t, id, full) ? <SettingHelpBody settingKey={id} full={full} /> : null,
     helpFull: full,
     modified: isModified(meta, id) ? { defaultValue: String(meta.defaults[id] ?? '') } : null,

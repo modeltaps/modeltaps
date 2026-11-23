@@ -34,6 +34,22 @@ export function settingHref(key) {
   return OBJECT_PAGES[entry.group] || null;
 }
 
+// A catalog text with its **key words** in bold; plain strings pass through.
+export function Emphasis({ text }) {
+  if (typeof text !== 'string' || !text.includes('**')) return text ?? null;
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="font-medium text-foreground">
+        {part}
+      </strong>
+    ) : (
+      part
+    )
+  );
+}
+
+Emphasis.propTypes = { text: PropTypes.node };
+
 export function SettingHelpBody({ settingKey, full = false }) {
   const { t } = useTranslation();
   const entry = catalogEntry(settingKey);
@@ -44,7 +60,11 @@ export function SettingHelpBody({ settingKey, full = false }) {
   const values = entry.type === 'enum' ? (entry.enum || []).filter((e) => e.description) : [];
   return (
     <div className="space-y-2">
-      {text && <p>{text}</p>}
+      {text && (
+        <p>
+          <Emphasis text={text} />
+        </p>
+      )}
       {values.length > 0 && (
         <ul className="space-y-0.5">
           {values.map((e) => (

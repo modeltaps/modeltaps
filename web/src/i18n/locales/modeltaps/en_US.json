@@ -3889,7 +3889,8 @@
           "description": "Platform settings of routing policies: how decision calls are billed, and whether users and organizations can create policies of their own.",
           "billing": "Billing",
           "own": "Own policies",
-          "saved": "Policy settings saved"
+          "saved": "Policy settings saved",
+          "billingSource": "Fee: the catalog price of each policy's **decision model**, once per session"
         }
       },
       "actions": {
