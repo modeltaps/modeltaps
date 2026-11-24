@@ -78,6 +78,14 @@ curl -X POST https://your-modeltaps-domain.com/v1/chat/completions \
 
 - `max_tokens` > `effort`
 
+### 較新的 Claude 模型
+
+從 Opus 4.6、Sonnet 4.6 起，Claude 自己決定思考多少（adaptive thinking）；最新的模型（Opus 4.7 及以後、Sonnet 5 及以後、Haiku 5 及以後、Fable）不再接受思考預算。對這些模型：
+
+- `reasoning_effort` 同樣會開啟思考，效果與帶 `reasoning` 欄位相同。
+- 強度（`reasoning.effort` 或 `reasoning_effort`）作為 Claude 的 effort 檔位下發（`minimal` 按 `low` 處理）；`reasoning.max_tokens` 會被忽略，上面關於 budget_tokens 的規則不適用。
+- 思考內容在 `reasoning_content` 裏返回，串流和非串流都一樣。最新的模型預設不返回思考文字，閘道會替請求要一份摘要；這只影響顯示，不影響計費。
+
 ## OpenAI
 
 ### 通過模型名快速切換 ReasoningEffort

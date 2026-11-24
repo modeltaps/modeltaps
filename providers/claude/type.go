@@ -134,6 +134,7 @@ type ClaudeRequest struct {
 	Tools         []Tools         `json:"tools,omitempty"`
 	ToolChoice    *ToolChoice     `json:"tool_choice,omitempty"`
 	Thinking      *Thinking       `json:"thinking,omitempty"`
+	OutputConfig  *OutputConfig   `json:"output_config,omitempty"`
 	McpServers    any             `json:"mcp_servers,omitempty"`
 	Metadata      *ClaudeMetadata `json:"metadata,omitempty"`
 	Stream        bool            `json:"stream"`
@@ -142,6 +143,14 @@ type ClaudeRequest struct {
 type Thinking struct {
 	Type         string `json:"type,omitempty"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
+	// Display is "summarized" or "omitted"; see thinking_models.go for the per-model default.
+	Display string `json:"display,omitempty"`
+}
+
+// OutputConfig carries the effort level (low / medium / high / xhigh / max) that sets how much
+// adaptive thinking does.
+type OutputConfig struct {
+	Effort string `json:"effort,omitempty"`
 }
 type ToolChoice struct {
 	Type                   string `json:"type,omitempty"`

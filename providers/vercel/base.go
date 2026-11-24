@@ -18,8 +18,9 @@ type VercelProviderFactory struct{}
 
 func (f VercelProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
 	req := requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle)
-	// The order of hosting providers kept with each model's price goes with every request (hosts.go).
-	req.RequestHook = hostOrderHook(channel)
+	// The order of hosting providers kept with each model's price goes with every request
+	// (hosts.go), and Claude chat requests that ask for reasoning get its summary (thinking.go).
+	req.RequestHook = chainHooks(hostOrderHook(channel), thinkingDisplayHook)
 	return &VercelProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{

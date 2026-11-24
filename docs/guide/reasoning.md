@@ -78,6 +78,14 @@ When both `effort` and `max_tokens` are provided inside `reasoning`, the priorit
 
 - `max_tokens` > `effort`
 
+### Newer Claude models
+
+From Opus 4.6 and Sonnet 4.6 on, Claude decides how much to think by itself (adaptive thinking), and the newest models (Opus 4.7 and later, Sonnet 5 and later, Haiku 5 and later, Fable) no longer accept a thinking budget. For these models:
+
+- `reasoning_effort` turns thinking on as well, the same as a `reasoning` field.
+- The effort (`reasoning.effort` or `reasoning_effort`) is sent as Claude's effort level (`minimal` is sent as `low`). `reasoning.max_tokens` is ignored, and the budget rules above do not apply.
+- The thinking comes back in `reasoning_content`, in streaming and non-streaming responses. The newest models leave the thinking text empty unless asked, so the gateway asks for a summary; this changes only what is shown, not what is billed.
+
 ## OpenAI
 
 ### Switching ReasoningEffort quickly via the model name

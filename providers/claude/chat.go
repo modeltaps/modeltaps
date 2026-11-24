@@ -228,19 +228,44 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 		claudeRequest.MaxTokens = config.ClaudeSettingsInstance.GetDefaultMaxTokens(request.Model)
 	}
 
-	// 如果是3-7 默认开启thinking
-	if request.OneOtherArg == "thinking" || request.Reasoning != nil {
-		var opErr *types.OpenAIErrorWithStatusCode
-		claudeRequest.MaxTokens, claudeRequest.Thinking, opErr = getThinking(claudeRequest.MaxTokens, request.Reasoning)
-
-		if opErr != nil {
-			return nil, opErr
+	// Thinking is on for the #thinking model suffix, a reasoning object or a reasoning_effort.
+	if request.OneOtherArg == "thinking" || request.Reasoning != nil || request.ReasoningEffort != nil {
+		reasoning := request.Reasoning
+		if reasoning == nil && request.ReasoningEffort != nil {
+			reasoning = &types.ChatReasoning{Effort: *request.ReasoningEffort}
+		}
+		if AdaptiveThinkingSupported(claudeRequest.Model) {
+			claudeRequest.Thinking, claudeRequest.OutputConfig = getAdaptiveThinking(claudeRequest.Model, reasoning)
+		} else {
+			var opErr *types.OpenAIErrorWithStatusCode
+			claudeRequest.MaxTokens, claudeRequest.Thinking, opErr = getThinking(claudeRequest.MaxTokens, reasoning)
+			if opErr != nil {
+				return nil, opErr
+			}
 		}
 
 		claudeRequest.TopP = nil
 	}
 
 	return &claudeRequest, nil
+}
+
+// getAdaptiveThinking is the thinking configuration for models that take adaptive thinking:
+// the effort, when given, goes to output_config.effort (a token budget does not apply, and is a
+// 400 on the newest models), and models that hide the thinking text by default are asked for a
+// summary, since a client that asks for reasoning wants to show it.
+func getAdaptiveThinking(model string, reasoning *types.ChatReasoning) (*Thinking, *OutputConfig) {
+	thinking := &Thinking{Type: "adaptive"}
+	if ThinkingHiddenByDefault(model) {
+		thinking.Display = "summarized"
+	}
+	var output *OutputConfig
+	if reasoning != nil {
+		if effort := claudeEffort(reasoning.Effort, model); effort != "" {
+			output = &OutputConfig{Effort: effort}
+		}
+	}
+	return thinking, output
 }
 
 func getThinking(maxTokens int, reasoning *types.ChatReasoning) (newMaxtokens int, thinking *Thinking, err *types.OpenAIErrorWithStatusCode) {

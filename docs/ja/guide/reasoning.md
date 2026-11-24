@@ -78,6 +78,14 @@ thinking を有効にすると、リクエスト内の `top_p` は破棄され�
 
 - `max_tokens` > `effort`
 
+### 新しい Claude モデル
+
+Opus 4.6・Sonnet 4.6 以降、Claude はどれだけ考えるかを自分で決めます（adaptive thinking）。最新のモデル（Opus 4.7 以降、Sonnet 5 以降、Haiku 5 以降、Fable）は思考予算を受け付けません。これらのモデルでは：
+
+- `reasoning_effort` でも思考が有効になります。`reasoning` フィールドを付けた場合と同じです。
+- 強度（`reasoning.effort` または `reasoning_effort`）は Claude の effort レベルとして送られます（`minimal` は `low` として扱います）。`reasoning.max_tokens` は無視され、上の budget_tokens の規則は適用されません。
+- 思考内容は `reasoning_content` で返ります。ストリーミングでも非ストリーミングでも同じです。最新のモデルは指定がないと思考テキストを返さないため、ゲートウェイが要約を求めます。表示が変わるだけで、課金は変わりません。
+
 ## OpenAI
 
 ### モデル名で ReasoningEffort をすばやく切り替える

@@ -130,7 +130,23 @@ func (p *OpenAIProvider) CreateChatCompletion(request *types.ChatCompletionReque
 	responseModel := p.GetResponseModelName(request.Model)
 	response.Model = responseModel
 
+	// The same reasoning rename as the stream (OpenAIStreamHandler.ReasoningHandler).
+	if p.ReasoningHandler {
+		renameReasoning(response.Choices)
+	}
+
 	return &response.ChatCompletionResponse, nil
+}
+
+// renameReasoning moves a choice's `reasoning` text to reasoning_content when the latter is
+// empty.
+func renameReasoning(choices []types.ChatCompletionChoice) {
+	for i := range choices {
+		if m := &choices[i].Message; m.ReasoningContent == "" && m.Reasoning != "" {
+			m.ReasoningContent = m.Reasoning
+			m.Reasoning = ""
+		}
+	}
 }
 
 func (p *OpenAIProvider) CreateChatCompletionStream(request *types.ChatCompletionRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
@@ -190,6 +206,10 @@ func (p *OpenAIProvider) CreateChatCompletionStream(request *types.ChatCompletio
 		isAzure:    p.IsAzure,
 		EscapeJSON: p.StreamEscapeJSON,
 		Context:    p.Context, // 传递 Context
+
+		// Gateways that stream reasoning as `reasoning` (Vercel, Requesty, Venice, ...) get it
+		// renamed to reasoning_content, the field chat clients show as thinking.
+		ReasoningHandler: p.ReasoningHandler,
 
 		ExtraBilling: getChatExtraBilling(request),
 		// Anthropic 缓存读取计费修正：与既有 UsageHandler 组合（先跑原有逻辑再 remap），不覆盖。
