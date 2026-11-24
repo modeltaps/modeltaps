@@ -5529,7 +5529,8 @@
       ],
       "cherryStudio": [
         "Open Settings → Model Provider, click Add and choose the OpenAI type.",
-        "Enter the API address and API key below, then click Manage to add models."
+        "Enter the API address and API key below, then click Manage to add models.",
+        "To see the thinking: when adding a model, tick Reasoning under More settings → Model capabilities, and in the chat raise the effort at the bottom right of the input box from Default. At Default, Cherry Studio sends no reasoning request."
       ],
       "other": [
         "In the tool, find the settings for a custom, OpenAI-compatible or Anthropic-compatible provider.",
