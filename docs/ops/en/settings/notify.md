@@ -18,7 +18,7 @@ Key `NotifyDisabledKinds` · Type list · Default `empty`
 
 Where: Platform settings › Notifications › Notice kinds
 
-The kinds of admin notices that are not sent to any notice channel; the card's switches write it. Comma separated; empty sends every kind. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, price_source, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.
+The kinds of admin notices that are **not sent to any notice channel**; the card's switches write it. Comma separated; **empty sends every kind**. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, price_source, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.
 
 Examples:
 
@@ -36,7 +36,7 @@ Key `NotifyKindLimitPerHour` · Type int · Range 0– · Default `20`
 
 Where: Platform settings › Notifications › Notice kinds
 
-The most notices of one kind sent in an hour; the rest are dropped. The hour starts with the first notice of the kind, and the first notice after a limited hour says how many were dropped. Each kind counts on its own, on each node. 0 means no limit.
+The most notices of one kind sent in an hour; **the rest are dropped**. The hour starts with the first notice of the kind, and the first notice after a limited hour says how many were dropped. Each kind counts on its own, **on each node**. 0 means no limit.
 
 Examples:
 
@@ -55,7 +55,7 @@ Key `UsageAlertTiers` · Type list · Unit % · Default `empty`
 
 Where: Platform settings › Notifications › Notice kinds
 
-The usage levels, in percent, at which a subscription channel (Codex, Claude Code) sends a notice for a usage window. Each tier fires once per window period and again after the window resets. Comma separated, each between 1 and 100; empty means 50, 75, 100 and 0 turns the alerts off. A channel's own tiers on its monitoring tab win over these. The notices are of the subscription_usage kind.
+The usage levels, in percent, at which a subscription channel (Codex, Claude Code) sends a notice for a usage window. Each tier **fires once per window period** and again after the window resets. Comma separated, each between 1 and 100; empty means 50, 75, 100 and 0 turns the alerts off. A channel's own tiers on its monitoring tab **win over these**. The notices are of the subscription_usage kind.
 
 Examples:
 

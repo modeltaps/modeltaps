@@ -18,7 +18,7 @@ Key `SMTPProvider` · Type string · Default `empty` · rarely changed
 
 Where: Platform settings › Mail › Mail service
 
-Which preset the mail service in use was set up from, such as resend, ses, gmail or custom. It only shapes the console form; sending reads the server, port and account. Like every SMTP setting it mirrors the mail service in use and changes with it.
+Which preset the mail service in use was set up from, such as resend, ses, gmail or custom. It **only shapes the console form**; sending reads the server, port and account. Like every SMTP setting it **mirrors the mail service in use and changes with it**.
 
 See also: [SMTP server](./mail.md#SMTPServer)
 
@@ -32,7 +32,7 @@ Key `SMTPServer` · Type string · Default `empty`
 
 Where: Platform settings › Mail › Mail service
 
-The host name of the SMTP server every email is sent through. It mirrors the mail service in use: add, edit or switch services on the Mail services card. Empty means the site cannot send mail, so login codes, password resets and quota warnings stop. When the deployment sets smtp.url (SMTP_URL), that wins and the console is read-only.
+The host name of the SMTP server every email is sent through. It mirrors the mail service in use: add, edit or switch services on the Mail services card. Empty means **the site cannot send mail**, so login codes, password resets and quota warnings stop. When the deployment sets smtp.url (SMTP_URL), **that wins** and **the console is read-only**.
 
 Examples:
 
@@ -50,7 +50,7 @@ Key `SMTPPort` · Type int · Range 1–65535 · Default `587`
 
 Where: Platform settings › Mail › Mail service
 
-The port of the SMTP server: usually 465 for SSL/TLS and 587 for STARTTLS. With encryption Auto the port decides the encryption, and port 587 logs in with LOGIN instead of PLAIN. It mirrors the mail service in use.
+The port of the SMTP server: usually 465 for SSL/TLS and 587 for STARTTLS. With encryption Auto the port decides the encryption, and **port 587 logs in with LOGIN instead of PLAIN**. It mirrors the mail service in use.
 
 Examples:
 
@@ -68,7 +68,7 @@ Key `SMTPAccount` · Type string · Default `empty`
 
 Where: Platform settings › Mail › Mail service
 
-The user name the mail service logs in to the SMTP server with; for a mailbox it is the mailbox address. When no sender address is set, mail is sent from it. It mirrors the mail service in use.
+The user name the mail service logs in to the SMTP server with; for a mailbox it is the mailbox address. When no sender address is set, **mail is sent from it**. It mirrors the mail service in use.
 
 See also: [SMTP password](./mail.md#SMTPToken) · [Sender address](./mail.md#SMTPFrom)
 
@@ -80,7 +80,7 @@ Key `SMTPFrom` · Type string · Default `empty`
 
 Where: Platform settings › Mail › Mail service
 
-The address every email comes from. It must be an address the service lets you send from: one on a domain you verified with it, or the mailbox itself. It mirrors the mail service in use.
+The address every email comes from. It **must be an address the service lets you send from**: one on a domain you verified with it, or the mailbox itself. It mirrors the mail service in use.
 
 Examples:
 
@@ -96,7 +96,7 @@ Key `SMTPFromName` · Type string · Default `empty`
 
 Where: Platform settings › Mail › Mail service
 
-The display name shown before the sender address. Empty shows the address alone. It mirrors the mail service in use.
+The display name shown before the sender address. Empty **shows the address alone**. It mirrors the mail service in use.
 
 Examples:
 
@@ -112,7 +112,7 @@ Key `SMTPReplyTo` · Type string · Default `empty`
 
 Where: Platform settings › Mail › Mail service
 
-Where replies to the site's emails go instead of the sender address. Empty sends replies to the sender address. It mirrors the mail service in use.
+Where replies to the site's emails go **instead of the sender address**. Empty sends replies to the sender address. It mirrors the mail service in use.
 
 Examples:
 
@@ -128,7 +128,7 @@ Key `SMTPToken` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Mail › Mail service
 
-The password, app password or API key the mail service logs in with. It is never shown again after saving and is encrypted in the database when ENCRYPTION_KEY is set. It mirrors the mail service in use.
+The password, app password or API key the mail service logs in with. It is **never shown again** after saving and is encrypted in the database when ENCRYPTION_KEY is set. It mirrors the mail service in use.
 
 See also: [SMTP username](./mail.md#SMTPAccount)
 
@@ -140,7 +140,7 @@ Key `SMTPTLSMode` · Type enum · Default `auto`
 
 Where: Platform settings › Mail › Mail service
 
-How the connection to the SMTP server is encrypted. Auto picks by port and suits almost every service. It mirrors the mail service in use.
+How the connection to the SMTP server is encrypted. **Auto picks by port** and suits almost every service. It mirrors the mail service in use.
 
 Values:
 
@@ -162,7 +162,7 @@ Key `MailTemplates` · Type json · Default `empty`
 
 Where: Platform settings › Mail › Email templates
 
-Your own subject and body for each email users get, per console language. The emails are the verification code, password reset, low balance and quota used up. Stored as JSON {"<template>": {"<language>": {"subject", "body"}}}; a template or language left out, or an empty subject or body, uses the built-in text of that language. Variables are a name in double curly braces, HTML-escaped in the body; the server adds the shared header with the logo and the footer. Unknown templates or languages are refused on save.
+Your own subject and body for each email users get, **per console language**. The emails are the verification code, password reset, low balance and quota used up. Stored as JSON {"<template>": {"<language>": {"subject", "body"}}}; a template or language left out, or an empty subject or body, uses the built-in text of that language. Variables are a name in double curly braces, HTML-escaped in the body; the server adds the shared header with the logo and the footer. Unknown templates or languages are **refused on save**.
 
 Examples:
 

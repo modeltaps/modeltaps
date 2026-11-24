@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片代理
 
-下载请求中所链接图片时使用的 HTTP 或 SOCKS5 代理。网关需下载这些图片以计算 token，并以数据形式转发给上游；未设置代理时，图床可见本服务器的 IP。设置了 Cloudflare Worker 时，代理仅用于访问 Worker。留空则直接下载。
+下载请求中所链接图片时使用的 HTTP 或 SOCKS5 代理。网关需下载这些图片以计算 token，并以数据形式转发给上游；未设置代理时，**图床可见本服务器的 IP**。设置了 Cloudflare Worker 时，代理仅用于访问 Worker。留空则直接下载。
 
 示例：
 
@@ -35,7 +35,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片代理
 
-由 Cloudflare Worker 代替本服务器下载请求中所链接的图片。网关将图片地址和 Worker 密钥发送给 Worker 并读回图片，图床仅可见 Cloudflare。此项优先于图片下载代理。部分图床拒绝 Cloudflare 访问，此类图片将下载失败。留空表示不使用 Worker。
+由 Cloudflare Worker 代替本服务器下载请求中所链接的图片。网关将图片地址和 Worker 密钥发送给 Worker 并读回图片，**图床仅可见 Cloudflare**。**此项优先于图片下载代理**。部分图床拒绝 Cloudflare 访问，此类图片将下载失败。留空表示不使用 Worker。
 
 示例：
 
@@ -65,16 +65,16 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-设置生成图片的存储位置，使要求返回图片链接的请求可获取链接。Gemini、Cloudflare Workers AI 和 Stability AI 仅返回图片数据。选择不启用时改为返回 base64：图片接口返回 b64_json 而非 url，Gemini 的回复中直接嵌入完整图片。修改后立即在所有节点生效。
+设置生成图片的存储位置，使要求返回图片链接的请求可获取链接。Gemini、Cloudflare Workers AI 和 Stability AI 仅返回图片数据。选择不启用时**改为返回 base64**：图片接口返回 b64_json 而非 url，Gemini 的回复中直接嵌入完整图片。**修改后立即在所有节点生效**。
 
 取值：
 
-- `local` 本网关：暂存在本网关，链接位于服务器地址下，1 小时内有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。多节点部署需启用 Redis，以便任一节点均可提供链接。
-- `s3` S3 兼容存储：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储。未填写公开访问地址时返回 1 小时内有效的签名链接，bucket 可保持私有。网关不删除文件，请在存储后台配置生命周期规则（如 1 天后删除）。
+- `local` 本网关：暂存在本网关，链接位于服务器地址下，1 小时内有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。**多节点部署需启用 Redis**，以便任一节点均可提供链接。
+- `s3` S3 兼容存储：AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储。未填写公开访问地址时返回 1 小时内有效的签名链接，bucket 可保持私有。**网关不删除文件**，请在存储后台配置生命周期规则（如 1 天后删除）。
 - `alioss` 阿里云 OSS：返回带签名的链接，1 小时内有效，bucket 可保持私有。
-- `smms` SM.MS：免费图床，图片公开可见。
-- `imgur` Imgur：免费图床，图片公开可见。
-- `off` 不启用：图片以 base64 返回，仅读取图片链接的客户端无法获取图片。
+- `smms` SM.MS：免费图床，**图片公开可见**。
+- `imgur` Imgur：免费图床，**图片公开可见**。
+- `off` 不启用：图片以 base64 返回，**仅读取图片链接的客户端无法获取图片**。
 
 相关设置：[转存上游返回的图片和视频链接](./media.md#ImageStorageRehostUpstream) · [服务器地址](./site.md#ServerAddress)
 
@@ -88,7 +88,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-将上游返回的图片和视频链接替换为本站链接，上游域名无法访问时仍可使用。适用于 DALL·E、Flux 等上游及 Midjourney 任务返回的图片链接，以及可灵任务返回的视频链接。图片立即下载并保存；视频在首次下载时获取并保存，单个最大 512 MB。无法获取的链接原样返回。关闭后上游链接原样透传。
+将上游返回的图片和视频链接替换为本站链接，**上游域名无法访问时仍可使用**。适用于 DALL·E、Flux 等上游及 Midjourney 任务返回的图片链接，以及可灵任务返回的视频链接。图片立即下载并保存；视频在首次下载时获取并保存，单个最大 512 MB。无法获取的链接原样返回。关闭后上游链接原样透传。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -102,7 +102,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-存储的 S3 API 地址，不含 bucket。未填写公开访问地址时，链接指向 <endpoint>/<bucket>/... 并带签名。
+存储的 S3 API 地址，**不含 bucket**。未填写公开访问地址时，链接指向 <endpoint>/<bucket>/... 并带签名。
 
 示例：
 
@@ -121,7 +121,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-签名使用的地域，通常留空。留空时从 AWS、Backblaze B2、Wasabi 的 endpoint 中解析，其他存储一律使用 auto，即 Cloudflare R2 要求的值。
+签名使用的地域，**通常留空**。留空时从 AWS、Backblaze B2、Wasabi 的 endpoint 中解析，其他存储一律使用 auto，即 Cloudflare R2 要求的值。
 
 示例：
 
@@ -161,7 +161,7 @@ outline: deep
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-S3 访问密钥的 Secret。设置了加密密钥时加密保存，保存后不再显示，留空保存表示不修改。
+S3 访问密钥的 Secret。设置了加密密钥时加密保存，**保存后不再显示**，留空保存表示不修改。
 
 相关设置：[S3 Access Key ID](./media.md#ImageStorageS3AccessKeyId)
 
@@ -173,7 +173,7 @@ S3 访问密钥的 Secret。设置了加密密钥时加密保存，保存后不�
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-bucket 的公开地址，或其前置 CDN 的地址；设置后图片返回该地址下的公开链接。留空时返回 1 小时内有效的签名链接，bucket 可保持私有。
+bucket 的公开地址，或其前置 CDN 的地址；**设置后图片返回该地址下的公开链接**。留空时返回 1 小时内有效的签名链接，bucket 可保持私有。
 
 示例：
 
@@ -189,7 +189,7 @@ bucket 的公开地址，或其前置 CDN 的地址；设置后图片返回该�
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-写入每张上传图片 Expires 头的天数，供缓存和 CDN 参考。此项不删除文件：如需删除，请使用存储的生命周期规则。0 表示不写入该头。
+写入每张上传图片 Expires 头的天数，供缓存和 CDN 参考。**此项不删除文件**：如需删除，请使用存储的生命周期规则。0 表示不写入该头。
 
 示例：
 
@@ -222,7 +222,7 @@ bucket 所在阿里云 OSS 地域的 endpoint。
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.com 形式的 endpoint 中解析；其他 endpoint（内网或加速域名）必须填写，否则上传失败。
+bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.com 形式的 endpoint 中解析；其他 endpoint（内网或加速域名）必须填写，**否则上传失败**。
 
 示例：
 
@@ -262,7 +262,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-该 OSS 用户的 AccessKey Secret。设置了加密密钥时加密保存，保存后不再显示，留空保存表示不修改。
+该 OSS 用户的 AccessKey Secret。设置了加密密钥时加密保存，**保存后不再显示**，留空保存表示不修改。
 
 相关设置：[OSS AccessKey ID](./media.md#ImageStorageOSSAccessKeyId)
 
@@ -274,7 +274,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-该免费图床账号的 API Token，用于上传图片。上传的图片公开可见。
+该免费图床账号的 API Token，用于上传图片。**上传的图片公开可见**。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -286,7 +286,7 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › 图片存储
 
-在 Imgur 注册的应用的 Client ID，用于匿名上传。上传的图片公开可见。
+在 Imgur 注册的应用的 Client ID，用于匿名上传。**上传的图片公开可见**。
 
 相关设置：[图片存储](./media.md#ImageStorageProvider)
 
@@ -300,4 +300,4 @@ bucket 所在的 OSS 地域，通常留空。留空时从 oss-<地域>.aliyuncs.
 
 位置：平台设置 › 媒体与存储 › Midjourney 回调
 
-将 Midjourney 任务携带的回调地址（notifyHook）转发给上游，任务状态变化时由上游调用该地址。回调来自上游而非本站，内容为上游记录的任务信息，上游也将获知调用方的地址。关闭后移除该地址，由调用方轮询任务状态。
+将 Midjourney 任务携带的回调地址（notifyHook）转发给上游，任务状态变化时由上游调用该地址。回调来自上游而非本站，内容为上游记录的任务信息，**上游也将获知调用方的地址**。关闭后移除该地址，由调用方轮询任务状态。

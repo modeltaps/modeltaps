@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-不發送至任何通知渠道的管理員通知類型，由卡片上的開關寫入。以逗號分隔；留空表示發送所有類型。類型包括 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可設定為僅接收部分類型。
+**不發送至任何通知渠道**的管理員通知類型，由卡片上的開關寫入。以逗號分隔；留空表示發送所有類型。類型包括 channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote 和 model_library。單個通知渠道也可設定為僅接收部分類型。
 
 示例：
 
@@ -36,7 +36,7 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-同一類通知一小時內最多發送的條數，超出部分將被丟棄。該小時從該類第一條通知起計，限量的一小時結束後，第一條通知將註明丟棄的數量。各類別、各節點分別計數。0 表示不限制。
+同一類通知一小時內最多發送的條數，**超出部分將被丟棄**。該小時從該類第一條通知起計，限量的一小時結束後，第一條通知將註明丟棄的數量。各類別、各節點分別計數。0 表示**不限制**。
 
 示例：
 
@@ -55,7 +55,7 @@ outline: deep
 
 位置：平台設定 › 通知 › 通知類型
 
-訂閱類渠道（Codex、Claude Code）的用量窗口達到哪些百分比時發送通知。每個檔位在一個窗口週期內僅發送一次，窗口重置後重新計算。以逗號分隔，每檔取值 1 到 100；留空時為 50, 75, 100，填寫 0 表示關閉提醒。單個渠道在其「監控」頁設定了檔位時，以渠道設定為準。此類通知屬於 subscription_usage 類型。
+訂閱類渠道（Codex、Claude Code）的用量窗口達到哪些百分比時發送通知。每個檔位在一個窗口週期內僅發送一次，窗口重置後重新計算。以逗號分隔，每檔取值 1 到 100；留空時為 50, 75, 100，填寫 0 **表示關閉提醒**。單個渠道在其「監控」頁設定了檔位時，**以渠道設定為準**。此類通知屬於 subscription_usage 類型。
 
 示例：
 

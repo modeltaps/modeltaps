@@ -18,7 +18,7 @@ Key `LogConsumeEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. When off no new records are written and charging goes on as before, but the log list, the usage statistics built from logs and per-user histories have a gap. Top-ups, sign-up bonuses and other system logs are written either way.
+Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. When off no new records are written and **charging goes on as before**, but the log list, the usage statistics built from logs and per-user histories **have a gap**. Top-ups, sign-up bonuses and other system logs are written either way.
 
 See also: [Delete old consume logs](./privacy.md#LogAutoDeleteEnabled) · [Allow keeping request bodies](./privacy.md#LogIOEnabled)
 
@@ -30,7 +30,7 @@ Key `LogRelayErrorEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-Write an error log when a request still fails after its retries, with the error the client got and every channel tried. Requests refused locally (insufficient quota, invalid parameters) are not logged.
+Write an error log when a request still fails after its retries, with the error the client got and every channel tried. Requests refused locally (insufficient quota, invalid parameters) **are not logged**.
 
 <a id="ChannelMetricsEnabled"></a>
 
@@ -40,7 +40,7 @@ Key `ChannelMetricsEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-Count attempts, successes, latency, time to first token and output speed per channel, model and hour. The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off nothing new is counted; stored hours stay until they expire.
+Count attempts, successes, latency, time to first token and output speed per channel, model and hour. The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off **nothing new is counted**; stored hours stay until they expire.
 
 See also: [Keep metrics for (days)](./privacy.md#ChannelMetricsRetentionDays)
 
@@ -52,7 +52,7 @@ Key `ChannelMetricsRetentionDays` · Type int · Unit days · Range 0– · Defa
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 keeps them forever.
+How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 **keeps them forever**.
 
 Examples:
 
@@ -69,7 +69,7 @@ Key `LogAutoDeleteEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-Delete consume logs older than the retention days every night at 03:00 server time, with their kept bodies. Error and system logs stay, and so do the daily usage statistics already built from the deleted logs.
+Delete consume logs older than the retention days every night at 03:00 server time, with their kept bodies. **Error and system logs stay**, and so do the daily usage statistics already built from the deleted logs.
 
 See also: [Keep consume logs for (days)](./privacy.md#LogAutoDeleteDays) · [Consume logs](./privacy.md#LogConsumeEnabled)
 
@@ -81,7 +81,7 @@ Key `LogAutoDeleteDays` · Type int · Unit days · Range 0– · Default `30`
 
 Where: Platform settings › Logs & privacy › Consume logs
 
-How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the nightly cleanup; 0 deletes nothing.
+How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the nightly cleanup; 0 **deletes nothing**.
 
 Examples:
 
@@ -100,7 +100,7 @@ Key `LogIOEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Logs & privacy › Request & response retention
 
-Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.
+Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) **no API key keeps them** and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and **never include API keys or auth headers**.
 
 See also: [Request and response retention](./objects.md#organization-log_io_policy)
 
@@ -114,7 +114,7 @@ Key `EnableSafe` · Type bool · Default `false`
 
 Where: Platform settings › Logs & privacy › Content safety
 
-Check the text of every request with the safety tool before it goes to a channel, and refuse matches with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini Live sessions are checked; images and audio are not.
+Check the text of every request with the safety tool before it goes to a channel, and refuse matches with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini Live sessions are checked; **images and audio are not**.
 
 See also: [Safety tool](./privacy.md#SafeToolName) · [Blocked keywords](./privacy.md#SafeKeyWords)
 
@@ -126,7 +126,7 @@ Key `SafeToolName` · Type enum · Default `Keyword` · rarely changed
 
 Where: Platform settings › Logs & privacy › Content safety
 
-The tool that runs the content safety check. Keyword is the one built in. A tool that is not installed refuses every request.
+The tool that runs the content safety check. Keyword is the one built in. A tool that is not installed **refuses every request**.
 
 Values:
 
@@ -142,7 +142,7 @@ Key `SafeKeyWords` · Type list
 
 Where: Platform settings › Logs & privacy › Content safety
 
-The words the Keyword tool blocks, one per line. A request is refused when its text contains any of them, ignoring case, also inside longer words. Empty lines are ignored.
+The words the Keyword tool blocks, one per line. A request is refused when its text contains any of them, ignoring case, **also inside longer words**. Empty lines are ignored.
 
 Examples:
 

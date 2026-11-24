@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { ActionRow, OptionList } from '@/components/settings/cards';
 import { settingDescription, settingEnumLabel } from '@/components/settings/catalog';
+import { Emphasis } from '@/components/settings/SettingHelp';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch } from './OptionCard';
 
@@ -121,7 +122,13 @@ export function SafetyCard({ ctx }) {
   }, []);
 
   return (
-    <OptionCard ctx={ctx} id="safety" title={ss('title')} description={settingDescription(t, 'EnableSafe')} enableKey="EnableSafe">
+    <OptionCard
+      ctx={ctx}
+      id="safety"
+      title={ss('title')}
+      description={<Emphasis text={settingDescription(t, 'EnableSafe')} />}
+      enableKey="EnableSafe"
+    >
       <SelectRow
         id="SafeToolName"
         value={inputs.SafeToolName || ''}

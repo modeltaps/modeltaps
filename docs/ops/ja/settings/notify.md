@@ -18,7 +18,7 @@ outline: deep
 
 場所：プラットフォーム設定 › 通知 › 通知の種類
 
-どの通知チャネルにも送らない管理者通知の種類で、カードのスイッチが書き込みます。カンマ区切りで、空欄ならすべての種類を送ります。種類は channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote、model_library です。通知チャネルごとに受け取る種類を絞ることもできます。
+**どの通知チャネルにも送らない**管理者通知の種類で、カードのスイッチが書き込みます。カンマ区切りで、空欄ならすべての種類を送ります。種類は channel_disabled、channel_enabled、channel_test、low_balance、subscription_usage、price_change、price_source、model_drift、model_consistency、credential、supply_paused、supply_resumed、supply_failover、supply_above_quote、model_library です。通知チャネルごとに受け取る種類を絞ることもできます。
 
 例：
 
@@ -36,7 +36,7 @@ outline: deep
 
 場所：プラットフォーム設定 › 通知 › 通知の種類
 
-同じ種類の通知を 1 時間に送る上限で、超えた分は破棄されます。1 時間はその種類の最初の通知から数え、上限に達した 1 時間のあとの最初の通知に破棄した件数が記載されます。種類ごと、ノードごとに数えます。0 は無制限です。
+同じ種類の通知を 1 時間に送る上限で、**超えた分は破棄されます**。1 時間はその種類の最初の通知から数え、上限に達した 1 時間のあとの最初の通知に破棄した件数が記載されます。種類ごと、ノードごとに数えます。0 は無制限です。
 
 例：
 
@@ -55,7 +55,7 @@ outline: deep
 
 場所：プラットフォーム設定 › 通知 › 通知の種類
 
-サブスクリプション型チャネル（Codex、Claude Code）の利用枠について、通知するパーセンテージを指定します。各段階は枠の期間ごとに 1 回だけ通知し、枠がリセットされると再び通知します。カンマ区切りで各段階は 1〜100、空欄なら 50, 75, 100、0 でアラートをオフにします。チャネルの「監視」タブで独自の段階を設定した場合はそちらが優先されます。これらの通知は subscription_usage の種類です。
+サブスクリプション型チャネル（Codex、Claude Code）の利用枠について、通知するパーセンテージを指定します。各段階は**枠の期間ごとに 1 回だけ通知し**、枠がリセットされると再び通知します。カンマ区切りで各段階は 1〜100、空欄なら 50, 75, 100、0 でアラートをオフにします。チャネルの「監視」タブで独自の段階を設定した場合は**そちらが優先されます**。これらの通知は subscription_usage の種類です。
 
 例：
 

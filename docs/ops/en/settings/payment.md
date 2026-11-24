@@ -18,7 +18,7 @@ Key `PaymentUSDRate` · Type float · Unit CNY/USD · Range 0– · Default `7.3
 
 Where: Platform settings › Payments › Payment settings
 
-How many yuan one US dollar of top-up costs at gateways that charge in CNY. A top-up of $X costs X x this rate there, times the gateway's own rate, plus its fee. It changes neither balances nor the quota a top-up buys, and USD gateways ignore it. Use the real exchange rate; for promotions use top-up discounts or a gateway's rate.
+How many yuan one US dollar of top-up costs at gateways that charge in CNY. A top-up of $X costs X x this rate there, times the gateway's own rate, plus its fee. It **changes neither balances nor the quota** a top-up buys, and **USD gateways ignore it**. Use the real exchange rate; for promotions use top-up discounts or a gateway's rate.
 
 Examples:
 
@@ -35,7 +35,7 @@ Key `PaymentMinAmount` · Type int · Unit USD · Range 0– · Default `1`
 
 Where: Platform settings › Payments › Payment settings
 
-The smallest top-up a user or an organization can pay, in whole US dollars. Smaller amounts are refused before a payment is created. 0 and 1 both allow any amount from $1.
+The smallest top-up a user or an organization can pay, in whole US dollars. Smaller amounts are **refused before a payment is created**. 0 and 1 both allow any amount from $1.
 
 Examples:
 
@@ -52,7 +52,7 @@ Key `PaymentCallbackAddress` · Type url · Default `empty` · rarely changed
 
 Where: Platform settings › Payments › Payment settings
 
-The address payment gateways send their payment notices to, when it differs from the server address. Empty uses the gateway's own callback domain, then the server address. Notices go to <address>/api/payment/notify/<gateway id> (EPay: <address>/api/user/epay/notify), which must be reachable from the internet, or paid orders are never credited.
+The address payment gateways send their payment notices to, when it differs from the server address. Empty uses the gateway's own callback domain, then the server address. Notices go to <address>/api/payment/notify/<gateway id> (EPay: <address>/api/user/epay/notify), which **must be reachable** from the internet, or **paid orders are never credited**.
 
 Examples:
 
@@ -68,7 +68,7 @@ Key `RechargeDiscount` · Type json · Default `{}`
 
 Where: Platform settings › Payments › Payment settings
 
-Discounts for fixed top-up amounts: a JSON object from a whole-dollar amount to the share of the price the user pays. Only those exact amounts are discounted; others pay full price. The quota is never discounted: $100 always buys 100 x 500,000 quota at the default quota per unit. A gateway's percentage fee is charged on the discounted price. Empty means no discounts.
+Discounts for fixed top-up amounts: a JSON object from a whole-dollar amount to the share of the price the user pays. **Only those exact amounts are discounted**; others pay full price. The quota is never discounted: $100 always buys 100 x 500,000 quota at the default quota per unit. A gateway's percentage fee **is charged on the discounted price**. Empty means no discounts.
 
 Examples:
 

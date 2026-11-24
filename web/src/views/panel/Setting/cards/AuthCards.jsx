@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Emphasis } from '@/components/settings/SettingHelp';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Check, PlugZap, Power, Trash2 } from 'lucide-react';
@@ -174,7 +175,7 @@ export function LoginMethodsCard({ ctx }) {
   // Label and description come from the settings catalog; a description passed here replaces
   // the catalog's first sentence under the field (the help keeps the whole catalog text).
   const row = (key, description) => <ToggleRow id={key} description={description} {...bindSwitch(ctx, key)} />;
-  const catalogFirst = (key) => splitFirstSentence(settingDescription(t, key)).first;
+  const catalogFirst = (key) => <Emphasis text={splitFirstSentence(settingDescription(t, key)).first} />;
 
   return (
     <OptionCard ctx={ctx} id="login-methods" options={{ beforeSave }}>

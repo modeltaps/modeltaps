@@ -18,10 +18,10 @@ func channelFields() []Setting {
 			Key: "channel.priority", Scope: ScopeChannel, Group: "channels", Card: "routing", Field: "priority",
 			Type: TypeInt, Default: "0",
 			Label: "Priority",
-			Description: "The order channels are tried in for a model: the highest priority takes requests first. " +
-				"A lower priority is used only while every channel above it is unavailable; channels of one priority " +
+			Description: "The order channels are tried in for a model: **the highest priority takes requests first**. " +
+				"A lower priority is **used only while every channel above it is unavailable**; channels of one priority " +
 				"share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. " +
-				"While supplies route requests, the call order on the Providers page orders channels instead, and new " +
+				"While supplies route requests, **the call order on the Providers page orders channels instead**, and new " +
 				"supplies of the channel start from its priority.",
 			Examples: []Example{
 				{Value: "10", Effect: "Tried before every channel at 0 that serves the same model in the same group."},
@@ -35,8 +35,8 @@ func channelFields() []Setting {
 			Type: TypeInt, Min: num(0), Default: "1",
 			Label: "Weight",
 			Description: "How channels of the same priority share a model's requests: each takes its weight over the sum of " +
-				"the weights. Channels of other priorities are not counted. While supplies route requests, the supplies' " +
-				"own weights decide, and new supplies of the channel start from its weight.",
+				"the weights. Channels of other priorities **are not counted**. While supplies route requests, the supplies' " +
+				"**own weights decide**, and new supplies of the channel start from its weight.",
 			Examples: []Example{
 				{Value: "3", Effect: "Next to a channel of weight 1 at the same priority, takes about 3 / (3 + 1) = 75% of the requests."},
 				{Value: "1", Effect: "The default: channels of one priority share requests equally."},
@@ -49,9 +49,9 @@ func channelFields() []Setting {
 			Type: TypeRatio, Min: num(0), Default: "empty (unknown)",
 			Label: "Cost ratio",
 			Description: "What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. " +
-				"It is used only where the channel publishes no synced price: the channel cost is then catalog price x cost ratio " +
+				"It is **used only where the channel publishes no synced price**: the channel cost is then catalog price x cost ratio " +
 				"x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; " +
-				"users are never charged by it. Empty or 0 means unknown.",
+				"**users are never charged by it**. Empty or 0 means unknown.",
 			Examples: []Example{
 				{Value: "0.8", Effect: "A relay at 80% of the official price: a $3 / $15 per million token model costs $2.40 / $12, or $2.52 / $12.60 with a 5% fee."},
 				{Value: "1", Effect: "The upstream charges the official price; any group below ratio 1 is flagged as selling at a loss here."},
@@ -65,7 +65,7 @@ func channelFields() []Setting {
 			Type: TypePercent, Unit: "%", Min: num(0), Default: "the provider's published fee",
 			Label: "Fee rate",
 			Description: "What the channel's provider charges on top of its list prices, usually when you buy credit: " +
-				"cash paid / credit received - 1. A channel's cost is its list price x (1 + fee rate); costs decide which " +
+				"cash paid / credit received - 1. A channel's cost is **its list price x (1 + fee rate)**; costs decide which " +
 				"supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.",
 			Examples: []Example{
 				{Value: "5", Effect: "Requesty: $105 buys $100 of credit."},
@@ -81,7 +81,7 @@ func channelFields() []Setting {
 			Type:  TypeString,
 			Label: "Fee source",
 			Description: "Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required " +
-				"once the fee rate is above 0. Only admins see it; users see a generic label.",
+				"once the fee rate is above 0. **Only admins see it**; users see a generic label.",
 			Related:  []string{"channel.fee_rate"},
 			Keywords: []string{"fee note", "receipt", "source"},
 		},
@@ -89,9 +89,9 @@ func channelFields() []Setting {
 			Key: "channel.group", Scope: ScopeChannel, Group: "channels", Card: "routing", Field: "group",
 			Type: TypeList, Default: "default",
 			Label: "Groups",
-			Description: "The user groups the channel serves: a request is only sent to channels of the group it runs in. " +
+			Description: "The user groups the channel serves: a request is **only sent to channels of the group it runs in**. " +
 				"A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. " +
-				"A channel needs at least one group.",
+				"A channel **needs at least one group**.",
 			Examples: []Example{
 				{Value: "default", Effect: "Serves every user of the default group and keys set to it."},
 				{Value: "default,vip", Effect: "Serves both groups; each request is billed at the ratio of the group it ran in."},
@@ -104,9 +104,9 @@ func channelFields() []Setting {
 			Type:  TypeJSON,
 			Label: "Model mapping",
 			Description: "Renames on this channel only: a requested model name is sent upstream as another name. Use it only when " +
-				"the upstream wants its own names, such as deployment names; matching models to the catalog needs nothing here. " +
+				"the upstream wants its own names, such as deployment names; **matching models to the catalog needs nothing here**. " +
 				"A target starting with + bills by the requested name. Requests routed through a supply use the supply's " +
-				"upstream model instead. Saving a change rewrites the channel's model list to the requested names.",
+				"upstream model instead. Saving a change **rewrites the channel's model list** to the requested names.",
 			Examples: []Example{
 				{Value: `{"gpt-4o": "my-gpt4o-deployment"}`, Effect: "Requests for gpt-4o reach the upstream as my-gpt4o-deployment."},
 				{Value: `{"opus-latest": "+claude-opus-4-1"}`, Effect: "opus-latest is sent as claude-opus-4-1 and billed as opus-latest."},
@@ -125,8 +125,8 @@ func channelFields() []Setting {
 			},
 			Label: "Pre-billing",
 			Description: "How the gateway counts a request's input before sending it, to hold the user's credit until the reply's " +
-				"usage is known. The count also stands in for the input when an upstream reports no usage, such as some streams. " +
-				"Leaving images or everything out saves server work on heavy requests; the prompt token limit is still checked.",
+				"usage is known. The count also **stands in for the input when an upstream reports no usage**, such as some streams. " +
+				"Leaving images or everything out saves server work on heavy requests; **the prompt token limit is still checked**.",
 			Related:  []string{"MaxPromptTokens"},
 			Keywords: []string{"pre-consume", "token count", "estimate", "hold"},
 			Advanced: true,
@@ -135,8 +135,8 @@ func channelFields() []Setting {
 			Key: "channel.disabled_stream", Scope: ScopeChannel, Group: "channels", Card: "advanced", Field: "disabled_stream",
 			Type:  TypeList,
 			Label: "Models with streaming disabled",
-			Description: "Models this channel must not stream: streaming requests for them skip it for another channel serving the model. " +
-				"Requests without streaming still use it. Empty means every model streams.",
+			Description: "Models this channel must not stream: streaming requests for them **skip it for another channel** serving the model. " +
+				"Requests without streaming **still use it**. Empty means every model streams.",
 			Examples: []Example{
 				{Value: "o1,o1-pro", Effect: "Streaming requests for o1 and o1-pro go to other channels; plain requests still come here."},
 			},
@@ -152,7 +152,7 @@ func channelFields() []Setting {
 				{Value: "off", Label: "Always off", Description: "Never inject on this channel."},
 			},
 			Label: "Prompt caching injection",
-			Description: "Whether the gateway adds cache_control marks to Claude requests on this channel, so the upstream caches the prompt. " +
+			Description: "Whether the gateway **adds cache_control marks to Claude requests** on this channel, so the upstream caches the prompt. " +
 				"Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry " +
 				"cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go " +
 				"and which models match (Claude names by default).",
@@ -164,9 +164,9 @@ func channelFields() []Setting {
 			Key: "channel.proxy", Scope: ScopeChannel, Group: "channels", Card: "connection", Field: "proxy",
 			Type:  TypeURL,
 			Label: "Proxy",
-			Description: "A proxy for this channel's upstream requests only, http or socks5. Only needed when this server cannot " +
+			Description: "A proxy for **this channel's upstream requests only**, http or socks5. Only needed when this server cannot " +
 				"reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for " +
-				"proxies that pin one exit per session. Empty connects directly.",
+				"proxies that pin one exit per session. Empty **connects directly**.",
 			Examples: []Example{
 				{Value: "http://127.0.0.1:1080", Effect: "Every request of the channel goes through the local HTTP proxy."},
 				{Value: "socks5://user-%s:pass@proxy.example.com:1080", Effect: "Each key gets its own proxy session, so its exit address stays the same."},
@@ -178,7 +178,7 @@ func channelFields() []Setting {
 			Type:  TypeString,
 			Label: "Test model",
 			Description: "The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model " +
-				"from the channel's list, else its first chat model; a channel without a chat model then cannot be tested.",
+				"from the channel's list, else its first chat model; a channel without a chat model then **cannot be tested**.",
 			Examples: []Example{
 				{Value: "gpt-4o-mini", Effect: "Tests cost a fraction of a cent and do not touch the expensive models."},
 			},
@@ -195,9 +195,9 @@ func modelFields() []Setting {
 			Type: TypeFloat, Unit: "USD / 1M tokens", Min: num(0),
 			Label: "Catalog price",
 			Description: "What the model costs before the group ratio, per million input and output tokens (or per request or minute). " +
-				"Users pay catalog price x their group ratio, whichever channel serves the " +
+				"**Users pay catalog price x their group ratio**, whichever channel serves the " +
 				"request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is " +
-				"refused by default.",
+				"**refused by default**.",
 			Examples: []Example{
 				{Value: "3 / 15", Effect: "$3 input and $15 output per million tokens; the default group at 1.12 pays $3.36 / $16.80."},
 				{Value: "ratio 1.5 / 7.5", Effect: "The same price as ratios: 1.5 x $2 = $3 and 7.5 x $2 = $15 per million tokens."},
@@ -215,8 +215,8 @@ func modelFields() []Setting {
 			},
 			Label: "Supply order",
 			Description: "Whether the model's supplies follow the call order of the Providers page or keep their own numbers. " +
-				"Changing a supply's priority or weight on the Supplies tab sets the model to set by hand; switching back " +
-				"to the call order drops those numbers.",
+				"Changing a supply's priority or weight on the Supplies tab **sets the model to set by hand**; switching back " +
+				"to the call order **drops those numbers**.",
 			Examples: []Example{
 				{Value: "policy", Effect: "Moving a provider up on the Providers page moves it up for this model too."},
 				{Value: "manual", Effect: "This model keeps its order when the call order changes; new channels join below its supplies."},
@@ -229,9 +229,9 @@ func modelFields() []Setting {
 			Type:    TypeInt,
 			Default: "the channel's priority; a supply added by hand joins below the lowest tier",
 			Label:   "Priority",
-			Description: "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. " +
-				"A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. " +
-				"Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
+			Description: "This supply's tier among the model's supplies: **higher tiers take requests first**, lower ones back them up. " +
+				"A lower tier is **used only while every supply above it is unavailable**. Supplies of one priority form a tier and share it by weight. " +
+				"Under the call order the policy sets it; **a supply with its own number no longer follows its channel**.",
 			Examples: []Example{
 				{Value: "2", Effect: "Above two supplies at 1: they are used only while this supply fails."},
 				{Value: "1", Effect: "Next to another supply at 1, the two form one tier and share its requests."},
@@ -245,7 +245,7 @@ func modelFields() []Setting {
 			Type: TypeInt, Min: num(0), Default: "the channel's weight",
 			Label: "Weight",
 			Description: "This supply's share of its tier: its weight over the tier's total. " +
-				"0 counts as 1. Under the call order a provider's weight is split equally " +
+				"0 **counts as 1**. Under the call order a provider's weight is split equally " +
 				"between its channels.",
 			Examples: []Example{
 				{Value: "3", Effect: "With a weight 1 supply in its tier: about 75% of the requests."},
@@ -258,8 +258,8 @@ func modelFields() []Setting {
 			Key: "supply.enabled", Scope: ScopeSupply, Group: "models", Card: "supplies", Field: "enabled",
 			Type: TypeBool, Default: "on; off for a supply an intake rule adds for review",
 			Label: "Use this supply",
-			Description: "Whether the supply takes the model's requests. Off, it keeps its settings but is skipped. Supplies an intake " +
-				"rule added wait switched off until you switch them on; switching a supply on also accepts its cost, so the " +
+			Description: "Whether the supply takes the model's requests. Off, it **keeps its settings but is skipped**. Supplies an intake " +
+				"rule added wait switched off until you switch them on; switching a supply on **also accepts its cost**, so the " +
 				"price check leaves it alone.",
 			Related:  []string{"SupplyIntakeRules"},
 			Keywords: []string{"enable", "disable", "review", "pending"},
@@ -269,7 +269,7 @@ func modelFields() []Setting {
 			Type: TypeString, Default: "filled in from the channel's mapping, its model list or its platform's naming",
 			Label: "Upstream model",
 			Description: "The model name this supply sends to its channel's upstream. The client still asks for the public name and is " +
-				"billed by it; the channel's model mapping does not apply. A supply stops taking requests when the upstream stops " +
+				"billed by it; **the channel's model mapping does not apply**. A supply **stops taking requests** when the upstream stops " +
 				"listing this name in two checks in a row.",
 			Examples: []Example{
 				{Value: "claude-sonnet-4-5@20250929", Effect: "A Vertex channel serves the public claude-sonnet-4-5 under its own versioned name."},
@@ -284,8 +284,8 @@ func modelFields() []Setting {
 			Label: "Call order",
 			Description: "The order channels take requests in while supplies route them, edited as the list on the Providers page. " +
 				"Each position is a provider (every channel of one type and address) or a single channel; positions shared by " +
-				"several split their requests by weight, and a provider's weight is split equally between its channels. Channels " +
-				"not placed come last, newest last. Models set by hand keep their own order.",
+				"several **split their requests by weight**, and a provider's weight is split equally between its channels. Channels " +
+				"**not placed come last**, newest last. Models set by hand **keep their own order**.",
 			Examples: []Example{
 				{Value: `[[{"provider":"14:","weight":1}],[{"channel_id":7,"weight":1}]]`, Effect: "The official Anthropic API first; channel 7 only while it fails."},
 				{Value: `[[{"channel_id":3,"weight":3},{"channel_id":5,"weight":1}]]`, Effect: "Channels 3 and 5 share the first position: about 75% and 25% of the requests."},
@@ -305,8 +305,8 @@ func userGroupFields() []Setting {
 			Type: TypeRatio, Min: num(0), Default: "1",
 			Label: "Group ratio",
 			Description: "The multiplier on the catalog (official) price for users of the group: every request is charged " +
-				"catalog price x ratio, whatever channel serves it. The default group's ratio is the site's normal price and " +
-				"margin; other groups give discounts or charge more. 0 makes the group's requests free.",
+				"catalog price x ratio, **whatever channel serves it**. The default group's ratio is the site's normal price and " +
+				"margin; other groups give discounts or charge more. 0 **makes the group's requests free**.",
 			Examples: []Example{
 				{Value: "1.12", Effect: "The default group sells at 12% over the official price: a $3 / $15 per million token model costs $3.36 / $16.80."},
 				{Value: "1.05", Effect: "A VIP discount. With a 4% payment cost it brings in $1.008 per $1, below a 3% channel fee."},
@@ -320,8 +320,8 @@ func userGroupFields() []Setting {
 			Key: "user_group.api_rate", Scope: ScopeUserGroup, Group: "user-groups", Card: "edit", Field: "api_rate",
 			Type: TypeInt, Unit: "requests / minute", Min: num(0), Default: "300",
 			Label: "API rate",
-			Description: "How many API requests each user of the group may send per minute, counted per user across all their keys. " +
-				"Requests over it get 429. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts " +
+			Description: "How many API requests each user of the group may send per minute, **counted per user across all their keys**. " +
+				"Requests over it **get 429**. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts " +
 				"of up to 10 seconds' worth.",
 			Examples: []Example{
 				{Value: "300", Effect: "Five requests a second on average per user."},
@@ -333,8 +333,8 @@ func userGroupFields() []Setting {
 			Key: "user_group.public", Scope: ScopeUserGroup, Group: "user-groups", Card: "edit", Field: "public",
 			Type: TypeBool, Default: "off",
 			Label: "Public",
-			Description: "Whether users outside the group may pick it for their API keys, as a key's group or backup group. Off, " +
-				"only users in the group use it. Requests through a picked group are billed at its ratio.",
+			Description: "Whether users outside the group **may pick it for their API keys**, as a key's group or backup group. Off, " +
+				"only users in the group use it. Requests through a picked group are **billed at its ratio**.",
 			Related:  []string{"token.group", "token.backup_group", "user_group.ratio"},
 			Keywords: []string{"selectable", "visible", "open group"},
 		},
@@ -343,9 +343,9 @@ func userGroupFields() []Setting {
 			Type: TypeBool, Default: "off",
 			Label: "Auto upgrade",
 			Description: "Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is " +
-				"checked after each paid order; gifted credit (sign-up and invite bonuses, redemption codes, admin changes) does " +
-				"not count. When several groups match, the one with the highest minimum wins. A user an admin put in another " +
-				"group is moved too.",
+				"checked after each paid order; **gifted credit** (sign-up and invite bonuses, redemption codes, admin changes) does " +
+				"not count. When several groups match, **the one with the highest minimum wins**. A user an admin put in another " +
+				"group **is moved too**.",
 			Related:  []string{"user_group.min", "user_group.max"},
 			Keywords: []string{"promotion", "tier", "loyalty", "upgrade"},
 		},
@@ -354,7 +354,7 @@ func userGroupFields() []Setting {
 			Type: TypeFloat, Unit: "$", Min: num(0), Default: "0",
 			Label: "Minimum paid top-ups",
 			Description: "The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with " +
-				"auto upgrade on.",
+				"**auto upgrade on**.",
 			Examples: []Example{
 				{Value: "100", Effect: "With a maximum of 500: a user who has paid $100 up to $499.99 in total joins the group."},
 				{Value: "0", Effect: "Every paying user matches, up to the maximum."},
@@ -366,8 +366,8 @@ func userGroupFields() []Setting {
 			Key: "user_group.max", Scope: ScopeUserGroup, Group: "user-groups", Card: "edit", Field: "max",
 			Type: TypeFloat, Unit: "$", Min: num(0), Default: "0",
 			Label: "Maximum paid top-ups",
-			Description: "The total paid top-ups at which the group stops matching (exclusive), so a bigger spender moves on to the " +
-				"next group. 0 means no upper bound. Only used with auto upgrade on.",
+			Description: "The total paid top-ups at which the group **stops matching (exclusive)**, so a bigger spender moves on to the " +
+				"next group. 0 means **no upper bound**. Only used with auto upgrade on.",
 			Examples: []Example{
 				{Value: "500", Effect: "A user reaching $500 in total moves to the group whose range starts at 500."},
 				{Value: "0", Effect: "The top level: users stay however much they pay."},
@@ -387,7 +387,7 @@ func routingPolicyFields() []Setting {
 			Label: "Decision model",
 			Description: "The model that reads a session's first user message and picks one of the routes. A decision model is " +
 				"best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the " +
-				"caller once per session, and it cannot be another routing policy.",
+				"**caller once per session**, and it **cannot be another routing policy**.",
 			Examples: []Example{
 				{Value: "gpt-4.1-mini", Effect: "A cheap chat model that returns logprobs, so the threshold is a real probability."},
 			},
@@ -404,8 +404,8 @@ func routingPolicyFields() []Setting {
 			},
 			Label: "Scoring",
 			Description: "How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a " +
-				"non-reasoning model on a channel that returns them; Claude, reasoning models and most aggregators do not. " +
-				"A decision model ignores this setting.",
+				"**non-reasoning model on a channel that returns them**; Claude, reasoning models and most aggregators do not. " +
+				"A decision model **ignores this setting**.",
 			Related:  []string{"routing_policy.threshold", "routing_policy.decision_model"},
 			Keywords: []string{"logprobs", "confidence", "probability"},
 		},
@@ -413,7 +413,7 @@ func routingPolicyFields() []Setting {
 			Key: "routing_policy.threshold", Scope: ScopeRoutingPolicy, Group: "routing-policies", Card: "routes", Field: "threshold",
 			Type: TypeFloat, Min: num(0), Max: num(1), Default: "0.5",
 			Label: "Confidence threshold",
-			Description: "The confidence the chosen route needs, from 0 to 1; below it the request goes to the fallback model. " +
+			Description: "The confidence the chosen route needs, from 0 to 1; **below it the request goes to the fallback model**. " +
 				"Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. " +
 				"Self-reported confidence is only a ranking, so it compares less exactly than logprobs.",
 			Examples: []Example{
@@ -429,7 +429,7 @@ func routingPolicyFields() []Setting {
 			Type:  TypeString,
 			Label: "Fallback model",
 			Description: "Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. " +
-				"A decision that times out counts as failed. Put your safest model here; it cannot be another routing policy.",
+				"A decision that times out counts as failed. **Put your safest model here**; it **cannot be another routing policy**.",
 			Examples: []Example{
 				{Value: "claude-sonnet-4-5", Effect: "Unclear and failed decisions get a strong general model rather than a cheap one."},
 			},
@@ -441,7 +441,7 @@ func routingPolicyFields() []Setting {
 			Type: TypeInt, Unit: "s", Min: num(0), Max: num(604800), Default: "3600",
 			Label: "Pin per session",
 			Description: "How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the " +
-				"upstream prompt cache warm and never switch models mid-conversation. 0 classifies every request; at most 7 days.",
+				"upstream prompt cache warm and **never switch models mid-conversation**. 0 **classifies every request**; at most 7 days.",
 			Examples: []Example{
 				{Value: "3600", Effect: "A conversation stays on its model for an hour after its first message, then is classified again."},
 				{Value: "0", Effect: "Every request pays for a decision and may land on another model."},
@@ -461,7 +461,7 @@ func organizationFields() []Setting {
 			Type: TypeInt, Min: num(0), Default: "the site default",
 			Label: "Member limit",
 			Description: "The most members the organization may have, set by platform admins. It only stops new members from " +
-				"joining; existing members are not removed. Follow the site default, unlimited (0) or a number.",
+				"joining; **existing members are not removed**. Follow the site default, unlimited (0) or a number.",
 			Examples: []Example{
 				{Value: "20", Effect: "An organization with 20 members cannot invite or add a 21st until one leaves."},
 				{Value: "0", Effect: "No limit, whatever the site default says."},
@@ -473,9 +473,9 @@ func organizationFields() []Setting {
 			Key: "organization.approved_models", Scope: ScopeOrganization, Group: "organizations", Card: "models", Field: "approved_models",
 			Type: TypeList, Default: "empty (every model)",
 			Label: "Approved models",
-			Description: "The most the organization may use, set by platform admins: every list of the organization stays inside it. " +
+			Description: "The most the organization may use, set by platform admins: **every list of the organization stays inside it**. " +
 				"Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows " +
-				"a prefix, so new releases of a family follow; exact names need approving one by one. Empty means no limit.",
+				"a prefix, so new releases of a family follow; **exact names need approving one by one**. Empty means **no limit**.",
 			Examples: []Example{
 				{Value: "claude-*, gpt-5*", Effect: "Every Claude and GPT-5 model, including ones released later; nothing else."},
 				{Value: "gpt-4.1-mini", Effect: "Only that model; a request for any other model is refused."},
@@ -488,8 +488,8 @@ func organizationFields() []Setting {
 			Type: TypeList, Default: "empty (every approved model)",
 			Label: "Default model access",
 			Description: "What members may use unless they have limits of their own, set by organization owners and admins. " +
-				"It is a named list or a list of models. Members with their own limits are not affected, and keys can only narrow what " +
-				"their creator may use. A name ending in * allows a prefix. Empty means every approved model.",
+				"It is a named list or a list of models. Members with their own limits **are not affected**, and keys can only narrow what " +
+				"their creator may use. A name ending in * allows a prefix. Empty means **every approved model**.",
 			Examples: []Example{
 				{Value: "claude-haiku-*, gpt-4.1-mini", Effect: "Members use the cheap models only; a member given their own list can use more."},
 			},
@@ -500,9 +500,9 @@ func organizationFields() []Setting {
 			Key: "organization.budget", Scope: ScopeOrganization, Group: "organizations", Card: "budget", Field: "setting.budget",
 			Type: TypeFloat, Unit: "$", Min: num(0), Default: "none",
 			Label: "Organization budget",
-			Description: "The most all members together may spend per day, week or month; then the organization's requests are refused. " +
+			Description: "The most all members together may spend per day, week or month; then **the organization's requests are refused**. " +
 				"They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the " +
-				"platform's reset time zone; changing the period restarts the count. None means no organization-wide cap.",
+				"platform's reset time zone; **changing the period restarts the count**. None means no organization-wide cap.",
 			Examples: []Example{
 				{Value: "1000 monthly", Effect: "When members have spent $1,000 in the month, every request of the organization is refused until the 1st."},
 				{Value: "50 daily", Effect: "A runaway script stops the team at $50 a day."},
@@ -515,8 +515,8 @@ func organizationFields() []Setting {
 			Type: TypeFloat, Unit: "$", Min: num(0), Default: "none",
 			Label: "Member budget",
 			Description: "The most one member may spend per day, week or month in the organization, set on the member's limits. " +
-				"Once used up, that member's requests are refused until the next period, while the organization budget caps " +
-				"everyone together. Keys the organization owns have no member budget. None means no cap of the member's own.",
+				"Once used up, **that member's requests are refused until the next period**, while the organization budget caps " +
+				"everyone together. Keys the organization owns **have no member budget**. None means no cap of the member's own.",
 			Examples: []Example{
 				{Value: "100 weekly", Effect: "The member can spend $100 from Monday (or Sunday, per the site's week start) to the next week start."},
 			},
@@ -533,9 +533,9 @@ func organizationFields() []Setting {
 			},
 			Label: "Request and response retention",
 			Description: "Which of the organization's API keys keep the bodies of their requests and responses. Only owners and " +
-				"admins set it, here: a key's creator cannot. Stored bodies never include API keys or auth headers, are deleted " +
-				"after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned " +
-				"retention on and when. Shown only while the site allows retention.",
+				"admins set it, here: **a key's creator cannot**. Stored bodies **never include API keys or auth headers**, are deleted " +
+				"after 30 days, and **only owners and platform admins can read them**. Members are told on their keys who turned " +
+				"retention on and when. Shown **only while the site allows retention**.",
 			Examples: []Example{
 				{Value: "off", Effect: "Zero data retention for the whole organization."},
 				{Value: "selected", Effect: "An admin ticks the key of the app being debugged; the other keys keep nothing."},
@@ -553,8 +553,8 @@ func tokenFields() []Setting {
 			Key: "token.group", Scope: ScopeToken, Group: "tokens", Card: "access", Field: "group",
 			Type: TypeString, Default: "empty (the user's group)",
 			Label: "Group",
-			Description: "The user group the key's requests run in: only channels of that group serve them, billed at its ratio. " +
-				"It must be the user's own group or a public one. Empty uses the user's group.",
+			Description: "The user group the key's requests run in: **only channels of that group serve them**, billed at its ratio. " +
+				"It **must be the user's own group or a public one**. Empty uses the user's group.",
 			Examples: []Example{
 				{Value: "vip", Effect: "Requests use the vip channels and pay the vip ratio, even if the user is in default."},
 			},
@@ -566,8 +566,8 @@ func tokenFields() []Setting {
 			Type:  TypeString,
 			Label: "Backup group",
 			Description: "A second group tried when the key's group has no channel that can take the request. A request served there " +
-				"is billed at the backup group's ratio and marked in the logs. With a group or backup group set, the user's own " +
-				"group is not tried.",
+				"is **billed at the backup group's ratio** and marked in the logs. With a group or backup group set, the user's own " +
+				"group **is not tried**.",
 			Examples: []Example{
 				{Value: "default", Effect: "Group vip with backup default: if every vip channel for the model fails, the request runs in default at its ratio."},
 			},
@@ -578,8 +578,8 @@ func tokenFields() []Setting {
 			Key: "token.model_limits", Scope: ScopeToken, Group: "tokens", Card: "access", Field: "setting.limits.limit_model_setting",
 			Type:  TypeList,
 			Label: "Model limits",
-			Description: "The models the key may call; others are refused. A name ending in * allows a prefix. With the switch on and " +
-				"no model selected, the key is not restricted. On an organization key it can only narrow what its creator may use, " +
+			Description: "The models the key may call; **others are refused**. A name ending in * allows a prefix. With the switch on and " +
+				"no model selected, **the key is not restricted**. On an organization key it **can only narrow what its creator may use**, " +
 				"and may be a named list.",
 			Examples: []Example{
 				{Value: "gpt-4.1-mini, claude-haiku-*", Effect: "A key for a chatbot that can only reach the two cheap model families."},
@@ -591,8 +591,8 @@ func tokenFields() []Setting {
 			Key: "token.quota", Scope: ScopeToken, Group: "tokens", Card: "basics", Field: "remain_quota",
 			Type: TypeFloat, Unit: "$", Min: num(0), Default: "empty (no limit)",
 			Label: "Spending limit",
-			Description: "The most the key may spend; once used up, its requests are refused. With a reset period it is the limit " +
-				"per period instead. It only caps the key: the account balance always applies. Empty means no limit of the key's own.",
+			Description: "The most the key may spend; once used up, **its requests are refused**. With a reset period it is the limit " +
+				"per period instead. It only caps the key: **the account balance always applies**. Empty means no limit of the key's own.",
 			Examples: []Example{
 				{Value: "10", Effect: "Without a period, the key stops for good after $10 of usage."},
 				{Value: "5 daily", Effect: "The key can spend $5 a day; the count starts over at midnight."},
@@ -609,9 +609,9 @@ func tokenFields() []Setting {
 				{Value: "monthly", Label: "Monthly", Description: "Starts over at midnight on the 1st."},
 			},
 			Label: "Reset period",
-			Description: "How often the key's spending limit starts over. Without a period the limit is spent once. Periods start at " +
-				"midnight in the platform's reset time zone, weeks on its week start; changing the period restarts the count. " +
-				"A period needs a limit above 0.",
+			Description: "How often the key's spending limit starts over. Without a period **the limit is spent once**. Periods start at " +
+				"midnight in the platform's reset time zone, weeks on its week start; **changing the period restarts the count**. " +
+				"A period **needs a limit above 0**.",
 			Related:  []string{"token.quota", "QuotaResetTimezone", "QuotaResetWeekStart"},
 			Keywords: []string{"reset", "period", "daily limit", "monthly limit"},
 		},

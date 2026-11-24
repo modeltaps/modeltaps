@@ -18,4 +18,4 @@ Key `BuiltinChatEnabled` · Type bool · Default `true`
 
 Where: Platform settings › User entries › Built-in chat
 
-Lets users try models in the console's playground and shows the quick-start chat on the dashboard. Off keeps the playground pages visible but disables running a request, and points users to the API docs instead. API keys and requests from other clients are not affected.
+Lets users try models in the console's playground and shows the quick-start chat on the dashboard. Off keeps the playground pages visible but **disables running a request**, and points users to the API docs instead. API keys and requests from other clients are **not affected**.

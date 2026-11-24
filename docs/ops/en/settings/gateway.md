@@ -18,7 +18,7 @@ Key `RetryTimes` · Type int · Range 0– · Default `2`
 
 Where: Platform settings › Gateway › Retries
 
-How many other channels a failed request is tried on before the caller gets the error. Rate limits, upstream 5xx errors, rejected keys and exhausted balances are retried; invalid requests (most 400s), 408 timeouts, the gateway's own errors and requests pinned to one channel are not. The retries never exceed the channels that serve the model and stop once the retry time limit has passed. 0 returns the first failure.
+How many other channels a failed request is tried on before the caller gets the error. Rate limits, upstream 5xx errors, rejected keys and exhausted balances **are retried**; invalid requests (most 400s), 408 timeouts, the gateway's own errors and requests pinned to one channel are not. The retries never exceed the channels that serve the model and stop once the retry time limit has passed. 0 **returns the first failure**.
 
 Examples:
 
@@ -36,7 +36,7 @@ Key `RetryCooldownSeconds` · Type int · Unit seconds · Range 0– · Default 
 
 Where: Platform settings › Gateway › Retries
 
-How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 only skips the channel for the failed request.
+How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; **its other models are not affected**. When the upstream says when the limit resets, **that time is used instead**. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 **only skips the channel for the failed request**.
 
 Examples:
 
@@ -54,7 +54,7 @@ Key `RetryTimeOut` · Type int · Unit seconds · Range 0– · Default `10`
 
 Where: Platform settings › Gateway › Retries
 
-No new retry starts once this many seconds have passed since the request arrived. It is checked before each retry and does not cut an attempt that is already running, so long generations still finish. When it stops the retries, the caller gets a 503 saying the upstream is at capacity. 0 starts no retry at all.
+No new retry starts once this many seconds have passed since the request arrived. It is checked before each retry and **does not cut an attempt that is already running**, so long generations still finish. When it stops the retries, **the caller gets a 503** saying the upstream is at capacity. 0 starts no retry at all.
 
 Examples:
 
@@ -71,7 +71,7 @@ Key `RetryCooldownPerStatus` · Type json · Default `empty` · rarely changed
 
 Where: Platform settings › Gateway › Retries
 
-Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.
+Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it **keeps the channel away from that one model**. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so **a 429 entry is never reached**, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 **is never cooled**. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.
 
 Examples:
 
@@ -89,7 +89,7 @@ Key `ModelNotFoundCooldownSeconds` · Type int · Unit seconds · Range 0– · 
 
 Where: Platform settings › Gateway › Retries
 
-How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as "model not found", "does not exist" or "no endpoints found", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.
+How long a channel is kept away from a model after its upstream says the model does not exist. **There is no field for it on this page**: change it through the option API (PUT /api/option/). It covers errors such as "model not found", "does not exist" or "no endpoints found", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which **also notifies admins**; custom rules carry their own seconds. 0 never pauses for it.
 
 Examples:
 
@@ -109,7 +109,7 @@ Key `PauseRules` · Type json · Default `empty`
 
 Where: Platform settings › Gateway › Supply pause rules
 
-A JSON array of pause rules that replaces the built-in rules as a whole; empty uses the built-in ones. Rules are tried in order and the first match decides, after the channel's own rules. A rule matches on any of status_codes, keywords (substrings of the error, "re:" for a regular expression), error_types or error_codes, plus the flags unusable, model_not_found, rate_limit_reset and per_status_config; times and window_seconds make it count matches first. action is "pause" (for seconds, on the whole channel or, by default, the model) or "retry" (move on without pausing). probe sends a test request before resuming and doubles the pause when it fails; notify tells admins. Pauses under a minute are kept in memory only. Saved rules carry their own seconds, so the rate limit and model-not-found settings no longer apply to them.
+A JSON array of pause rules that **replaces the built-in rules as a whole**; empty uses the built-in ones. Rules are tried in order and **the first match decides**, after the channel's own rules. A rule matches on any of status_codes, keywords (substrings of the error, "re:" for a regular expression), error_types or error_codes, plus the flags unusable, model_not_found, rate_limit_reset and per_status_config; times and window_seconds make it count matches first. action is "pause" (for seconds, on the whole channel or, by default, the model) or "retry" (move on without pausing). probe sends a test request before resuming and doubles the pause when it fails; notify tells admins. Pauses under a minute are kept in memory only. Saved rules carry their own seconds, so the rate limit and model-not-found settings **no longer apply to them**.
 
 Examples:
 
@@ -129,7 +129,7 @@ Key `AutomaticDisableChannelEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It applies to channel tests: on live requests such errors pause the channel through the pause rules instead. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.
+Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It **applies to channel tests**: on live requests such errors **pause the channel through the pause rules instead**. A disabled channel **comes back only through a passing test with automatic recovery on, or by hand**.
 
 See also: [Re-enable channels that pass a test](./gateway.md#AutomaticEnableChannelEnabled) · [Disable keywords](./gateway.md#DisableChannelKeywords) · [Custom pause rules](./gateway.md#PauseRules) · [Scheduled channel test](./gateway.md#ChannelTestMode)
 
@@ -141,7 +141,7 @@ Key `AutomaticEnableChannelEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-A channel that was disabled automatically is enabled again when it passes a channel test. The test is a test of all channels, scheduled or started by hand, and must answer within the maximum response time. Channels an admin disabled are never enabled again on their own. When off, every disabled channel waits for an admin.
+A channel that was disabled automatically is **enabled again when it passes a channel test**. The test is a test of all channels, scheduled or started by hand, and must answer within the maximum response time. Channels an admin disabled **are never enabled** again on their own. When off, every disabled channel waits for an admin.
 
 See also: [Disable channels that can no longer serve](./gateway.md#AutomaticDisableChannelEnabled) · [Scheduled channel test](./gateway.md#ChannelTestMode) · [Maximum response time](./gateway.md#ChannelDisableThreshold)
 
@@ -153,7 +153,7 @@ Key `ChannelDisableThreshold` · Type float · Unit seconds · Range 0– · Def
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-A channel test slower than this many seconds disables an enabled channel and keeps a disabled one off. It applies to tests of all channels (scheduled in the All channels mode, or started from the channels page), whether or not automatic disabling is on; live requests are never timed against it. 0 sets no limit.
+A channel test slower than this many seconds **disables an enabled channel** and keeps a disabled one off. It applies to tests of all channels (scheduled in the All channels mode, or started from the channels page), whether or not automatic disabling is on; **live requests are never timed against it**. 0 sets no limit.
 
 Examples:
 
@@ -171,7 +171,7 @@ Key `DisableChannelKeywords` · Type list
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and pauses the channel through the built-in credential rule (1 hour, tested before resuming); in a channel test it disables the channel when automatic disabling is on. Empty leaves only the built-in checks of status codes and known messages.
+Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. **Matching is case-sensitive**, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and **pauses the channel** through the built-in credential rule (1 hour, tested before resuming); in a channel test it **disables the channel when automatic disabling is on**. Empty leaves only the built-in checks of status codes and known messages.
 
 Examples:
 
@@ -188,7 +188,7 @@ Key `ChannelTestMode` · Type enum · Default `recovery`
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Which channels the gateway tests on its own, every test interval. Each test is one small request to the channel's test model and is billed by the upstream. The CHANNEL_TEST_FREQUENCY environment variable, when set, overrides this: all channels every that many minutes.
+Which channels the gateway tests on its own, every test interval. Each test is one small request to the channel's test model and is **billed by the upstream**. The CHANNEL_TEST_FREQUENCY environment variable, when set, **overrides this**: all channels every that many minutes.
 
 Values:
 
@@ -206,7 +206,7 @@ Key `ChannelTestIntervalMinutes` · Type int · Unit minutes · Range 1– · De
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Minutes between two scheduled channel tests, at least one. A new interval applies from the next round, without a restart. Shorter intervals bring channels back sooner but send more test requests.
+Minutes between two scheduled channel tests, at least one. A new interval applies from the next round, without a restart. Shorter intervals bring channels back sooner but **send more test requests**.
 
 Examples:
 
@@ -223,7 +223,7 @@ Key `ChannelCredentialRefreshMinutes` · Type int · Unit minutes · Range 0– 
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-How often the OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked. Credentials expiring before the next check (plus 15 minutes) are refreshed even on idle or auto-disabled channels, so they do not fail on their first request after a quiet night; channels disabled by hand are skipped. A channel whose refresh starts failing sends one channel credential notice. 0 turns the background refresh off.
+How often the OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked. Credentials expiring before the next check (plus 15 minutes) are **refreshed even on idle or auto-disabled channels**, so they do not fail on their first request after a quiet night; **channels disabled by hand are skipped**. A channel whose refresh starts failing sends one channel credential notice. 0 **turns the background refresh off**.
 
 Examples:
 
@@ -240,7 +240,7 @@ Key `ChannelFailErrorWrapEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Error handling
 
-Callers get a generic error instead of the upstream's own text, which may name the provider or show parts of a key. Upstream errors other than 400 become a 503 with the unified message (a 429 stays a 429 so clients back off), rejected channel keys get a fixed message, and a missing model a 404. 400 errors pass through, since they are about the request. Turn it off only for a while, to see what the upstream really says.
+Callers get **a generic error instead of the upstream's own text**, which may name the provider or show parts of a key. Upstream errors other than 400 become a 503 with the unified message (a 429 stays a 429 so clients back off), rejected channel keys get a fixed message, and a missing model a 404. **400 errors pass through**, since they are about the request. **Turn it off only for a while**, to see what the upstream really says.
 
 See also: [Unified error message](./gateway.md#ChannelFailErrorMessage)
 
@@ -252,7 +252,7 @@ Key `ChannelFailErrorMessage` · Type string · Default `Upstream for the curren
 
 Where: Platform settings › Gateway › Error handling
 
-The message callers get when an upstream fails and upstream errors are hidden. The request id is added to it so a caller can quote it. Empty uses "Upstream for the current group is at capacity, please try again later". It has no effect while upstream errors are shown.
+The message callers get when an upstream fails and upstream errors are hidden. The request id is added to it so a caller can quote it. Empty uses "Upstream for the current group is at capacity, please try again later". It has **no effect while upstream errors are shown**.
 
 Examples:
 
@@ -270,7 +270,7 @@ Key `ModelNameCaseInsensitiveEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Gateway › Model name matching
 
-The model name a caller sends matches channels and prices whatever its case. When on, GPT-4o finds the channels and the price of gpt-4o, including wildcard prices. When off, names must match exactly and a differently cased name gets no channel.
+The model name a caller sends matches channels and prices **whatever its case**. When on, GPT-4o finds the channels and the price of gpt-4o, including wildcard prices. When off, names must match exactly and a differently cased name **gets no channel**.
 
 See also: [Answer with the requested model name](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -282,7 +282,7 @@ Key `UnifiedRequestResponseModelEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Gateway › Model name matching
 
-The model field of every response carries the name the caller asked for, not the upstream model it was mapped to. Some clients check that the reply names the model they requested. When off, it is done only for channels and supplies that switch it on themselves.
+The model field of every response **carries the name the caller asked for**, not the upstream model it was mapped to. Some clients check that the reply names the model they requested. When off, it is done only for channels and supplies that switch it on themselves.
 
 Examples:
 
@@ -301,7 +301,7 @@ Key `ClaudeAPIEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Native protocols
 
-Callers can use the Anthropic Messages format (/claude/v1/messages and the coding agent endpoints) besides the OpenAI format. Claude Code and the Anthropic SDKs need it. When off, those endpoints answer 403 and llms.txt no longer lists them.
+Callers can use the Anthropic Messages format (/claude/v1/messages and the coding agent endpoints) besides the OpenAI format. Claude Code and the Anthropic SDKs need it. When off, **those endpoints answer 403** and llms.txt no longer lists them.
 
 See also: [Gemini API](./gateway.md#GeminiAPIEnabled) · [Add prompt cache markers](./gateway.md#ClaudePromptCachingEnabled)
 
@@ -313,7 +313,7 @@ Key `GeminiAPIEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Native protocols
 
-Callers can use the Google Gemini format (the /gemini/v1beta endpoints, Live API included) besides the OpenAI format. Gemini CLI and the Google SDKs need it. When off, those endpoints answer 403.
+Callers can use the Google Gemini format (the /gemini/v1beta endpoints, Live API included) besides the OpenAI format. Gemini CLI and the Google SDKs need it. When off, **those endpoints answer 403**.
 
 See also: [Claude Messages API](./gateway.md#ClaudeAPIEnabled) · [Show Gemini thoughts](./gateway.md#GeminiOpenThink)
 
@@ -325,7 +325,7 @@ Key `ClaudePromptCachingEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Native protocols
 
-Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.
+Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then **read it at the cache price**. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; **a channel set to On or Off decides for itself**, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.
 
 Examples:
 
@@ -342,7 +342,7 @@ Key `FingerprintPassThroughEnabled` · Type bool · Default `true` · rarely cha
 
 Where: Platform settings › Gateway › Native protocols
 
-Keeps upstream responses as close to the original as possible. Non-streaming Claude and Bedrock responses are passed byte for byte, streams keep their model field, and upstream headers such as anthropic-ratelimit-*, x-ratelimit-* and x-amzn-* reach the caller. When off, responses are rebuilt like those of any other channel.
+Keeps upstream responses as close to the original as possible. Non-streaming Claude and Bedrock responses are **passed byte for byte**, streams keep their model field, and upstream headers such as anthropic-ratelimit-*, x-ratelimit-* and x-amzn-* reach the caller. When off, responses are rebuilt like those of any other channel.
 
 See also: [Answer with the requested model name](./gateway.md#UnifiedRequestResponseModelEnabled)
 
@@ -354,7 +354,7 @@ Key `ClaudeBudgetTokensPercentage` · Type float · Range 0–1 · Default `0.8`
 
 Where: Platform settings › Gateway › Native protocols
 
-The share of max_tokens Claude may spend thinking when a request asks for thinking without its own budget. It applies to OpenAI-format requests sent to Claude. budget_tokens = max_tokens x this value, and never below 1024. A request that names an effort gets 0.2, 0.5 or 0.8 for low, medium and high instead.
+The share of max_tokens Claude may spend thinking when a request asks for thinking without its own budget. It applies to **OpenAI-format requests sent to Claude**. budget_tokens = max_tokens x this value, and never below 1024. A request that names an effort gets 0.2, 0.5 or 0.8 for low, medium and high instead.
 
 Examples:
 
@@ -372,7 +372,7 @@ Key `ClaudeDefaultMaxTokens` · Type json · Default `{"default":8192}`
 
 Where: Platform settings › Gateway › Native protocols
 
-The max_tokens sent to Claude when an OpenAI-format or Responses request sets no output limit. Claude requires one, so it is a JSON object of model name and tokens, with "default" for every other model. Requests that set max_tokens or max_completion_tokens keep their own. Empty means {"default": 8192}; an object without "default" leaves unlisted models without a limit and Claude rejects them, and text that is not valid JSON is ignored.
+The max_tokens sent to Claude when an OpenAI-format or Responses request sets no output limit. **Claude requires one**, so it is a JSON object of model name and tokens, with "default" for every other model. Requests that set max_tokens or max_completion_tokens keep their own. Empty means {"default": 8192}; an object without "default" leaves unlisted models without a limit and **Claude rejects them**, and text that is not valid JSON is ignored.
 
 Examples:
 
@@ -389,7 +389,7 @@ Key `GeminiOpenThink` · Type json · Default `{}` · rarely changed
 
 Where: Platform settings › Gateway › Native protocols
 
-Gemini models whose responses include their thought summaries, as a JSON object of model name and true. It only applies to models that can think; unlisted models keep thoughts out unless the request asks for them. Empty lists none, and text that is not valid JSON is ignored.
+Gemini models whose responses include their thought summaries, as a JSON object of model name and true. It **only applies to models that can think**; unlisted models keep thoughts out unless the request asks for them. Empty lists none, and text that is not valid JSON is ignored.
 
 Examples:
 
@@ -407,7 +407,7 @@ Key `MaxPromptTokens` · Type int · Range 0– · Default `1000000` · rarely c
 
 Where: Platform settings › Gateway › Prompt limits
 
-Requests to AWS Bedrock channels with more input tokens than this are refused before reaching the upstream. They get a 400 "prompt is too long", which Claude Code reads like Anthropic's own; Bedrock would otherwise hang on them until its timeout. A model's context length in the catalog takes precedence; other channel types are not checked. 0 turns the check off.
+Requests to AWS Bedrock channels with more input tokens than this are **refused before reaching the upstream**. They get a 400 "prompt is too long", which Claude Code reads like Anthropic's own; Bedrock would otherwise hang on them until its timeout. A model's context length in the catalog takes precedence; other channel types are not checked. 0 **turns the check off**.
 
 Examples:
 
@@ -424,7 +424,7 @@ Key `ModelLibraryRulesEnabled` · Type bool · Default `true` · rarely changed
 
 Where: Platform settings › Gateway › Intake rules for new upstream models
 
-Runs the inclusion rules after each daily model library sync, so new releases join the catalog on their own. Edited on the Models page, Inclusion rules tab. Off, the library still syncs but nothing is added or retired automatically.
+Runs the inclusion rules after each daily model library sync, so **new releases join the catalog on their own**. Edited on the Models page, Inclusion rules tab. Off, the library still syncs but **nothing** is added or retired automatically.
 
 See also: [Apply the inclusion rules](./gateway.md#ModelLibraryRulesApply) · [Inclusion rules](./gateway.md#ModelLibraryRules)
 
@@ -436,7 +436,7 @@ Key `ModelLibraryRulesApply` · Type bool · Default `false` · rarely changed
 
 Where: Platform settings › Gateway › Intake rules for new upstream models
 
-Lets the inclusion rules change the catalog: on, they add and retire models and notify admins of what they did. Off is a dry run: they change nothing and only notify admins of what they would do. Edited on the Models page, Inclusion rules tab.
+Lets the inclusion rules change the catalog: on, **they add and retire models** and notify admins of what they did. Off is **a dry run**: they change nothing and only notify admins of what they would do. Edited on the Models page, Inclusion rules tab.
 
 Examples:
 
@@ -453,7 +453,7 @@ Key `ModelLibraryRules` · Type json · Default `empty` · rarely changed
 
 Where: Platform settings › Gateway › Intake rules for new upstream models
 
-The rules that decide which library models join the catalog and which catalog models are retired. They are saved as a JSON list and edited on the Models page, Inclusion rules tab. Rules are tried in order and the first one whose conditions all hold decides: enable, add disabled, leave out or retire. Conditions are labs, id patterns, release age, whether a channel can supply the model, deprecated, open weights and endpoints. Each model is decided once, so a model you remove is not added back. Empty uses the built-in rules; an empty list does nothing.
+The rules that decide which library models join the catalog and which catalog models are retired. They are saved as a JSON list and edited on the Models page, Inclusion rules tab. **Rules are tried in order** and the first one whose conditions all hold decides: enable, add disabled, leave out or retire. Conditions are labs, id patterns, release age, whether a channel can supply the model, deprecated, open weights and endpoints. Each model is decided once, so **a model you remove is not added back**. Empty uses the built-in rules; an empty list does nothing.
 
 Examples:
 

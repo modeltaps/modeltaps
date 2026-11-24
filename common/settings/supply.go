@@ -14,8 +14,8 @@ func supply() []Setting {
 			},
 			Label: "Order by",
 			Description: "Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. " +
-				"Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With " +
-				"lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; " +
+				"**Users always pay the catalog price times their group ratio**; this setting **affects only the platform's cost**. With " +
+				"lowest cost, a supply is called earlier only when it **meets both the minimum saving and the minimum success rate**; " +
 				"supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.",
 			Examples: []Example{
 				{Value: "priority", Effect: "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."},
@@ -29,9 +29,9 @@ func supply() []Setting {
 			Key: "SupplyCostMinSavingPercent", Scope: ScopeSite, Group: "supply", Card: "supply-mode", Type: TypePercent, Unit: "%",
 			Min: num(0), Max: num(99),
 			Label: "Minimum saving",
-			Description: "With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a " +
+			Description: "With cost first, **how much cheaper a supply must be** than another to take requests ahead of it, as a " +
 				"percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority " +
-				"and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is " +
+				"and weight, so a slightly cheaper supply **does not take all of a model's traffic**. 0 puts any supply that is " +
 				"cheaper by more than 0.1% ahead.",
 			Examples: []Example{
 				{Value: "5", Effect: "OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both."},
@@ -46,8 +46,8 @@ func supply() []Setting {
 			Min: num(0), Max: num(100),
 			Label: "Minimum success rate",
 			Description: "With cost first, the success rate a supply needs over the current and the previous hour to be put " +
-				"ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that " +
-				"serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns " +
+				"ahead for its cost. A cheaper supply below it **is ordered as if its cost were unknown**, behind the supplies that " +
+				"serve well, until its rate recovers. A supply with fewer than 20 attempts in that time **is not judged**. 0 turns " +
 				"the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or " +
 				"OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
 			Examples: []Example{
@@ -61,12 +61,12 @@ func supply() []Setting {
 		{
 			Key: "ModelSupplyEnabled", Scope: ScopeSite, Group: "supply", Card: "supply-mode", Type: TypeBool,
 			Label: "Route by supplies",
-			Description: "Requests are routed through each public model's supplies instead of the channels' model lists and " +
+			Description: "Requests are **routed through each public model's supplies** instead of the channels' model lists and " +
 				"model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is " +
-				"still missing), so every model a channel serves keeps working. While on, requests are billed by the public " +
+				"still missing), so **every model a channel serves keeps working**. While on, requests are billed by the public " +
 				"model, only published models are listed, the providers page orders the channels, and the call order, the " +
 				"order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning " +
-				"it off goes back to the channels' model lists at once and keeps the supplies.",
+				"it off goes back to the channels' model lists at once and **keeps the supplies**.",
 			Examples: []Example{
 				{Value: "false", Effect: "Requests follow each channel's models and model mapping; the supply pages only preview what would change."},
 				{Value: "true", Effect: "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."},
@@ -82,12 +82,12 @@ func supply() []Setting {
 			Key: "SupplyIntakeRules", Scope: ScopeSite, Group: "supply", Card: "supply-intake-rules", Type: TypeJSON,
 			Label: "Intake rules for new upstream models",
 			Description: "What happens to a model a channel's upstream starts listing, for channels that add new upstream models " +
-				"on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model " +
-				"no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), " +
+				"on their own. It is a JSON array tried from the top, and **the first rule whose conditions all hold decides**; a model " +
+				"no rule matches **waits for review**. Conditions: endpoints (abilities such as chat, responses, images, any of them), " +
 				"vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another " +
 				"channel already supplies it). action is enable (routes at once), pending (added switched off until an admin " +
 				"confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply " +
-				"it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them " +
+				"it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; **saved rules replace them** " +
 				"as a whole, and a channel can use rules of its own.",
 			Examples: []Example{
 				{
@@ -107,10 +107,10 @@ func supply() []Setting {
 		{
 			Key: "SessionAffinityEnabled", Scope: ScopeSite, Group: "supply", Card: "session-affinity", Type: TypeBool,
 			Label: "Keep each session on one channel",
-			Description: "Requests of one client session go to the channel that served it first, so the upstream prompt cache " +
+			Description: "Requests of one client session **go to the channel that served it first**, so the upstream prompt cache " +
 				"keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session " +
 				"header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user " +
-				"message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, " +
+				"message. Claude Code, Gemini CLI and Codex account channels are **always sticky**, whatever this says. When off, " +
 				"each request is routed on its own.",
 			Related:  []string{"SessionAffinityStrict", "SessionAffinityTTLSeconds", "ClaudePromptCachingEnabled"},
 			Keywords: []string{"sticky session", "prompt cache", "cache hit", "affinity", "pinning"},
@@ -118,10 +118,10 @@ func supply() []Setting {
 		{
 			Key: "SessionAffinityStrict", Scope: ScopeSite, Group: "supply", Card: "session-affinity", Type: TypeBool,
 			Label: "Do not move a session on failure",
-			Description: "When a session's channel fails, the caller gets the error instead of a retry on another channel. The " +
+			Description: "When a session's channel fails, **the caller gets the error instead of a retry on another channel**. The " +
 				"channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the " +
 				"conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an " +
-				"empty balance) still move the session. Leave it off to favour availability.",
+				"empty balance) **still move the session**. Leave it off to favour availability.",
 			Related:  []string{"SessionAffinityEnabled", "RetryTimes"},
 			Keywords: []string{"strict", "no failover", "cache", "Codex"},
 		},
@@ -129,7 +129,7 @@ func supply() []Setting {
 			Key: "SessionAffinityTTLSeconds", Scope: ScopeSite, Group: "supply", Card: "session-affinity", Type: TypeInt, Unit: "seconds", Min: num(0),
 			Label: "Session lifetime",
 			Description: "How long a session stays bound to its channel after its last request; every request starts the time " +
-				"again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.",
+				"again. Account channels (Claude Code, Gemini CLI, Codex) **always keep 1 hour**. 0 uses 1 hour as well.",
 			Examples: []Example{
 				{Value: "3600", Effect: "A coding session paused for 50 minutes comes back to the same channel; after 70 minutes it may land elsewhere."},
 				{Value: "300", Effect: "Matches the upstream's 5-minute prompt cache: past that the cache is gone, so the session is free to move."},
@@ -156,9 +156,9 @@ func supply() []Setting {
 		{
 			Key: "UserRoutingPolicyEnabled", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeBool,
 			Label: "Own routing policies",
-			Description: "Users and organizations can create routing policies of their own, called as policy/<name>. Users create " +
+			Description: "Users and organizations can **create routing policies of their own**, called as policy/<name>. Users create " +
 				"personal policies under Routing policies in the workbench, organization owners and admins organization policies; " +
-				"an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform " +
+				"an own policy **overrides a platform policy of the same name** for its own keys. When off, **own policies are kept but no longer apply**, and only platform " +
 				"policies resolve.",
 			Related:  []string{"PersonalRoutingPolicyMaxCount", "OrganizationRoutingPolicyMaxCount"},
 			Keywords: []string{"routing policy", "policy/", "self-service", "organization policy"},
@@ -167,7 +167,7 @@ func supply() []Setting {
 			Key: "PersonalRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per user",
 			Description: "How many personal routing policies one user can create. Policies a user already has are kept when the " +
-				"cap is lowered; only new ones are refused. 0 sets no limit.",
+				"cap is lowered; **only new ones are refused**. 0 sets no limit.",
 			Examples: []Example{
 				{Value: "20", Effect: "A user with 20 policies gets an error when creating the 21st."},
 				{Value: "0", Effect: "Users can create as many policies as they like."},
@@ -179,7 +179,7 @@ func supply() []Setting {
 			Key: "OrganizationRoutingPolicyMaxCount", Scope: ScopeSite, Group: "supply", Card: "routing-settings", Page: "routing-policies", Type: TypeInt, Min: num(0),
 			Label: "Policies per organization",
 			Description: "How many routing policies one organization can create. Policies it already has are kept when the cap " +
-				"is lowered; only new ones are refused. 0 sets no limit.",
+				"is lowered; **only new ones are refused**. 0 sets no limit.",
 			Examples: []Example{
 				{Value: "20", Effect: "An organization with 20 policies gets an error when creating the 21st."},
 				{Value: "5", Effect: "Keeps organization policies few enough to review by hand."},

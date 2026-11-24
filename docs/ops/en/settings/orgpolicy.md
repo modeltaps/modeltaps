@@ -18,7 +18,7 @@ Key `OrganizationEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Organization policy › Organizations
 
-Users can create and join organizations that share a balance, members, budgets and API keys. When off, users no longer see organizations and the organization API refuses every request; site admins still manage the existing ones, which are kept as they are.
+Users can create and join organizations that share a balance, members, budgets and API keys. When off, users no longer see organizations and **the organization API refuses every request**; site admins still manage the existing ones, **which are kept as they are**.
 
 See also: [Organizations per user](./orgpolicy.md#OrganizationMaxPerUser) · [Default member limit](./orgpolicy.md#OrganizationDefaultMaxMembers) · [Personal balance transfer into organizations](./orgpolicy.md#OrganizationQuotaTransferEnabled)
 
@@ -30,7 +30,7 @@ Key `OrganizationQuotaTransferEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Organization policy › Organizations
 
-An organization's owner or admins can move their own personal balance into the organization's shared balance. The transfer is one-way: nothing moves back to a personal account. When off, transfers are refused.
+An organization's owner or admins can move their own personal balance into the organization's shared balance. **The transfer is one-way**: nothing moves back to a personal account. When off, transfers are refused.
 
 See also: [Organizations](./orgpolicy.md#OrganizationEnabled) · [Balance of a deleted organization](./orgpolicy.md#OrganizationDissolveQuotaRefund)
 
@@ -42,7 +42,7 @@ Key `OrganizationMaxPerUser` · Type int · Range 0– · Default `3`
 
 Where: Platform settings › Organization policy › Organizations
 
-How many organizations one user can create. Organizations they only joined do not count, nor deleted ones. 0 means no limit.
+How many organizations one user can create. **Organizations they only joined do not count**, nor deleted ones. 0 means **no limit**.
 
 Examples:
 
@@ -60,7 +60,7 @@ Key `OrganizationDefaultMaxMembers` · Type int · Range 0– · Default `10`
 
 Where: Platform settings › Organization policy › Organizations
 
-How many members an organization can have when a site admin has not set a limit for that organization. Changing it applies to every organization without a limit of its own, existing ones included. 0 means no limit.
+How many members an organization can have when a site admin has not set a limit for that organization. Changing it applies to every organization without a limit of its own, **existing ones included**. 0 means **no limit**.
 
 Examples:
 
@@ -77,7 +77,7 @@ Key `OrganizationDissolveQuotaRefund` · Type enum · Default `owner` · rarely 
 
 Where: Platform settings › Organization policy › Organizations
 
-What happens to an organization's remaining shared balance when it is deleted, by its owner or a site admin. It has no field on the settings page and is only set through the option API (PUT /api/option/). Any value other than owner discards the balance.
+What happens to an organization's remaining shared balance when it is deleted, by its owner or a site admin. It has no field on the settings page and is **only set through the option API** (PUT /api/option/). Any value other than owner **discards the balance**.
 
 Values:
 

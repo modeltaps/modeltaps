@@ -18,7 +18,7 @@ Key `SupplyCostOrder` · Type enum · Default `priority`
 
 Where: Platform settings › Supply allocation › Supply routing and order
 
-Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.
+Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. **Users always pay the catalog price times their group ratio**; this setting **affects only the platform's cost**. With lowest cost, a supply is called earlier only when it **meets both the minimum saving and the minimum success rate**; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.
 
 Values:
 
@@ -42,7 +42,7 @@ Key `SupplyCostMinSavingPercent` · Type percent · Unit % · Range 0–99 · De
 
 Where: Platform settings › Supply allocation › Supply routing and order
 
-With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.
+With cost first, **how much cheaper a supply must be** than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply **does not take all of a model's traffic**. 0 puts any supply that is cheaper by more than 0.1% ahead.
 
 Examples:
 
@@ -61,7 +61,7 @@ Key `SupplyCostMinSuccessPercent` · Type percent · Unit % · Range 0–100 · 
 
 Where: Platform settings › Supply allocation › Supply routing and order
 
-With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.
+With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it **is ordered as if its cost were unknown**, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time **is not judged**. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.
 
 Examples:
 
@@ -80,7 +80,7 @@ Key `ModelSupplyEnabled` · Type bool · Default `false` · rarely changed
 
 Where: Platform settings › Supply allocation › Supply routing and order
 
-Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.
+Requests are **routed through each public model's supplies** instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so **every model a channel serves keeps working**. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and **keeps the supplies**.
 
 Examples:
 
@@ -101,7 +101,7 @@ Key `SupplyIntakeRules` · Type json · Default `empty`
 
 Where: Platform settings › Supply allocation › Intake rules for new upstream models
 
-What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them as a whole, and a channel can use rules of its own.
+What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and **the first rule whose conditions all hold decides**; a model no rule matches **waits for review**. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; **saved rules replace them** as a whole, and a channel can use rules of its own.
 
 Examples:
 
@@ -120,7 +120,7 @@ Key `SessionAffinityEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Supply allocation › Session affinity
 
-Requests of one client session go to the channel that served it first, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, each request is routed on its own.
+Requests of one client session **go to the channel that served it first**, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are **always sticky**, whatever this says. When off, each request is routed on its own.
 
 See also: [Do not move a session on failure](./supply.md#SessionAffinityStrict) · [Session lifetime](./supply.md#SessionAffinityTTLSeconds) · [Add prompt cache markers](./gateway.md#ClaudePromptCachingEnabled)
 
@@ -132,7 +132,7 @@ Key `SessionAffinityStrict` · Type bool · Default `false`
 
 Where: Platform settings › Supply allocation › Session affinity
 
-When a session's channel fails, the caller gets the error instead of a retry on another channel. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) still move the session. Leave it off to favour availability.
+When a session's channel fails, **the caller gets the error instead of a retry on another channel**. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) **still move the session**. Leave it off to favour availability.
 
 See also: [Keep each session on one channel](./supply.md#SessionAffinityEnabled) · [Retries](./gateway.md#RetryTimes)
 
@@ -144,7 +144,7 @@ Key `SessionAffinityTTLSeconds` · Type int · Unit seconds · Range 0– · Def
 
 Where: Platform settings › Supply allocation › Session affinity
 
-How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.
+How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) **always keep 1 hour**. 0 uses 1 hour as well.
 
 Examples:
 
@@ -180,7 +180,7 @@ Key `UserRoutingPolicyEnabled` · Type bool · Default `true`
 
 Where: Routing policy › Policy settings
 
-Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.
+Users and organizations can **create routing policies of their own**, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy **overrides a platform policy of the same name** for its own keys. When off, **own policies are kept but no longer apply**, and only platform policies resolve.
 
 See also: [Policies per user](./supply.md#PersonalRoutingPolicyMaxCount) · [Policies per organization](./supply.md#OrganizationRoutingPolicyMaxCount)
 
@@ -192,7 +192,7 @@ Key `PersonalRoutingPolicyMaxCount` · Type int · Range 0– · Default `20`
 
 Where: Routing policy › Policy settings
 
-How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
+How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; **only new ones are refused**. 0 sets no limit.
 
 Examples:
 
@@ -209,7 +209,7 @@ Key `OrganizationRoutingPolicyMaxCount` · Type int · Range 0– · Default `20
 
 Where: Routing policy › Policy settings
 
-How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.
+How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; **only new ones are refused**. 0 sets no limit.
 
 Examples:
 

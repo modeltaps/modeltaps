@@ -45,7 +45,8 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   links to the removed card open the dialog. The decision call billing switch says where the fee comes
   from (each policy's decision model, once per session), and its help puts the key points in bold.
 - Setting descriptions can mark key words as bold (`**...**`), shown bold in the help and the
-  generated reference and left out of search.
+  generated reference and left out of search. Every setting's description now puts its key
+  points in bold, in English, Chinese and Japanese.
 - A setting's `?` help opens as a floating panel instead of inside the row, so nothing below it
   moves.
 - The order-by choices are named "Call order first" and "Lowest cost".

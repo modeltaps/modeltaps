@@ -18,7 +18,7 @@ Key `QuotaForNewUser` · Type int · Range 0– · Default `0`
 
 Where: Platform settings › Billing › Quota
 
-The quota a new account starts with, granted once when it is created and logged as a sign-up bonus. In quota units: 500,000 = $1 at the default quota per unit; the field also takes dollars. Accounts an organization creates for its members start at 0, and changing it leaves existing balances alone. 0 gives new users nothing until they top up or redeem a code.
+The quota a new account starts with, **granted once when it is created** and logged as a sign-up bonus. In quota units: 500,000 = $1 at the default quota per unit; the field also takes dollars. Accounts an organization creates for its members start at 0, and **changing it leaves existing balances alone**. 0 gives new users nothing until they top up or redeem a code.
 
 Examples:
 
@@ -35,7 +35,7 @@ Key `PreConsumedQuota` · Type int · Range 0– · Default `500` · rarely chan
 
 Where: Platform settings › Billing › Quota
 
-A fixed amount added to the up-front reservation of every token-priced request, on top of its estimated cost. The reservation (estimated input + reserved output tokens + this) is held from the balance or the API key's quota while the request runs and settled to the real cost when it ends, so it decides who may start a request, never what is charged. A balance below the reservation is refused with insufficient quota. In quota units: 500 = $0.001. Requests priced per call or per minute reserve their own price instead.
+A fixed amount added to the up-front reservation of every token-priced request, on top of its estimated cost. The reservation (estimated input + reserved output tokens + this) is held from the balance or the API key's quota while the request runs and settled to the real cost when it ends, so it **decides who may start a request**, **never what is charged**. A balance below the reservation **is refused with insufficient quota**. In quota units: 500 = $0.001. Requests priced per call or per minute reserve their own price instead.
 
 Examples:
 
@@ -53,7 +53,7 @@ Key `PreConsumedOutputTokens` · Type int · Range 0– · Default `4096` · rar
 
 Where: Platform settings › Billing › Quota
 
-How many output tokens a token-priced request reserves up front, or the request's own max_tokens when smaller. Reserving its likely output keeps concurrent requests from driving a balance far below zero; the charge is settled to the real usage when the request ends. 0 reserves no output, only the input estimate and the fixed pre-charge.
+How many output tokens a token-priced request reserves up front, or the request's own max_tokens when smaller. Reserving its likely output keeps concurrent requests from **driving a balance far below zero**; the charge is **settled to the real usage** when the request ends. 0 reserves no output, only the input estimate and the fixed pre-charge.
 
 Examples:
 
@@ -70,7 +70,7 @@ Key `QuotaRemindEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Billing › Quota
 
-Email users when their balance falls below the warning threshold, and again when it runs out. Each email is sent once; another goes out only after the balance has clearly recovered and fallen again. Needs a mail service. Users can turn the emails off or set their own threshold in their personal settings; organization API keys never send them. When off nobody gets them, and settlement skips the balance read the check needs.
+Email users when their balance falls below the warning threshold, and again when it runs out. Each email is sent once; another goes out only after the balance has clearly recovered and fallen again. **Needs a mail service**. Users can turn the emails off or set their own threshold in their personal settings; **organization API keys never send them**. When off nobody gets them, and settlement skips the balance read the check needs.
 
 See also: [Warning threshold](./billing.md#QuotaRemindThreshold)
 
@@ -82,7 +82,7 @@ Key `QuotaRemindThreshold` · Type int · Range 0– · Default `1000`
 
 Where: Platform settings › Billing › Quota
 
-The balance below which a user gets the "running low" email, in quota units (500,000 = $1). It is the default for users who have not set their own threshold. After an email the next one waits until the balance has gone back above the threshold plus 10% of it (or plus the fixed pre-charge, if larger) and fallen again. 0 sends only the "used up" email.
+The balance below which a user gets the "running low" email, in quota units (500,000 = $1). It is **the default for users who have not set their own threshold**. After an email the next one waits until the balance has gone back above the threshold plus 10% of it (or plus the fixed pre-charge, if larger) and fallen again. 0 **sends only the "used up" email**.
 
 Examples:
 
@@ -101,7 +101,7 @@ Key `PaymentCostPercent` · Type percent · Unit % · Range 0–99.99 · Default
 
 Where: Platform settings › Billing › Pricing
 
-What taking a payment costs the site, as a percentage of the amount: card fees and currency conversion. Nobody is charged it. It only lowers the revenue the price check and the margin figures compare channel costs with: net revenue = catalog price x the default group's ratio x (1 - payment cost). 0 counts payments as free.
+What taking a payment costs the site, as a percentage of the amount: card fees and currency conversion. **Nobody is charged** it. It **only lowers the revenue** the price check and the margin figures compare channel costs with: net revenue = catalog price x the default group's ratio x (1 - payment cost). 0 counts payments as free.
 
 Examples:
 
@@ -122,7 +122,7 @@ Key `EmptyResponseBillingEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Billing › Billing rules
 
-Charge token-priced requests whose reply has no output tokens for their input. When off such requests are free, although the upstream may still bill you for the input. Requests priced per call or per minute are charged either way, and a request with no tokens at all is never charged.
+Charge token-priced requests whose reply has no output tokens for their input. When off such requests **are free**, although **the upstream may still bill you for the input**. Requests priced per call or per minute are charged either way, and a request with no tokens at all is never charged.
 
 Examples:
 
@@ -137,7 +137,7 @@ Key `ApproximateTokenEnabled` · Type bool · Default `false` · rarely changed
 
 Where: Platform settings › Billing › Billing rules
 
-Count tokens locally as 0.38 tokens per byte of text instead of running the model's tokenizer. Local counts are used for the up-front reservation and when an upstream reply carries no usage; replies that report their usage are billed by it. It saves CPU on busy instances at the cost of accuracy, worst for text outside the Latin alphabet.
+Count tokens locally as 0.38 tokens per byte of text instead of running the model's tokenizer. Local counts are used for the up-front reservation and when an upstream reply carries no usage; replies that report their usage are billed by it. It saves CPU on busy instances **at the cost of accuracy**, worst for text outside the Latin alphabet.
 
 Examples:
 
@@ -151,7 +151,7 @@ Key `PriceSyncAutoApply` · Type enum · Default `increases`
 
 Where: Platform settings › Billing › Billing rules
 
-What the automatic price syncs (at startup, daily and when a channel is saved) write for models that already have a price. New models are always added and locked prices never change. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync.
+What the automatic price syncs (at startup, daily and when a channel is saved) write for models that already have a price. **New models are always added** and **locked prices never change**. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync.
 
 Values:
 
@@ -174,7 +174,7 @@ Key `QuotaResetTimezone` · Type string · Default `UTC`
 
 Where: Platform settings › Billing › Periodic limit reset
 
-The time zone whose midnight starts each daily, weekly and monthly limit period. It applies to API key period limits, organization budgets and member budgets. An IANA name; empty or unknown names fall back to UTC. Changing it moves the boundary of the current period.
+The time zone whose midnight starts each daily, weekly and monthly limit period. It applies to API key period limits, organization budgets and member budgets. An IANA name; empty or unknown names **fall back to UTC**. Changing it **moves the boundary of the current period**.
 
 Examples:
 
@@ -192,7 +192,7 @@ Key `QuotaResetWeekStart` · Type enum · Default `monday`
 
 Where: Platform settings › Billing › Periodic limit reset
 
-The day weekly limit periods start, at midnight in the reset time zone. Daily and monthly periods are not affected.
+The day weekly limit periods start, at midnight in the reset time zone. Daily and monthly periods **are not affected**.
 
 Values:
 
@@ -216,7 +216,7 @@ Key `InviteRewardEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Billing › Invite rewards
 
-Pay invite rewards: sign-up bonuses for the inviter and the invitee, and the inviter's rebate on the first top-up. When off none are paid and the site hides its invite entries; who invited whom is still recorded.
+Pay invite rewards: sign-up bonuses for the inviter and the invitee, and the inviter's rebate on the first top-up. When off **none are paid and the site hides its invite entries**; who invited whom is still recorded.
 
 See also: [Inviter sign-up bonus](./billing.md#QuotaForInviter) · [Invitee sign-up bonus](./billing.md#QuotaForInvitee) · [First top-up rebate type](./billing.md#InviterRewardType) · [First top-up rebate](./billing.md#InviterRewardValue)
 
@@ -228,7 +228,7 @@ Key `QuotaForInviter` · Type int · Range 0– · Default `0`
 
 Where: Platform settings › Billing › Invite rewards
 
-The quota an inviter gets each time someone signs up with their invite link or code. In quota units (500,000 = $1). 0 pays nothing at sign-up; the first top-up rebate is set separately.
+The quota an inviter gets each time someone signs up with their invite link or code. In quota units (500,000 = $1). 0 pays nothing at sign-up; **the first top-up rebate is set separately**.
 
 Examples:
 
@@ -245,7 +245,7 @@ Key `QuotaForInvitee` · Type int · Range 0– · Default `0`
 
 Where: Platform settings › Billing › Invite rewards
 
-Extra quota a new user gets for signing up with an invite link or code, on top of the new user quota. In quota units (500,000 = $1). 0 gives invited users only the new user quota.
+Extra quota a new user gets for signing up with an invite link or code, **on top of the new user quota**. In quota units (500,000 = $1). 0 gives invited users only the new user quota.
 
 Examples:
 
@@ -261,7 +261,7 @@ Key `InviterRewardType` · Type enum · Default `fixed`
 
 Where: Platform settings › Billing › Invite rewards
 
-How the inviter's rebate on an invited user's first paid top-up is counted: a fixed quota or a percentage of the top-up. The first top-up rebate sets the amount.
+How the inviter's rebate on an invited user's first paid top-up is counted: **a fixed quota** or a **percentage of the top-up**. The first top-up rebate sets the amount.
 
 Values:
 
@@ -278,7 +278,7 @@ Key `InviterRewardValue` · Type int · Range 0– · Default `0`
 
 Where: Platform settings › Billing › Invite rewards
 
-What an inviter earns when someone they invited makes a first paid top-up. For the fixed type it is quota units (500,000 = $1); for the percentage type a whole percentage from 0 to 100 of the quota bought. Only the first paid top-up earns it: later top-ups and redemption codes earn nothing. 0 turns the rebate off.
+What an inviter earns when someone they invited makes a first paid top-up. For the fixed type it is quota units (500,000 = $1); for the percentage type a whole percentage from 0 to 100 of the quota bought. **Only the first paid top-up earns it**: later top-ups and redemption codes earn nothing. 0 **turns the rebate off**.
 
 Examples:
 

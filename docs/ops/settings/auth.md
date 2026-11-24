@@ -18,7 +18,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 账号体系
 
-本站自行管理账号，或交由外部身份提供方管理。选择外部身份提供方后，本站的密码、邮箱验证码、通行密钥与社交登录开关对普通用户不再生效，仅 root 保留 /login/admin 应急登录。切换到外部身份提供方前，需先启用一个标记为「本站身份」的身份提供方；两个方向的切换在保存前均需再次确认。
+本站自行管理账号，或交由外部身份提供方管理。选择外部身份提供方后，**本站的密码、邮箱验证码、通行密钥与社交登录开关对普通用户不再生效**，仅 root 保留 /login/admin 应急登录。切换到外部身份提供方前，**需先启用一个标记为「本站身份」的身份提供方**；两个方向的切换在保存前均需再次确认。
 
 取值：
 
@@ -37,7 +37,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-允许用户使用用户名或邮箱加密码登录。关闭后，普通用户仅可使用邮箱验证码、通行密钥或社交账号登录；root 仍可使用密码登录后台。仅在内置账号模式下生效。
+允许用户使用用户名或邮箱加密码登录。关闭后，普通用户仅可使用邮箱验证码、通行密钥或社交账号登录；root 仍可使用密码登录后台。**仅在内置账号模式下生效**。
 
 相关设置：[密码注册](./auth.md#PasswordRegisterEnabled) · [邮箱验证码登录](./auth.md#EmailCodeLoginEnabled) · [通行密钥](./auth.md#PasskeyLoginEnabled) · [账号体系](./auth.md#AccountSystem)
 
@@ -49,7 +49,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-允许用户使用发送至已验证邮箱的验证码登录，无需输入密码。需配置可用的发信服务，未配置时登录页不显示此入口。仅在内置账号模式下生效。
+允许用户使用发送至已验证邮箱的验证码登录，无需输入密码。**需配置可用的发信服务**，未配置时登录页不显示此入口。**仅在内置账号模式下生效**。
 
 相关设置：[密码登录](./auth.md#PasswordLoginEnabled) · [通行密钥](./auth.md#PasskeyLoginEnabled)
 
@@ -61,7 +61,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-允许用户在账号安全页添加通行密钥（指纹、面容或硬件密钥）并用于登录。关闭后无法添加或使用通行密钥。使用外部身份提供方时仅 root 可使用，作为应急登录方式。
+允许用户在账号安全页添加通行密钥（指纹、面容或硬件密钥）并用于登录。**关闭后无法添加或使用通行密钥**。使用外部身份提供方时仅 root 可使用，作为应急登录方式。
 
 相关设置：[密码登录](./auth.md#PasswordLoginEnabled) · [管理员应急登录](./auth.md#AdminLoginEnabled)
 
@@ -73,7 +73,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-是否允许创建新账号。关闭后所有注册途径均不可用：密码注册、首次社交登录或身份提供方登录均不创建账号，组织也无法代建成员账号。已有用户仍可正常登录。
+是否允许创建新账号。**关闭后所有注册途径均不可用**：密码注册、首次社交登录或身份提供方登录均不创建账号，组织也无法代建成员账号。**已有用户仍可正常登录**。
 
 相关设置：[密码注册](./auth.md#PasswordRegisterEnabled) · [注册需要邀请码](./auth.md#InviteCodeRegisterEnabled) · [注册时验证邮箱](./auth.md#EmailVerificationEnabled)
 
@@ -85,7 +85,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-允许新用户使用用户名和密码注册。关闭后，新账号仅能通过社交登录创建，组织也无法代建成员账号。需先开启「新用户注册」，仅在内置账号模式下生效。
+允许新用户使用用户名和密码注册。关闭后，新账号仅能通过社交登录创建，**组织也无法代建成员账号**。**需先开启「新用户注册」**，仅在内置账号模式下生效。
 
 相关设置：[新用户注册](./auth.md#RegisterEnabled) · [注册时验证邮箱](./auth.md#EmailVerificationEnabled) · [注册需要邀请码](./auth.md#InviteCodeRegisterEnabled) · [密码登录](./auth.md#PasswordLoginEnabled)
 
@@ -97,7 +97,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-密码注册时需填写邮箱及发送至该邮箱的验证码，账号将记录该已验证邮箱。需配置可用的发信服务。社交登录注册不受影响。开启邮箱域名限制时，验证码仅发送至允许的域名。
+密码注册时需填写邮箱及发送至该邮箱的验证码，账号将记录该已验证邮箱。**需配置可用的发信服务**。社交登录注册不受影响。开启邮箱域名限制时，验证码仅发送至允许的域名。
 
 相关设置：[密码注册](./auth.md#PasswordRegisterEnabled) · [邮箱域名限制](./auth.md#EmailDomainRestrictionEnabled) · [允许的邮箱域名](./auth.md#EmailDomainWhitelist)
 
@@ -109,7 +109,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-新用户须填写有效的邀请码，密码注册和首次社交登录均适用。邀请码在「邀请码」页管理。已有用户和组织代建的成员账号无需邀请码。
+**新用户须填写有效的邀请码**，密码注册和首次社交登录均适用。邀请码在「邀请码」页管理。已有用户和组织代建的成员账号无需邀请码。
 
 相关设置：[新用户注册](./auth.md#RegisterEnabled) · [密码注册](./auth.md#PasswordRegisterEnabled)
 
@@ -121,7 +121,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 登录方式
 
-使用 Cloudflare Turnstile 确认登录、注册、找回密码和发送验证码邮件的操作者为真人。保存 Turnstile Site Key 前无法开启，另需配置 Secret Key。验证通过后，同一会话默认 10 分钟内不再验证。
+使用 Cloudflare Turnstile 确认登录、注册、找回密码和发送验证码邮件的操作者为真人。**保存 Turnstile Site Key 前无法开启**，另需配置 Secret Key。验证通过后，同一会话默认 10 分钟内不再验证。
 
 相关设置：[Turnstile Site Key](./auth.md#TurnstileSiteKey) · [Turnstile Secret Key](./auth.md#TurnstileSecretKey)
 
@@ -135,7 +135,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › 管理员应急登录
 
-保留 /login/admin 入口，身份提供方故障时 root 可使用密码或通行密钥登录。仅 root 可通过此入口登录，账号锁定、限流与人机验证仍然生效。仅在外部身份提供方模式下存在。关闭后，提供方故障期间无法登录后台。
+保留 /login/admin 入口，身份提供方故障时 root 可使用密码或通行密钥登录。**仅 root 可通过此入口登录**，账号锁定、限流与人机验证仍然生效。仅在外部身份提供方模式下存在。关闭后，**提供方故障期间无法登录后台**。
 
 相关设置：[账号体系](./auth.md#AccountSystem) · [通行密钥](./auth.md#PasskeyLoginEnabled)
 
@@ -149,7 +149,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › GitHub 登录
 
-允许用户使用 GitHub 账号登录和注册。保存 GitHub Client ID 前无法开启。仅在内置账号模式下生效。
+允许用户使用 GitHub 账号登录和注册。**保存 GitHub Client ID 前无法开启**。仅在内置账号模式下生效。
 
 相关设置：[GitHub Client ID](./auth.md#GitHubClientId) · [GitHub Client Secret](./auth.md#GitHubClientSecret) · [仅按 ID 匹配 GitHub 账号](./auth.md#GitHubOldIdCloseEnabled)
 
@@ -173,7 +173,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › GitHub 登录
 
-同一 GitHub OAuth App 的 Client Secret。保存后不再显示；留空保存将保留已存储的值。
+同一 GitHub OAuth App 的 Client Secret。保存后不再显示；**留空保存将保留已存储的值**。
 
 相关设置：[GitHub 登录](./auth.md#GitHubOAuthEnabled) · [GitHub Client ID](./auth.md#GitHubClientId)
 
@@ -185,7 +185,7 @@ outline: deep
 
 位置：平台设置 › 登录与注册 › GitHub 登录
 
-GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字账号 ID 匹配。关闭时，尚未存储 ID 的旧账号将按用户名匹配一次，之后记录其 ID。由于用户名可能被修改后由他人注册，建议在旧账号均登录过一次后开启。
+GitHub 登录不再按 GitHub 用户名匹配旧账号，**仅按 GitHub 的数字账号 ID 匹配**。关闭时，尚未存储 ID 的旧账号将按用户名匹配一次，之后记录其 ID。由于用户名可能被修改后由他人注册，**建议在旧账号均登录过一次后开启**。
 
 相关设置：[GitHub 登录](./auth.md#GitHubOAuthEnabled)
 
@@ -199,7 +199,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 微信登录
 
-允许用户通过本站的微信公众号登录和注册。用户关注公众号获取验证码后，在登录页输入。需部署微信登录服务器，保存其地址前无法开启。仅在内置账号模式下生效。
+允许用户通过本站的微信公众号登录和注册。用户关注公众号获取验证码后，在登录页输入。**需部署微信登录服务器**，保存其地址前无法开启。仅在内置账号模式下生效。
 
 相关设置：[微信登录服务器地址](./auth.md#WeChatServerAddress) · [微信登录服务器凭证](./auth.md#WeChatServerToken) · [公众号二维码](./auth.md#WeChatAccountQRCodeImageURL)
 
@@ -227,7 +227,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 微信登录
 
-本站每次查询时发送给微信登录服务器的访问凭证，须与该服务器上的设置一致。保存后不再显示；留空保存将保留已存储的值。
+本站每次查询时发送给微信登录服务器的访问凭证，**须与该服务器上的设置一致**。保存后不再显示；**留空保存将保留已存储的值**。
 
 相关设置：[微信登录服务器地址](./auth.md#WeChatServerAddress)
 
@@ -257,7 +257,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 飞书登录
 
-允许用户使用飞书账号登录和注册。使用本卡片中所填 App ID 和 App Secret 对应的应用。仅在内置账号模式下生效。
+允许用户使用飞书账号登录和注册。使用本卡片中所填 App ID 和 App Secret 对应的应用。**仅在内置账号模式下生效**。
 
 相关设置：[飞书 App ID](./auth.md#LarkClientId) · [飞书 App Secret](./auth.md#LarkClientSecret)
 
@@ -281,7 +281,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 飞书登录
 
-同一飞书应用的 App Secret。保存后不再显示；留空表示保留已存储的值。
+同一飞书应用的 App Secret。保存后不再显示；**留空表示保留已存储的值**。
 
 相关设置：[飞书登录](./auth.md#LarkAuthEnabled) · [飞书 App ID](./auth.md#LarkClientId)
 
@@ -295,7 +295,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › LINUX DO 登录
 
-允许用户使用 LINUX DO 账号登录和注册。保存 Client ID 和 Client Secret 前无法开启。仅在内置账号模式下生效。
+允许用户使用 LINUX DO 账号登录和注册。**保存 Client ID 和 Client Secret 前无法开启**。仅在内置账号模式下生效。
 
 相关设置：[LINUX DO Client ID](./auth.md#LinuxDoClientId) · [LINUX DO Client Secret](./auth.md#LinuxDoClientSecret) · [最低信任等级](./auth.md#LinuxDoOAuthTrustLevelEnabled)
 
@@ -319,7 +319,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › LINUX DO 登录
 
-同一 LINUX DO OAuth 应用的 Client Secret。保存后不再显示；留空保存将保留已存储的值。
+同一 LINUX DO OAuth 应用的 Client Secret。保存后不再显示；**留空保存将保留已存储的值**。
 
 相关设置：[LINUX DO 登录](./auth.md#LinuxDoOAuthEnabled) · [LINUX DO Client ID](./auth.md#LinuxDoClientId)
 
@@ -331,7 +331,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › LINUX DO 登录
 
-信任等级低于最低等级的 LINUX DO 账号无法注册或绑定。是否同时检查已有用户，由「同时检查已有用户」决定。需先开启 LINUX DO 登录。
+信任等级低于最低等级的 LINUX DO 账号**无法注册或绑定**。是否同时检查已有用户，由「同时检查已有用户」决定。**需先开启 LINUX DO 登录**。
 
 相关设置：[LINUX DO 最低信任等级](./auth.md#LinuxDoOAuthLowestTrustLevel) · [同时检查已有用户](./auth.md#LinuxDoOAuthDynamicTrustLevel) · [LINUX DO 登录](./auth.md#LinuxDoOAuthEnabled)
 
@@ -343,7 +343,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › LINUX DO 登录
 
-允许访问的最低 LINUX DO 信任等级，取值 1 到 4：1 基础用户、2 会员、3 活跃用户、4 领导者。仅在开启最低信任等级时生效。
+允许访问的最低 LINUX DO 信任等级，取值 1 到 4：1 基础用户、2 会员、3 活跃用户、4 领导者。**仅在开启最低信任等级时生效**。
 
 示例：
 
@@ -361,7 +361,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › LINUX DO 登录
 
-每次 LINUX DO 登录均检查最低信任等级，已有用户同样适用。等级已不满足要求的已有用户将被拒绝登录。关闭时仅检查新注册用户。需先开启最低信任等级。
+每次 LINUX DO 登录均检查最低信任等级，已有用户同样适用。**等级已不满足要求的已有用户将被拒绝登录**。关闭时仅检查新注册用户。需先开启最低信任等级。
 
 相关设置：[最低信任等级](./auth.md#LinuxDoOAuthTrustLevelEnabled) · [LINUX DO 最低信任等级](./auth.md#LinuxDoOAuthLowestTrustLevel)
 
@@ -387,7 +387,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 人机验证
 
-同一 Turnstile 组件的 Secret Key，服务端使用它向 Cloudflare 核验每次验证结果。保存后不再显示；留空保存将保留已存储的值。
+同一 Turnstile 组件的 Secret Key，服务端使用它向 Cloudflare 核验每次验证结果。保存后不再显示；**留空保存将保留已存储的值**。
 
 相关设置：[Turnstile Site Key](./auth.md#TurnstileSiteKey) · [人机验证](./auth.md#TurnstileCheckEnabled)
 
@@ -401,7 +401,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 邮箱域名限制
 
-注册验证码仅发送至允许域名的邮箱，用于拦截临时邮箱。组织也无法使用其他邮箱代建成员账号。仅在开启注册邮箱验证时可拦截密码注册；域名列表为空时无法开启。
+**注册验证码仅发送至允许域名的邮箱**，用于拦截临时邮箱。组织也无法使用其他邮箱代建成员账号。仅在开启注册邮箱验证时可拦截密码注册；**域名列表为空时无法开启**。
 
 相关设置：[允许的邮箱域名](./auth.md#EmailDomainWhitelist) · [注册时验证邮箱](./auth.md#EmailVerificationEnabled)
 
@@ -413,7 +413,7 @@ GitHub 登录不再按 GitHub 用户名匹配旧账号，仅按 GitHub 的数字
 
 位置：平台设置 › 登录与注册 › 邮箱域名限制
 
-开启限制时允许的邮箱域名，每行一个（存储时以逗号分隔）。域名精确匹配：example.com 不包括 mail.example.com。
+开启限制时允许的邮箱域名，每行一个（存储时以逗号分隔）。**域名精确匹配**：example.com 不包括 mail.example.com。
 
 示例：
 

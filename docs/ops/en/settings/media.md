@@ -18,7 +18,7 @@ Key `ChatImageRequestProxy` · Type url · Default `empty`
 
 Where: Platform settings › Media & storage › Image proxy
 
-An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and without a proxy the image hosts see this server's IP. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty downloads directly.
+An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and **without a proxy the image hosts see this server's IP**. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty **downloads directly**.
 
 Examples:
 
@@ -35,7 +35,7 @@ Key `CFWorkerImageUrl` · Type url · Default `empty` · rarely changed
 
 Where: Platform settings › Media & storage › Image proxy
 
-A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It takes precedence over the image download proxy. Some image hosts refuse Cloudflare, and those images then fail. Empty uses no Worker.
+A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It **takes precedence over the image download proxy**. Some image hosts refuse Cloudflare, and **those images then fail**. Empty uses no Worker.
 
 Examples:
 
@@ -51,7 +51,7 @@ Key `CFWorkerImageKey` · Type secret · secret: never shown after saving · rar
 
 Where: Platform settings › Media & storage › Image proxy
 
-The key sent to the Cloudflare Worker with every image download, for a Worker that checks one. Leave it empty when the Worker checks none or no Worker is set.
+The key sent to the Cloudflare Worker with every image download, **for a Worker that checks one**. Leave it empty when the Worker checks none or no Worker is set.
 
 See also: [Cloudflare Worker image proxy](./media.md#CFWorkerImageUrl)
 
@@ -65,7 +65,7 @@ Key `ImageStorageProvider` · Type enum · Default `local`
 
 Where: Platform settings › Media & storage › Image storage
 
-Where generated images are kept so a request that asks for an image URL gets a link. Gemini, Cloudflare Workers AI and Stability AI return image data only. Off answers with base64 instead: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change applies at once on every node.
+Where generated images are kept so a request that asks for an image URL **gets a link**. Gemini, Cloudflare Workers AI and Stability AI return image data only. **Off answers with base64 instead**: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change **applies at once on every node**.
 
 Values:
 
@@ -88,7 +88,7 @@ Key `ImageStorageRehostUpstream` · Type bool · Default `true`
 
 Where: Platform settings › Media & storage › Image storage
 
-Image and video links from upstreams are swapped for links on this site, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on as it is. When off, upstream links pass through.
+Image and video links from upstreams are **swapped for links on this site**, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is **passed on as it is**. When off, upstream links pass through.
 
 See also: [Image storage](./media.md#ImageStorageProvider)
 
@@ -102,7 +102,7 @@ Key `ImageStorageS3Endpoint` · Type url · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and are signed.
+The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and **are signed**.
 
 Examples:
 
@@ -121,7 +121,7 @@ Key `ImageStorageS3Region` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The region requests are signed for; usually left empty. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.
+The region requests are signed for; **usually left empty**. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.
 
 Examples:
 
@@ -137,7 +137,7 @@ Key `ImageStorageS3BucketName` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The bucket images are uploaded to. It can stay private unless a public URL is set.
+The bucket images are uploaded to. It **can stay private unless a public URL is set**.
 
 See also: [S3 endpoint](./media.md#ImageStorageS3Endpoint) · [S3 public URL](./media.md#ImageStorageS3CDNURL)
 
@@ -149,7 +149,7 @@ Key `ImageStorageS3AccessKeyId` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The ID of an access key that may write to the bucket; its secret goes in the next field.
+The ID of an access key that **may write to the bucket**; its secret goes in the next field.
 
 See also: [S3 access key secret](./media.md#ImageStorageS3AccessKeySecret)
 
@@ -161,7 +161,7 @@ Key `ImageStorageS3AccessKeySecret` · Type secret · secret: never shown after 
 
 Where: Platform settings › Media & storage › Image storage
 
-The secret of the S3 access key. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.
+The secret of the S3 access key. It is **stored encrypted when an encryption key is set**, never shown again, and **saving the field empty keeps the stored one**.
 
 See also: [S3 access key ID](./media.md#ImageStorageS3AccessKeyId)
 
@@ -173,7 +173,7 @@ Key `ImageStorageS3CDNURL` · Type url · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links signed for 1 hour, and the bucket can stay private.
+A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links **signed for 1 hour**, and the bucket can stay private.
 
 Examples:
 
@@ -189,7 +189,7 @@ Key `ImageStorageS3ExpirationDays` · Type int · Unit days · Range 0– · Def
 
 Where: Platform settings › Media & storage › Image storage
 
-Days written into the Expires header of each uploaded image, for caches and CDNs. It deletes nothing: use a lifecycle rule of the storage for that. 0 writes no header.
+Days written into the Expires header of each uploaded image, for caches and CDNs. **It deletes nothing**: use a lifecycle rule of the storage for that. 0 writes no header.
 
 Examples:
 
@@ -222,7 +222,7 @@ Key `ImageStorageOSSRegion` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) need it, or uploads fail.
+The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) **need it, or uploads fail**.
 
 Examples:
 
@@ -238,7 +238,7 @@ Key `ImageStorageOSSBucketName` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The OSS bucket images are uploaded to; it can stay private, since links are signed.
+The OSS bucket images are uploaded to; **it can stay private, since links are signed**.
 
 See also: [OSS endpoint](./media.md#ImageStorageOSSEndpoint)
 
@@ -250,7 +250,7 @@ Key `ImageStorageOSSAccessKeyId` · Type string · Default `empty`
 
 Where: Platform settings › Media & storage › Image storage
 
-The AccessKey ID of a RAM user that may write to the bucket; its secret goes in the next field.
+The AccessKey ID of a RAM user that **may write to the bucket**; its secret goes in the next field.
 
 See also: [OSS AccessKey secret](./media.md#ImageStorageOSSAccessKeySecret)
 
@@ -262,7 +262,7 @@ Key `ImageStorageOSSAccessKeySecret` · Type secret · secret: never shown after
 
 Where: Platform settings › Media & storage › Image storage
 
-The AccessKey secret of the OSS user. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.
+The AccessKey secret of the OSS user. It is **stored encrypted when an encryption key is set**, never shown again, and **saving the field empty keeps the stored one**.
 
 See also: [OSS AccessKey ID](./media.md#ImageStorageOSSAccessKeyId)
 
@@ -274,7 +274,7 @@ Key `ImageStorageSMMSSecret` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Media & storage › Image storage
 
-The API token of your account on the free image host, used for uploads. Images there are public.
+The API token of your account on the free image host, used for uploads. Images there **are public**.
 
 See also: [Image storage](./media.md#ImageStorageProvider)
 
@@ -286,7 +286,7 @@ Key `ImageStorageImgurClientId` · Type secret · secret: never shown after savi
 
 Where: Platform settings › Media & storage › Image storage
 
-The client ID of an application registered with Imgur, used for anonymous uploads. Images there are public.
+The client ID of an application registered with Imgur, used for anonymous uploads. Images there **are public**.
 
 See also: [Image storage](./media.md#ImageStorageProvider)
 
@@ -300,4 +300,4 @@ Key `MjNotifyEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Media & storage › Midjourney callback
 
-Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call comes from the upstream, not this site, so it carries the upstream's view of the task and tells the upstream the caller's address. When off, the address is dropped and callers poll the task status.
+Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call **comes from the upstream, not this site**, so it carries the upstream's view of the task and **tells the upstream the caller's address**. When off, the address is dropped and callers poll the task status.

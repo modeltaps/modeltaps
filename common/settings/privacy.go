@@ -8,8 +8,8 @@ func init() {
 			Key: "LogConsumeEnabled", Scope: ScopeSite, Group: "privacy", Card: "log-consume", Type: TypeBool,
 			Label: "Consume logs",
 			Description: "Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. " +
-				"When off no new records are written and charging goes on as before, but the log list, the usage " +
-				"statistics built from logs and per-user histories have a gap. Top-ups, sign-up bonuses and other system logs " +
+				"When off no new records are written and **charging goes on as before**, but the log list, the usage " +
+				"statistics built from logs and per-user histories **have a gap**. Top-ups, sign-up bonuses and other system logs " +
 				"are written either way.",
 			Related:  []string{"LogAutoDeleteEnabled", "LogIOEnabled"},
 			Keywords: []string{"usage log", "request log", "billing log", "audit"},
@@ -18,7 +18,7 @@ func init() {
 			Key: "LogRelayErrorEnabled", Scope: ScopeSite, Group: "privacy", Card: "log-consume", Type: TypeBool,
 			Label: "Log failed requests",
 			Description: "Write an error log when a request still fails after its retries, with the error the client got and " +
-				"every channel tried. Requests refused locally (insufficient quota, invalid parameters) are not logged.",
+				"every channel tried. Requests refused locally (insufficient quota, invalid parameters) **are not logged**.",
 			Keywords: []string{"error log", "failed request", "upstream error", "troubleshooting"},
 		},
 		Setting{
@@ -26,7 +26,7 @@ func init() {
 			Label: "Hourly channel metrics",
 			Description: "Count attempts, successes, latency, time to first token and output speed per channel, model and hour. " +
 				"The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off " +
-				"nothing new is counted; stored hours stay until they expire.",
+				"**nothing new is counted**; stored hours stay until they expire.",
 			Related:  []string{"ChannelMetricsRetentionDays"},
 			Keywords: []string{"success rate", "latency", "TTFT", "throughput", "channel health", "monitoring"},
 		},
@@ -34,7 +34,7 @@ func init() {
 			Key: "ChannelMetricsRetentionDays", Scope: ScopeSite, Group: "privacy", Card: "log-consume", Type: TypeInt,
 			Unit: "days", Min: num(0),
 			Label:       "Keep metrics for (days)",
-			Description: "How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 keeps them forever.",
+			Description: "How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 **keeps them forever**.",
 			Examples: []Example{
 				{Value: "30", Effect: "The default: at most 30 x 24 = 720 rows per channel and model."},
 				{Value: "0", Effect: "Nothing is deleted: the table grows by one row per channel, model and hour in use."},
@@ -46,7 +46,7 @@ func init() {
 			Key: "LogAutoDeleteEnabled", Scope: ScopeSite, Group: "privacy", Card: "log-consume", Type: TypeBool,
 			Label: "Delete old consume logs",
 			Description: "Delete consume logs older than the retention days every night at 03:00 server time, with their kept " +
-				"bodies. Error and system logs stay, and so do the daily usage statistics already " +
+				"bodies. **Error and system logs stay**, and so do the daily usage statistics already " +
 				"built from the deleted logs.",
 			Related:  []string{"LogAutoDeleteDays", "LogConsumeEnabled"},
 			Keywords: []string{"log retention", "cleanup", "purge", "data retention", "GDPR"},
@@ -56,7 +56,7 @@ func init() {
 			Unit: "days", Min: num(0),
 			Label: "Keep consume logs for (days)",
 			Description: "How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the " +
-				"nightly cleanup; 0 deletes nothing.",
+				"nightly cleanup; 0 **deletes nothing**.",
 			Examples: []Example{
 				{Value: "30", Effect: "The default: a month of logs is kept; a log written on 1 May is gone by 1 June."},
 				{Value: "90", Effect: "A quarter is kept, about three times the rows of the default."},
@@ -69,10 +69,10 @@ func init() {
 			Key: "LogIOEnabled", Scope: ScopeSite, Group: "privacy", Card: "log-io", Type: TypeBool,
 			Label: "Allow keeping request bodies",
 			Description: "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. " +
-				"When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and " +
+				"When off (the default, zero data retention) **no API key keeps them** and the option is hidden from personal and " +
 				"organization settings. When on, a personal account turns it on for its keys in the personal settings, and an " +
 				"organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until " +
-				"then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
+				"then. Bodies are cut at 1 MB each by default, kept 30 days, and **never include API keys or auth headers**.",
 			Related:  []string{"organization.log_io_policy"},
 			Keywords: []string{"zero data retention", "ZDR", "request body", "response body", "prompt logging", "privacy"},
 		},
@@ -82,7 +82,7 @@ func init() {
 			Label: "Content safety check",
 			Description: "Check the text of every request with the safety tool before it goes to a channel, and refuse matches " +
 				"with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini " +
-				"Live sessions are checked; images and audio are not.",
+				"Live sessions are checked; **images and audio are not**.",
 			Related:  []string{"SafeToolName", "SafeKeyWords"},
 			Keywords: []string{"moderation", "content filter", "keyword filter", "prompt safety", "censorship"},
 		},
@@ -94,7 +94,7 @@ func init() {
 			Advanced: true,
 			Label:    "Safety tool",
 			Description: "The tool that runs the content safety check. Keyword is the one built in. A tool that is not " +
-				"installed refuses every request.",
+				"installed **refuses every request**.",
 			Related:  []string{"EnableSafe", "SafeKeyWords"},
 			Keywords: []string{"moderation tool", "content filter"},
 		},
@@ -102,7 +102,7 @@ func init() {
 			Key: "SafeKeyWords", Scope: ScopeSite, Group: "privacy", Card: "safety", Type: TypeList,
 			Label: "Blocked keywords",
 			Description: "The words the Keyword tool blocks, one per line. A request is refused when its text contains any of " +
-				"them, ignoring case, also inside longer words. Empty lines are ignored.",
+				"them, ignoring case, **also inside longer words**. Empty lines are ignored.",
 			Examples: []Example{
 				{Value: "casino", Effect: "Refuses \"Plan a casino night\" and \"best casinos\"."},
 				{Value: "ass", Effect: "Also refuses \"class\" and \"password\": short words match inside longer ones, so list whole, unusual words."},

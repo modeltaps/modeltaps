@@ -20,7 +20,7 @@ Key `channel.priority` · Type int · Default 0
 
 Where: Channels › routing
 
-The order channels are tried in for a model: the highest priority takes requests first. A lower priority is used only while every channel above it is unavailable; channels of one priority share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. While supplies route requests, the call order on the Providers page orders channels instead, and new supplies of the channel start from its priority.
+The order channels are tried in for a model: **the highest priority takes requests first**. A lower priority is **used only while every channel above it is unavailable**; channels of one priority share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. While supplies route requests, **the call order on the Providers page orders channels instead**, and new supplies of the channel start from its priority.
 
 Examples:
 
@@ -37,7 +37,7 @@ Key `channel.weight` · Type int · Range 0– · Default 1
 
 Where: Channels › routing
 
-How channels of the same priority share a model's requests: each takes its weight over the sum of the weights. Channels of other priorities are not counted. While supplies route requests, the supplies' own weights decide, and new supplies of the channel start from its weight.
+How channels of the same priority share a model's requests: each takes its weight over the sum of the weights. Channels of other priorities **are not counted**. While supplies route requests, the supplies' **own weights decide**, and new supplies of the channel start from its weight.
 
 Examples:
 
@@ -54,7 +54,7 @@ Key `channel.cost_ratio` · Type ratio · Range 0– · Default empty (unknown)
 
 Where: Channels › advanced
 
-What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. It is used only where the channel publishes no synced price: the channel cost is then catalog price x cost ratio x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; users are never charged by it. Empty or 0 means unknown.
+What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. It is **used only where the channel publishes no synced price**: the channel cost is then catalog price x cost ratio x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; **users are never charged by it**. Empty or 0 means unknown.
 
 Examples:
 
@@ -73,7 +73,7 @@ Key `channel.fee_rate` · Type percent · Unit % · Range 0– · Default the pr
 
 Where: Channels › advanced
 
-What the channel's provider charges on top of its list prices, usually when you buy credit: cash paid / credit received - 1. A channel's cost is its list price x (1 + fee rate); costs decide which supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.
+What the channel's provider charges on top of its list prices, usually when you buy credit: cash paid / credit received - 1. A channel's cost is **its list price x (1 + fee rate)**; costs decide which supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.
 
 Examples:
 
@@ -93,7 +93,7 @@ Key `channel.fee_note` · Type string
 
 Where: Channels › advanced
 
-Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required once the fee rate is above 0. Only admins see it; users see a generic label.
+Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required once the fee rate is above 0. **Only admins see it**; users see a generic label.
 
 See also: [Fee rate](./objects.md#channel-fee_rate)
 
@@ -105,7 +105,7 @@ Key `channel.group` · Type list · Default default
 
 Where: Channels › routing
 
-The user groups the channel serves: a request is only sent to channels of the group it runs in. A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. A channel needs at least one group.
+The user groups the channel serves: a request is **only sent to channels of the group it runs in**. A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. A channel **needs at least one group**.
 
 Examples:
 
@@ -122,7 +122,7 @@ Key `channel.model_mapping` · Type json · rarely changed
 
 Where: Channels › advanced
 
-Renames on this channel only: a requested model name is sent upstream as another name. Use it only when the upstream wants its own names, such as deployment names; matching models to the catalog needs nothing here. A target starting with + bills by the requested name. Requests routed through a supply use the supply's upstream model instead. Saving a change rewrites the channel's model list to the requested names.
+Renames on this channel only: a requested model name is sent upstream as another name. Use it only when the upstream wants its own names, such as deployment names; **matching models to the catalog needs nothing here**. A target starting with + bills by the requested name. Requests routed through a supply use the supply's upstream model instead. Saving a change **rewrites the channel's model list** to the requested names.
 
 Examples:
 
@@ -139,7 +139,7 @@ Key `channel.pre_cost` · Type enum · Default 1 · rarely changed
 
 Where: Channels › advanced
 
-How the gateway counts a request's input before sending it, to hold the user's credit until the reply's usage is known. The count also stands in for the input when an upstream reports no usage, such as some streams. Leaving images or everything out saves server work on heavy requests; the prompt token limit is still checked.
+How the gateway counts a request's input before sending it, to hold the user's credit until the reply's usage is known. The count also **stands in for the input when an upstream reports no usage**, such as some streams. Leaving images or everything out saves server work on heavy requests; **the prompt token limit is still checked**.
 
 Values:
 
@@ -157,7 +157,7 @@ Key `channel.disabled_stream` · Type list · rarely changed
 
 Where: Channels › advanced
 
-Models this channel must not stream: streaming requests for them skip it for another channel serving the model. Requests without streaming still use it. Empty means every model streams.
+Models this channel must not stream: streaming requests for them **skip it for another channel** serving the model. Requests without streaming **still use it**. Empty means every model streams.
 
 Examples:
 
@@ -171,7 +171,7 @@ Key `channel.prompt_caching` · Type enum · Default inherit · rarely changed
 
 Where: Channels › advanced
 
-Whether the gateway adds cache_control marks to Claude requests on this channel, so the upstream caches the prompt. Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go and which models match (Claude names by default).
+Whether the gateway **adds cache_control marks to Claude requests** on this channel, so the upstream caches the prompt. Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go and which models match (Claude names by default).
 
 Values:
 
@@ -189,7 +189,7 @@ Key `channel.proxy` · Type url
 
 Where: Channels › connection
 
-A proxy for this channel's upstream requests only, http or socks5. Only needed when this server cannot reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for proxies that pin one exit per session. Empty connects directly.
+A proxy for **this channel's upstream requests only**, http or socks5. Only needed when this server cannot reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for proxies that pin one exit per session. Empty **connects directly**.
 
 Examples:
 
@@ -204,7 +204,7 @@ Key `channel.test_model` · Type string
 
 Where: Channels › monitor
 
-The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model from the channel's list, else its first chat model; a channel without a chat model then cannot be tested.
+The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model from the channel's list, else its first chat model; a channel without a chat model then **cannot be tested**.
 
 Examples:
 
@@ -220,7 +220,7 @@ Key `model.price` · Type float · Unit USD / 1M tokens · Range 0–
 
 Where: Models › Pricing
 
-What the model costs before the group ratio, per million input and output tokens (or per request or minute). Users pay catalog price x their group ratio, whichever channel serves the request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is refused by default.
+What the model costs before the group ratio, per million input and output tokens (or per request or minute). **Users pay catalog price x their group ratio**, whichever channel serves the request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is **refused by default**.
 
 Examples:
 
@@ -239,7 +239,7 @@ Key `model.allocation` · Type enum · Default policy
 
 Where: Models › supplies
 
-Whether the model's supplies follow the call order of the Providers page or keep their own numbers. Changing a supply's priority or weight on the Supplies tab sets the model to set by hand; switching back to the call order drops those numbers.
+Whether the model's supplies follow the call order of the Providers page or keep their own numbers. Changing a supply's priority or weight on the Supplies tab **sets the model to set by hand**; switching back to the call order **drops those numbers**.
 
 Values:
 
@@ -263,7 +263,7 @@ Key `supply.priority` · Type int · Default the channel's priority; a supply ad
 
 Where: Models › supplies
 
-This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; a supply with its own number no longer follows its channel.
+This supply's tier among the model's supplies: **higher tiers take requests first**, lower ones back them up. A lower tier is **used only while every supply above it is unavailable**. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; **a supply with its own number no longer follows its channel**.
 
 Examples:
 
@@ -282,7 +282,7 @@ Key `supply.weight` · Type int · Range 0– · Default the channel's weight
 
 Where: Models › supplies
 
-This supply's share of its tier: its weight over the tier's total. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.
+This supply's share of its tier: its weight over the tier's total. 0 **counts as 1**. Under the call order a provider's weight is split equally between its channels.
 
 Examples:
 
@@ -299,7 +299,7 @@ Key `supply.enabled` · Type bool · Default on; off for a supply an intake rule
 
 Where: Models › supplies
 
-Whether the supply takes the model's requests. Off, it keeps its settings but is skipped. Supplies an intake rule added wait switched off until you switch them on; switching a supply on also accepts its cost, so the price check leaves it alone.
+Whether the supply takes the model's requests. Off, it **keeps its settings but is skipped**. Supplies an intake rule added wait switched off until you switch them on; switching a supply on **also accepts its cost**, so the price check leaves it alone.
 
 See also: [Intake rules for new upstream models](./supply.md#SupplyIntakeRules)
 
@@ -311,7 +311,7 @@ Key `supply.upstream_model` · Type string · Default filled in from the channel
 
 Where: Models › supplies
 
-The model name this supply sends to its channel's upstream. The client still asks for the public name and is billed by it; the channel's model mapping does not apply. A supply stops taking requests when the upstream stops listing this name in two checks in a row.
+The model name this supply sends to its channel's upstream. The client still asks for the public name and is billed by it; **the channel's model mapping does not apply**. A supply **stops taking requests** when the upstream stops listing this name in two checks in a row.
 
 Examples:
 
@@ -330,7 +330,7 @@ Key `allocation.tiers` · Type json · Default created from the channels' priori
 
 Where: Allocation policy › call-order
 
-The order channels take requests in while supplies route them, edited as the list on the Providers page. Each position is a provider (every channel of one type and address) or a single channel; positions shared by several split their requests by weight, and a provider's weight is split equally between its channels. Channels not placed come last, newest last. Models set by hand keep their own order.
+The order channels take requests in while supplies route them, edited as the list on the Providers page. Each position is a provider (every channel of one type and address) or a single channel; positions shared by several **split their requests by weight**, and a provider's weight is split equally between its channels. Channels **not placed come last**, newest last. Models set by hand **keep their own order**.
 
 Examples:
 
@@ -351,7 +351,7 @@ Key `user_group.ratio` · Type ratio · Range 0– · Default 1
 
 Where: User groups › edit
 
-The multiplier on the catalog (official) price for users of the group: every request is charged catalog price x ratio, whatever channel serves it. The default group's ratio is the site's normal price and margin; other groups give discounts or charge more. 0 makes the group's requests free.
+The multiplier on the catalog (official) price for users of the group: every request is charged catalog price x ratio, **whatever channel serves it**. The default group's ratio is the site's normal price and margin; other groups give discounts or charge more. 0 **makes the group's requests free**.
 
 Examples:
 
@@ -371,7 +371,7 @@ Key `user_group.api_rate` · Type int · Unit requests / minute · Range 0– ·
 
 Where: User groups › edit
 
-How many API requests each user of the group may send per minute, counted per user across all their keys. Requests over it get 429. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts of up to 10 seconds' worth.
+How many API requests each user of the group may send per minute, **counted per user across all their keys**. Requests over it **get 429**. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts of up to 10 seconds' worth.
 
 Examples:
 
@@ -386,7 +386,7 @@ Key `user_group.public` · Type bool · Default off
 
 Where: User groups › edit
 
-Whether users outside the group may pick it for their API keys, as a key's group or backup group. Off, only users in the group use it. Requests through a picked group are billed at its ratio.
+Whether users outside the group **may pick it for their API keys**, as a key's group or backup group. Off, only users in the group use it. Requests through a picked group are **billed at its ratio**.
 
 See also: [Group](./objects.md#token-group) · [Backup group](./objects.md#token-backup_group) · [Group ratio](./objects.md#user_group-ratio)
 
@@ -398,7 +398,7 @@ Key `user_group.promotion` · Type bool · Default off
 
 Where: User groups › edit
 
-Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is checked after each paid order; gifted credit (sign-up and invite bonuses, redemption codes, admin changes) does not count. When several groups match, the one with the highest minimum wins. A user an admin put in another group is moved too.
+Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is checked after each paid order; **gifted credit** (sign-up and invite bonuses, redemption codes, admin changes) does not count. When several groups match, **the one with the highest minimum wins**. A user an admin put in another group **is moved too**.
 
 See also: [Minimum paid top-ups](./objects.md#user_group-min) · [Maximum paid top-ups](./objects.md#user_group-max)
 
@@ -410,7 +410,7 @@ Key `user_group.min` · Type float · Unit $ · Range 0– · Default 0
 
 Where: User groups › edit
 
-The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with auto upgrade on.
+The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with **auto upgrade on**.
 
 Examples:
 
@@ -427,7 +427,7 @@ Key `user_group.max` · Type float · Unit $ · Range 0– · Default 0
 
 Where: User groups › edit
 
-The total paid top-ups at which the group stops matching (exclusive), so a bigger spender moves on to the next group. 0 means no upper bound. Only used with auto upgrade on.
+The total paid top-ups at which the group **stops matching (exclusive)**, so a bigger spender moves on to the next group. 0 means **no upper bound**. Only used with auto upgrade on.
 
 Examples:
 
@@ -446,7 +446,7 @@ Key `routing_policy.decision_model` · Type string
 
 Where: Routing policies › routes
 
-The model that reads a session's first user message and picks one of the routes. A decision model is best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the caller once per session, and it cannot be another routing policy.
+The model that reads a session's first user message and picks one of the routes. A decision model is best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the **caller once per session**, and it **cannot be another routing policy**.
 
 Examples:
 
@@ -462,7 +462,7 @@ Key `routing_policy.scoring` · Type enum · Default auto
 
 Where: Routing policies › routes
 
-How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a non-reasoning model on a channel that returns them; Claude, reasoning models and most aggregators do not. A decision model ignores this setting.
+How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a **non-reasoning model on a channel that returns them**; Claude, reasoning models and most aggregators do not. A decision model **ignores this setting**.
 
 Values:
 
@@ -480,7 +480,7 @@ Key `routing_policy.threshold` · Type float · Range 0–1 · Default 0.5
 
 Where: Routing policies › routes
 
-The confidence the chosen route needs, from 0 to 1; below it the request goes to the fallback model. Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. Self-reported confidence is only a ranking, so it compares less exactly than logprobs.
+The confidence the chosen route needs, from 0 to 1; **below it the request goes to the fallback model**. Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. Self-reported confidence is only a ranking, so it compares less exactly than logprobs.
 
 Examples:
 
@@ -498,7 +498,7 @@ Key `routing_policy.fallback_model` · Type string
 
 Where: Routing policies › routes
 
-Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. A decision that times out counts as failed. Put your safest model here; it cannot be another routing policy.
+Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. A decision that times out counts as failed. **Put your safest model here**; it **cannot be another routing policy**.
 
 Examples:
 
@@ -514,7 +514,7 @@ Key `routing_policy.pin_ttl_seconds` · Type int · Unit s · Range 0–604800 �
 
 Where: Routing policies › settings
 
-How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. 0 classifies every request; at most 7 days.
+How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the upstream prompt cache warm and **never switch models mid-conversation**. 0 **classifies every request**; at most 7 days.
 
 Examples:
 
@@ -533,7 +533,7 @@ Key `organization.max_members` · Type int · Range 0– · Default the site def
 
 Where: Organizations › members
 
-The most members the organization may have, set by platform admins. It only stops new members from joining; existing members are not removed. Follow the site default, unlimited (0) or a number.
+The most members the organization may have, set by platform admins. It only stops new members from joining; **existing members are not removed**. Follow the site default, unlimited (0) or a number.
 
 Examples:
 
@@ -550,7 +550,7 @@ Key `organization.approved_models` · Type list · Default empty (every model)
 
 Where: Organizations › models
 
-The most the organization may use, set by platform admins: every list of the organization stays inside it. Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows a prefix, so new releases of a family follow; exact names need approving one by one. Empty means no limit.
+The most the organization may use, set by platform admins: **every list of the organization stays inside it**. Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows a prefix, so new releases of a family follow; **exact names need approving one by one**. Empty means **no limit**.
 
 Examples:
 
@@ -567,7 +567,7 @@ Key `organization.model_whitelist` · Type list · Default empty (every approved
 
 Where: Organizations › model-access
 
-What members may use unless they have limits of their own, set by organization owners and admins. It is a named list or a list of models. Members with their own limits are not affected, and keys can only narrow what their creator may use. A name ending in * allows a prefix. Empty means every approved model.
+What members may use unless they have limits of their own, set by organization owners and admins. It is a named list or a list of models. Members with their own limits **are not affected**, and keys can only narrow what their creator may use. A name ending in * allows a prefix. Empty means **every approved model**.
 
 Examples:
 
@@ -583,7 +583,7 @@ Key `organization.budget` · Type float · Unit $ · Range 0– · Default none
 
 Where: Organizations › budget
 
-The most all members together may spend per day, week or month; then the organization's requests are refused. They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the platform's reset time zone; changing the period restarts the count. None means no organization-wide cap.
+The most all members together may spend per day, week or month; then **the organization's requests are refused**. They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the platform's reset time zone; **changing the period restarts the count**. None means no organization-wide cap.
 
 Examples:
 
@@ -600,7 +600,7 @@ Key `organization.member_budget` · Type float · Unit $ · Range 0– · Defaul
 
 Where: Organizations › members
 
-The most one member may spend per day, week or month in the organization, set on the member's limits. Once used up, that member's requests are refused until the next period, while the organization budget caps everyone together. Keys the organization owns have no member budget. None means no cap of the member's own.
+The most one member may spend per day, week or month in the organization, set on the member's limits. Once used up, **that member's requests are refused until the next period**, while the organization budget caps everyone together. Keys the organization owns **have no member budget**. None means no cap of the member's own.
 
 Examples:
 
@@ -616,7 +616,7 @@ Key `organization.log_io_policy` · Type enum · Default off
 
 Where: Organizations › general
 
-Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: a key's creator cannot. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.
+Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: **a key's creator cannot**. Stored bodies **never include API keys or auth headers**, are deleted after 30 days, and **only owners and platform admins can read them**. Members are told on their keys who turned retention on and when. Shown **only while the site allows retention**.
 
 Values:
 
@@ -641,7 +641,7 @@ Key `token.group` · Type string · Default empty (the user's group)
 
 Where: API keys › access
 
-The user group the key's requests run in: only channels of that group serve them, billed at its ratio. It must be the user's own group or a public one. Empty uses the user's group.
+The user group the key's requests run in: **only channels of that group serve them**, billed at its ratio. It **must be the user's own group or a public one**. Empty uses the user's group.
 
 Examples:
 
@@ -657,7 +657,7 @@ Key `token.backup_group` · Type string
 
 Where: API keys › access
 
-A second group tried when the key's group has no channel that can take the request. A request served there is billed at the backup group's ratio and marked in the logs. With a group or backup group set, the user's own group is not tried.
+A second group tried when the key's group has no channel that can take the request. A request served there is **billed at the backup group's ratio** and marked in the logs. With a group or backup group set, the user's own group **is not tried**.
 
 Examples:
 
@@ -673,7 +673,7 @@ Key `token.model_limits` · Type list
 
 Where: API keys › access
 
-The models the key may call; others are refused. A name ending in * allows a prefix. With the switch on and no model selected, the key is not restricted. On an organization key it can only narrow what its creator may use, and may be a named list.
+The models the key may call; **others are refused**. A name ending in * allows a prefix. With the switch on and no model selected, **the key is not restricted**. On an organization key it **can only narrow what its creator may use**, and may be a named list.
 
 Examples:
 
@@ -689,7 +689,7 @@ Key `token.quota` · Type float · Unit $ · Range 0– · Default empty (no lim
 
 Where: API keys › basics
 
-The most the key may spend; once used up, its requests are refused. With a reset period it is the limit per period instead. It only caps the key: the account balance always applies. Empty means no limit of the key's own.
+The most the key may spend; once used up, **its requests are refused**. With a reset period it is the limit per period instead. It only caps the key: **the account balance always applies**. Empty means no limit of the key's own.
 
 Examples:
 
@@ -706,7 +706,7 @@ Key `token.quota_reset` · Type enum
 
 Where: API keys › basics
 
-How often the key's spending limit starts over. Without a period the limit is spent once. Periods start at midnight in the platform's reset time zone, weeks on its week start; changing the period restarts the count. A period needs a limit above 0.
+How often the key's spending limit starts over. Without a period **the limit is spent once**. Periods start at midnight in the platform's reset time zone, weeks on its week start; **changing the period restarts the count**. A period **needs a limit above 0**.
 
 Values:
 

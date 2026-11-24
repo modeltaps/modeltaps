@@ -18,12 +18,12 @@ Key `AccountSystem` · Type enum · Default `builtin`
 
 Where: Platform settings › Sign-in & registration › Account system
 
-Whether this site manages its own accounts or leaves them to an external identity provider. With an external provider, the site's password, email code, passkey and social sign-in switches stop applying to regular users; only root keeps the emergency sign-in at /login/admin. Switching to external needs an enabled identity provider marked as the site identity, and saving asks for confirmation either way.
+Whether this site manages its own accounts or leaves them to an external identity provider. With an external provider, the site's password, email code, passkey and social sign-in switches **stop applying** to regular users; **only root keeps the emergency sign-in** at /login/admin. Switching to external needs an enabled identity provider marked as the site identity, and saving asks for confirmation either way.
 
 Values:
 
-- `builtin` Built-in accounts: This site manages users, passwords, email codes and passkeys, optionally with GitHub, WeChat and other third-party sign-in. No external service is needed.
-- `external` External identity provider: An OIDC service handles sign-in, sign-up, phone numbers, two-step verification and third-party sign-in. This site shows no sign-in form of its own: /login goes straight to the provider.
+- `builtin` Built-in accounts: This site manages users, passwords, email codes and passkeys, optionally with GitHub, WeChat and other third-party sign-in. **No external service** is needed.
+- `external` External identity provider: An OIDC service handles sign-in, sign-up, phone numbers, two-step verification and third-party sign-in. This site shows **no sign-in form of its own**: /login goes straight to the provider.
 
 See also: [Admin emergency sign-in](./auth.md#AdminLoginEnabled) · [Password sign-in](./auth.md#PasswordLoginEnabled) · [New user sign-up](./auth.md#RegisterEnabled)
 
@@ -37,7 +37,7 @@ Key `PasswordLoginEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Users can sign in with their username or email and password. When off, regular users sign in with an email code, a passkey or a social account; root can still use its password to reach the console. Only applies with built-in accounts.
+Users can sign in with their username or email and password. When off, regular users sign in with an email code, a passkey or a social account; root can still use its password to reach the console. Only applies **with built-in accounts**.
 
 See also: [Password sign-up](./auth.md#PasswordRegisterEnabled) · [Email code sign-in](./auth.md#EmailCodeLoginEnabled) · [Passkeys](./auth.md#PasskeyLoginEnabled) · [Account system](./auth.md#AccountSystem)
 
@@ -49,7 +49,7 @@ Key `EmailCodeLoginEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Users can sign in with a code sent to their verified email instead of a password. It needs a working mail service: without one the option is not offered on the sign-in page. Only applies with built-in accounts.
+Users can sign in with a code sent to their verified email instead of a password. It needs a **working mail service**: without one the option is not offered on the sign-in page. Only applies **with built-in accounts**.
 
 See also: [Password sign-in](./auth.md#PasswordLoginEnabled) · [Passkeys](./auth.md#PasskeyLoginEnabled)
 
@@ -61,7 +61,7 @@ Key `PasskeyLoginEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Users can add passkeys (fingerprint, face or a hardware key) on their security page and sign in with them. When off, passkeys can neither be added nor used. With an external identity provider only root can use them, for the emergency sign-in.
+Users can add passkeys (fingerprint, face or a hardware key) on their security page and sign in with them. When off, **passkeys can neither be added nor used**. With an external identity provider only root can use them, for the emergency sign-in.
 
 See also: [Password sign-in](./auth.md#PasswordLoginEnabled) · [Admin emergency sign-in](./auth.md#AdminLoginEnabled)
 
@@ -73,7 +73,7 @@ Key `RegisterEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Whether new accounts can be created at all. When off, nobody can sign up: not with a password, not on a first social or identity provider sign-in, and organizations cannot create member accounts. Existing users still sign in.
+Whether new accounts can be created at all. When off, **nobody can sign up**: not with a password, not on a first social or identity provider sign-in, and organizations cannot create member accounts. Existing users **still sign in**.
 
 See also: [Password sign-up](./auth.md#PasswordRegisterEnabled) · [Invite code required to sign up](./auth.md#InviteCodeRegisterEnabled) · [Email verification at sign-up](./auth.md#EmailVerificationEnabled)
 
@@ -85,7 +85,7 @@ Key `PasswordRegisterEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-New users can sign up with a username and password. When off, new accounts come only from social sign-in, and organizations cannot create member accounts. Needs New user sign-up on; only applies with built-in accounts.
+New users can sign up with a username and password. When off, new accounts come only from social sign-in, and organizations cannot create member accounts. **Needs New user sign-up on**; **only applies with built-in accounts**.
 
 See also: [New user sign-up](./auth.md#RegisterEnabled) · [Email verification at sign-up](./auth.md#EmailVerificationEnabled) · [Invite code required to sign up](./auth.md#InviteCodeRegisterEnabled) · [Password sign-in](./auth.md#PasswordLoginEnabled)
 
@@ -97,7 +97,7 @@ Key `EmailVerificationEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Password sign-up asks for an email and the code sent to it, and the account keeps that email as verified. It needs a working mail service. Social sign-ups are not affected. With the email domain restriction on, codes only go to allowed domains.
+Password sign-up asks for an email and the code sent to it, and the account keeps that email as verified. It **needs a working mail service**. Social sign-ups are not affected. With the email domain restriction on, codes only go to allowed domains.
 
 See also: [Password sign-up](./auth.md#PasswordRegisterEnabled) · [Email domain restriction](./auth.md#EmailDomainRestrictionEnabled) · [Allowed email domains](./auth.md#EmailDomainWhitelist)
 
@@ -109,7 +109,7 @@ Key `InviteCodeRegisterEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-New users must enter a valid invite code, both for password sign-up and for a first social sign-in. Invite codes are managed on the invite codes page. Existing users and member accounts created by organizations do not need one.
+New users **must enter a valid invite code**, both for password sign-up and for a first social sign-in. Invite codes are managed on the invite codes page. Existing users and member accounts created by organizations do not need one.
 
 See also: [New user sign-up](./auth.md#RegisterEnabled) · [Password sign-up](./auth.md#PasswordRegisterEnabled)
 
@@ -121,7 +121,7 @@ Key `TurnstileCheckEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › Sign-in methods
 
-Cloudflare Turnstile checks that a person is behind sign-in, sign-up, password reset and the emails with codes. It cannot be turned on before the Turnstile site key is saved, and it needs the secret key too. A passed check covers the session for 10 minutes by default.
+Cloudflare Turnstile checks that a person is behind sign-in, sign-up, password reset and the emails with codes. It **cannot be turned on before the Turnstile site key is saved**, and it **needs the secret key too**. A passed check covers the session for 10 minutes by default.
 
 See also: [Turnstile site key](./auth.md#TurnstileSiteKey) · [Turnstile secret key](./auth.md#TurnstileSecretKey)
 
@@ -135,7 +135,7 @@ Key `AdminLoginEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Sign-in & registration › Admin emergency sign-in
 
-Keeps /login/admin open so root can sign in with its password or passkey when the identity provider is down. Only root gets through; account lockout, rate limits and the bot check still apply. It exists only with an external identity provider. When off, nobody can reach the console while the provider is down.
+Keeps /login/admin open so root can sign in with its password or passkey when the identity provider is down. **Only root gets through**; account lockout, rate limits and the bot check still apply. It **exists only with an external identity provider**. When off, **nobody can reach the console** while the provider is down.
 
 See also: [Account system](./auth.md#AccountSystem) · [Passkeys](./auth.md#PasskeyLoginEnabled)
 
@@ -149,7 +149,7 @@ Key `GitHubOAuthEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › GitHub sign-in
 
-Users can sign in and sign up with their GitHub account. It cannot be turned on before the GitHub client ID is saved. Only applies with built-in accounts.
+Users can sign in and sign up with their GitHub account. It cannot be turned on before the GitHub client ID is saved. Only applies **with built-in accounts**.
 
 See also: [GitHub client ID](./auth.md#GitHubClientId) · [GitHub client secret](./auth.md#GitHubClientSecret) · [Match GitHub accounts by ID only](./auth.md#GitHubOldIdCloseEnabled)
 
@@ -161,7 +161,7 @@ Key `GitHubClientId` · Type string · Default `empty`
 
 Where: Platform settings › Sign-in & registration › GitHub sign-in
 
-The client ID of the OAuth app you registered on GitHub. Register it with this site's address as the homepage URL and <server address>/oauth/github as the callback URL.
+The client ID of the OAuth app you registered on GitHub. Register it with this site's address as the homepage URL and **<server address>/oauth/github as the callback URL**.
 
 See also: [GitHub sign-in](./auth.md#GitHubOAuthEnabled) · [GitHub client secret](./auth.md#GitHubClientSecret)
 
@@ -173,7 +173,7 @@ Key `GitHubClientSecret` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Sign-in & registration › GitHub sign-in
 
-The client secret of the same GitHub OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.
+The client secret of the same GitHub OAuth app. It is **never shown again after saving**; leave the field empty to keep the stored one.
 
 See also: [GitHub sign-in](./auth.md#GitHubOAuthEnabled) · [GitHub client ID](./auth.md#GitHubClientId)
 
@@ -185,7 +185,7 @@ Key `GitHubOldIdCloseEnabled` · Type bool · Default `false` · rarely changed
 
 Where: Platform settings › Sign-in & registration › GitHub sign-in
 
-GitHub sign-in no longer matches old accounts by their GitHub login name, only by GitHub's numeric account ID. When off, an account from before IDs were stored is matched once by login name and then keeps the ID. A login name can be renamed and taken by someone else, so turn it on once old accounts have signed in.
+GitHub sign-in no longer matches old accounts by their GitHub login name, only by GitHub's numeric account ID. When off, an account from before IDs were stored is matched once by login name and then keeps the ID. A login name can be renamed and **taken by someone else**, so **turn it on once old accounts have signed in**.
 
 See also: [GitHub sign-in](./auth.md#GitHubOAuthEnabled)
 
@@ -199,7 +199,7 @@ Key `WeChatAuthEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › WeChat sign-in
 
-Users can sign in and sign up through your WeChat official account. They follow it, get a code and enter it on the sign-in page. It needs a WeChat login server and cannot be turned on before its address is saved. Only applies with built-in accounts.
+Users can sign in and sign up through your WeChat official account. They follow it, get a code and enter it on the sign-in page. It **needs a WeChat login server** and cannot be turned on before its address is saved. Only applies **with built-in accounts**.
 
 See also: [WeChat login server address](./auth.md#WeChatServerAddress) · [WeChat login server token](./auth.md#WeChatServerToken) · [Official account QR code](./auth.md#WeChatAccountQRCodeImageURL)
 
@@ -227,7 +227,7 @@ Key `WeChatServerToken` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Sign-in & registration › WeChat sign-in
 
-The access token the site sends to the WeChat login server with every check, as set on that server. It is never shown again after saving; leave the field empty to keep the stored one.
+The access token the site sends to the WeChat login server with every check, as set on that server. It is **never shown again after saving**; leave the field empty to keep the stored one.
 
 See also: [WeChat login server address](./auth.md#WeChatServerAddress)
 
@@ -257,7 +257,7 @@ Key `LarkAuthEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › Lark sign-in
 
-Users can sign in and sign up with their Lark (Feishu) account. It uses the app whose App ID and App Secret you enter on this card. Only applies with built-in accounts.
+Users can sign in and sign up with their Lark (Feishu) account. It uses the app whose App ID and App Secret you enter on this card. Only applies **with built-in accounts**.
 
 See also: [Lark App ID](./auth.md#LarkClientId) · [Lark App Secret](./auth.md#LarkClientSecret)
 
@@ -269,7 +269,7 @@ Key `LarkClientId` · Type string · Default `empty`
 
 Where: Platform settings › Sign-in & registration › Lark sign-in
 
-The App ID of the Lark (Feishu) app users sign in with. Create a web app on the Lark open platform and set its redirect URL to <server address>/oauth/lark.
+The App ID of the Lark (Feishu) app users sign in with. Create a web app on the Lark open platform and **set its redirect URL to <server address>/oauth/lark**.
 
 See also: [Lark sign-in](./auth.md#LarkAuthEnabled) · [Lark App Secret](./auth.md#LarkClientSecret)
 
@@ -281,7 +281,7 @@ Key `LarkClientSecret` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Sign-in & registration › Lark sign-in
 
-The App Secret of the same Lark app. It is never shown again after saving; leave the field empty to keep the stored one.
+The App Secret of the same Lark app. It is **never shown again after saving**; leave the field empty to keep the stored one.
 
 See also: [Lark sign-in](./auth.md#LarkAuthEnabled) · [Lark App ID](./auth.md#LarkClientId)
 
@@ -295,7 +295,7 @@ Key `LinuxDoOAuthEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-Users can sign in and sign up with their LINUX DO account. It cannot be turned on before the client ID and client secret are saved. Only applies with built-in accounts.
+Users can sign in and sign up with their LINUX DO account. It cannot be turned on before the client ID and client secret are saved. Only applies **with built-in accounts**.
 
 See also: [LINUX DO client ID](./auth.md#LinuxDoClientId) · [LINUX DO client secret](./auth.md#LinuxDoClientSecret) · [Minimum trust level](./auth.md#LinuxDoOAuthTrustLevelEnabled)
 
@@ -307,7 +307,7 @@ Key `LinuxDoClientId` · Type string · Default `empty`
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-The client ID of the OAuth app you registered on LINUX DO, with <server address>/oauth/linuxdo as its callback URL.
+The client ID of the OAuth app you registered on LINUX DO, with **<server address>/oauth/linuxdo** as its callback URL.
 
 See also: [LINUX DO sign-in](./auth.md#LinuxDoOAuthEnabled) · [LINUX DO client secret](./auth.md#LinuxDoClientSecret)
 
@@ -319,7 +319,7 @@ Key `LinuxDoClientSecret` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-The client secret of the same LINUX DO OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.
+The client secret of the same LINUX DO OAuth app. It is **never shown again after saving**; leave the field empty to keep the stored one.
 
 See also: [LINUX DO sign-in](./auth.md#LinuxDoOAuthEnabled) · [LINUX DO client ID](./auth.md#LinuxDoClientId)
 
@@ -331,7 +331,7 @@ Key `LinuxDoOAuthTrustLevelEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-LINUX DO accounts below the minimum trust level cannot sign up or be linked. Whether existing users are checked too is up to the dynamic limit. It needs LINUX DO sign-in on.
+LINUX DO accounts below the minimum trust level **cannot sign up or be linked**. Whether existing users are checked too is up to the dynamic limit. It **needs LINUX DO sign-in on**.
 
 See also: [Lowest LINUX DO trust level](./auth.md#LinuxDoOAuthLowestTrustLevel) · [Check existing users too](./auth.md#LinuxDoOAuthDynamicTrustLevel) · [LINUX DO sign-in](./auth.md#LinuxDoOAuthEnabled)
 
@@ -343,7 +343,7 @@ Key `LinuxDoOAuthLowestTrustLevel` · Type int · Range 1–4 · Default `1`
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-The lowest LINUX DO trust level allowed in, from 1 to 4: 1 basic, 2 member, 3 regular, 4 leader. Only applies while the minimum trust level is on.
+The lowest LINUX DO trust level allowed in, from 1 to 4: 1 basic, 2 member, 3 regular, 4 leader. **Only applies while the minimum trust level is on**.
 
 Examples:
 
@@ -361,7 +361,7 @@ Key `LinuxDoOAuthDynamicTrustLevel` · Type bool · Default `true` · rarely cha
 
 Where: Platform settings › Sign-in & registration › LINUX DO sign-in
 
-The minimum trust level is checked on every LINUX DO sign-in, also for existing users. An existing user whose level is now too low is refused. When off, only new sign-ups are checked. It needs the minimum trust level on.
+The minimum trust level is checked on every LINUX DO sign-in, also for existing users. An existing user **whose level is now too low is refused**. When off, only new sign-ups are checked. It **needs the minimum trust level on**.
 
 See also: [Minimum trust level](./auth.md#LinuxDoOAuthTrustLevelEnabled) · [Lowest LINUX DO trust level](./auth.md#LinuxDoOAuthLowestTrustLevel)
 
@@ -375,7 +375,7 @@ Key `TurnstileSiteKey` · Type string · Default `empty`
 
 Where: Platform settings › Sign-in & registration › Bot check
 
-The site key of the widget you created in the Cloudflare Turnstile dashboard. The sign-in and sign-up pages load the check with it. The invisible widget type disturbs users least.
+The site key of the widget you created in the Cloudflare Turnstile dashboard. The sign-in and sign-up pages load the check with it. The **invisible widget type** disturbs users least.
 
 See also: [Turnstile secret key](./auth.md#TurnstileSecretKey) · [Bot check](./auth.md#TurnstileCheckEnabled)
 
@@ -387,7 +387,7 @@ Key `TurnstileSecretKey` · Type secret · secret: never shown after saving
 
 Where: Platform settings › Sign-in & registration › Bot check
 
-The secret key of the same Turnstile widget; the server uses it to confirm each check with Cloudflare. It is never shown again after saving; leave the field empty to keep the stored one.
+The secret key of the same Turnstile widget; the server uses it to confirm each check with Cloudflare. It is **never shown again after saving**; leave the field empty to keep the stored one.
 
 See also: [Turnstile site key](./auth.md#TurnstileSiteKey) · [Bot check](./auth.md#TurnstileCheckEnabled)
 
@@ -401,7 +401,7 @@ Key `EmailDomainRestrictionEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Sign-in & registration › Email domain restriction
 
-Sign-up verification codes only go to emails on the allowed domains, which keeps out throwaway mailboxes. Organizations cannot create member accounts with other emails either. It only stops password sign-up while email verification is on, and it cannot be turned on with an empty domain list.
+Sign-up verification codes **only go to emails on the allowed domains**, which keeps out throwaway mailboxes. Organizations cannot create member accounts with other emails either. It only stops password sign-up while email verification is on, and it **cannot be turned on with an empty domain list**.
 
 See also: [Allowed email domains](./auth.md#EmailDomainWhitelist) · [Email verification at sign-up](./auth.md#EmailVerificationEnabled)
 
@@ -413,7 +413,7 @@ Key `EmailDomainWhitelist` · Type list
 
 Where: Platform settings › Sign-in & registration › Email domain restriction
 
-The email domains allowed while the restriction is on, one per line (stored comma-separated). A domain matches exactly: example.com does not allow mail.example.com.
+The email domains allowed while the restriction is on, one per line (stored comma-separated). A domain **matches exactly**: example.com does not allow mail.example.com.
 
 Examples:
 

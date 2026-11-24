@@ -18,7 +18,7 @@ Key `ServerAddress` · Type url · Default `http://localhost:3000`
 
 Where: Platform settings › Site › Server address
 
-The public address users reach the site at; every link and callback the server builds starts with it. Sign-in callbacks, links in emails and Telegram replies, payment callbacks, generated image links and the docs examples use it, and the CSRF check accepts requests from its origin. Enter the scheme and host as users type them; a trailing slash is removed on save. The default http://localhost:3000 only works on the server itself. Passkeys are bound to its host name: after a move to another domain, users register their passkeys again.
+The public address users reach the site at; **every link and callback the server builds starts with it**. Sign-in callbacks, links in emails and Telegram replies, payment callbacks, generated image links and the docs examples use it, and the CSRF check accepts requests from its origin. Enter the scheme and host as users type them; a trailing slash is removed on save. The default http://localhost:3000 **only works on the server itself**. Passkeys are bound to its host name: after a move to another domain, **users register their passkeys again**.
 
 Examples:
 
@@ -48,7 +48,7 @@ Key `Logo` · Type url · Default `empty`
 
 Where: Platform settings › Site › Branding
 
-The image at the top of every email and on the signed-out and device authorization pages. Use an absolute https address so mail clients can load it. Empty shows the built-in mark on those pages and no image in emails.
+The image at the top of every email and on the signed-out and device authorization pages. Use an **absolute https address** so mail clients can load it. Empty shows the built-in mark on those pages and no image in emails.
 
 Examples:
 
@@ -64,7 +64,7 @@ Key `HomePageContent` · Type text · Default `empty`
 
 Where: Platform settings › Site › Branding
 
-Your own home page in place of the built-in one. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty keeps the built-in home page.
+Your own home page in place of the built-in one. A value starting with http:// or https:// is **shown in a full-page frame**; anything else is **rendered as Markdown**, or as sanitized HTML when it starts with a tag. Empty keeps the built-in home page.
 
 Examples:
 
@@ -82,7 +82,7 @@ Key `About` · Type text · Default `empty`
 
 Where: Platform settings › Site › Branding
 
-The content of the About page. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty shows the built-in About text with a link to the project.
+The content of the About page. A value starting with http:// or https:// is shown in a full-page frame; anything else is **rendered as Markdown**, or as sanitized HTML when it starts with a tag. Empty shows the built-in About text with a link to the project.
 
 Examples:
 
@@ -98,7 +98,7 @@ Key `Footer` · Type text · Default `empty`
 
 Where: Platform settings › Site › Branding
 
-HTML that replaces the footer of the public pages. It is sanitized before display. Empty shows the default footer with the copyright and the docs link. A custom footer also makes the home page render in the console app instead of the prebuilt static page.
+HTML that replaces the footer of the public pages. It is **sanitized before display**. Empty shows the default footer with the copyright and the docs link. A custom footer also makes the home page render in the console app instead of the prebuilt static page.
 
 Examples:
 
@@ -114,7 +114,7 @@ Key `AnalyticsCode` · Type text · Default `empty`
 
 Where: Platform settings › Site › Branding
 
-HTML added to the head of every page, for analytics scripts such as Google Analytics, Umami or Plausible. It runs for every visitor with full access to the page, so paste only code from a provider you trust. Empty adds nothing.
+HTML added to the head of every page, for analytics scripts such as Google Analytics, Umami or Plausible. It runs for every visitor with **full access to the page**, so paste only code from a provider you trust. Empty adds nothing.
 
 Examples:
 
@@ -128,7 +128,7 @@ Key `BrandIconSyncEnabled` · Type bool · Default `true` · rarely changed
 
 Where: Platform settings › Site › Branding
 
-Keeps the vendor and channel icon library up to date from the npm registry, checked every 24 hours. A newer version is used once it is verified; a failed check keeps the current icons. Off keeps the icons embedded in this build. Every node syncs on its own; browsers always load icons from this site.
+Keeps the vendor and channel icon library up to date from the npm registry, checked every 24 hours. A newer version is used once it is verified; **a failed check keeps the current icons**. Off keeps the icons embedded in this build. **Every node syncs on its own**; browsers always load icons from this site.
 
 See also: [Icon library registry](./site.md#BrandIconRegistry) · [Fetch icons for unknown vendors](./site.md#BrandIconFaviconFetchEnabled)
 
@@ -157,7 +157,7 @@ Key `BrandIconFaviconFetchEnabled` · Type bool · Default `true` · rarely chan
 
 Where: Platform settings › Site › Branding
 
-When a vendor or channel without a built-in icon is saved, the server fetches its website's favicon and caches it. Browsers still load every icon from this site. Off leaves those vendors without a fetched icon.
+When a vendor or channel without a built-in icon is saved, the server fetches its website's favicon and caches it. Browsers **still load every icon from this site**. Off leaves those vendors without a fetched icon.
 
 See also: [Sync the icon library](./site.md#BrandIconSyncEnabled)
 
@@ -171,7 +171,7 @@ Key `DisplayInCurrencyEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Site › Display
 
-Shows balances, quotas and costs as US dollar amounts in the console, the logs and the billing API. Each amount is quota / quota per dollar. Off shows raw quota numbers. Only the display changes, not what is charged.
+Shows balances, quotas and costs as US dollar amounts in the console, the logs and the billing API. Each amount is quota / quota per dollar. Off shows raw quota numbers. Only the display changes, **not what is charged**.
 
 Examples:
 
@@ -188,7 +188,7 @@ Key `DisplayTokenStatEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Site › Display
 
-The billing API reports the calling API key's quota instead of the user's balance. This covers the OpenAI-style endpoints /v1/dashboard/billing/subscription and /usage. A key with unlimited quota still reports the user's balance, and organization keys always report their own quota. Off always reports the user's balance.
+The billing API **reports the calling API key's quota instead of the user's balance**. This covers the OpenAI-style endpoints /v1/dashboard/billing/subscription and /usage. A key with unlimited quota still reports the user's balance, and **organization keys always report their own quota**. Off always reports the user's balance.
 
 See also: [Show amounts in US dollars](./site.md#DisplayInCurrencyEnabled)
 
@@ -200,7 +200,7 @@ Key `QuotaPerUnit` · Type float · Range 1– · Default `500000` · rarely cha
 
 Where: Platform settings › Site › Display
 
-How many quota units make one US dollar; every conversion between quota and dollars uses it. A top-up of $1 credits this much quota, and dollar amounts in the console, logs and billing API are quota divided by it. Balances are stored in quota, so changing it on a running site changes what every balance is worth: keep 500000 unless the site is new.
+How many quota units make one US dollar; every conversion between quota and dollars uses it. A top-up of $1 credits this much quota, and dollar amounts in the console, logs and billing API are quota divided by it. **Balances are stored in quota**, so changing it on a running site changes what every balance is worth: **keep 500000 unless the site is new**.
 
 Examples:
 
@@ -219,7 +219,7 @@ Key `DefaultLanguage` · Type enum · Default `empty`
 
 Where: Platform settings › Site › Language
 
-The language emails and the home page use when a person's language is unknown. Users who picked a language in the console get emails in theirs; the home page uses it when the browser's language is not supported. The email template editor opens on it. Empty means English.
+The language emails and the home page use when a person's language is unknown. Users who picked a language in the console **get emails in theirs**; the home page uses it when the browser's language is not supported. The email template editor opens on it. Empty means English.
 
 Values:
 
@@ -239,7 +239,7 @@ Key `TopUpLink` · Type url · Default `empty`
 
 Where: Platform settings › Site › External links
 
-An outside shop where users buy redemption codes, opened in a new tab from the top-up page. Empty hides the button.
+An outside shop where users buy redemption codes, opened in a new tab from the top-up page. Empty **hides the button**.
 
 Examples:
 
@@ -253,7 +253,7 @@ Key `DocsLink` · Type url · Default `https://docs.modeltaps.com`
 
 Where: Platform settings › Site › External links
 
-Where the site's documentation lives, linked from the footer, the account menu and the API pages. /llms.txt and the agent skill file point to it too. Empty hides the external docs links; signed-in users still get the console's built-in docs.
+Where the site's documentation lives, linked from the footer, the account menu and the API pages. /llms.txt and the agent skill file point to it too. Empty **hides the external docs links**; signed-in users **still get the console's built-in docs**.
 
 Examples:
 
@@ -271,7 +271,7 @@ Key `Notice` · Type text · Default `empty`
 
 Where: Platform settings › Site › Version notice
 
-A banner at the top of the console for signed-in users, until each one reads or closes it. It shows again whenever the text changes. Markdown and HTML are supported. Empty shows no announcement.
+A banner at the top of the console for signed-in users, until each one reads or closes it. It **shows again whenever the text changes**. Markdown and HTML are supported. Empty shows no announcement.
 
 Examples:
 

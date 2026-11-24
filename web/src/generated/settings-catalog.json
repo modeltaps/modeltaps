@@ -8,7 +8,7 @@
       "card": "server-address",
       "type": "url",
       "label": "Server address",
-      "description": "The public address users reach the site at; every link and callback the server builds starts with it. Sign-in callbacks, links in emails and Telegram replies, payment callbacks, generated image links and the docs examples use it, and the CSRF check accepts requests from its origin. Enter the scheme and host as users type them; a trailing slash is removed on save. The default http://localhost:3000 only works on the server itself. Passkeys are bound to its host name: after a move to another domain, users register their passkeys again.",
+      "description": "The public address users reach the site at; **every link and callback the server builds starts with it**. Sign-in callbacks, links in emails and Telegram replies, payment callbacks, generated image links and the docs examples use it, and the CSRF check accepts requests from its origin. Enter the scheme and host as users type them; a trailing slash is removed on save. The default http://localhost:3000 **only works on the server itself**. Passkeys are bound to its host name: after a move to another domain, **users register their passkeys again**.",
       "examples": [
         {
           "value": "https://api.example.com",
@@ -53,7 +53,7 @@
       "card": "branding",
       "type": "url",
       "label": "Logo URL",
-      "description": "The image at the top of every email and on the signed-out and device authorization pages. Use an absolute https address so mail clients can load it. Empty shows the built-in mark on those pages and no image in emails.",
+      "description": "The image at the top of every email and on the signed-out and device authorization pages. Use an **absolute https address** so mail clients can load it. Empty shows the built-in mark on those pages and no image in emails.",
       "examples": [
         {
           "value": "https://cdn.example.com/logo.svg",
@@ -77,7 +77,7 @@
       "card": "branding",
       "type": "text",
       "label": "Home page content",
-      "description": "Your own home page in place of the built-in one. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty keeps the built-in home page.",
+      "description": "Your own home page in place of the built-in one. A value starting with http:// or https:// is **shown in a full-page frame**; anything else is **rendered as Markdown**, or as sanitized HTML when it starts with a tag. Empty keeps the built-in home page.",
       "examples": [
         {
           "value": "https://www.example.com",
@@ -107,7 +107,7 @@
       "card": "branding",
       "type": "text",
       "label": "About page",
-      "description": "The content of the About page. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty shows the built-in About text with a link to the project.",
+      "description": "The content of the About page. A value starting with http:// or https:// is shown in a full-page frame; anything else is **rendered as Markdown**, or as sanitized HTML when it starts with a tag. Empty shows the built-in About text with a link to the project.",
       "examples": [
         {
           "value": "Example AI is run by Example Inc. Contact: support@example.com",
@@ -131,7 +131,7 @@
       "card": "branding",
       "type": "text",
       "label": "Footer",
-      "description": "HTML that replaces the footer of the public pages. It is sanitized before display. Empty shows the default footer with the copyright and the docs link. A custom footer also makes the home page render in the console app instead of the prebuilt static page.",
+      "description": "HTML that replaces the footer of the public pages. It is **sanitized before display**. Empty shows the default footer with the copyright and the docs link. A custom footer also makes the home page render in the console app instead of the prebuilt static page.",
       "examples": [
         {
           "value": "© 2026 Example Inc · <a href=\"/about\">About</a>",
@@ -156,7 +156,7 @@
       "card": "branding",
       "type": "text",
       "label": "Analytics code",
-      "description": "HTML added to the head of every page, for analytics scripts such as Google Analytics, Umami or Plausible. It runs for every visitor with full access to the page, so paste only code from a provider you trust. Empty adds nothing.",
+      "description": "HTML added to the head of every page, for analytics scripts such as Google Analytics, Umami or Plausible. It runs for every visitor with **full access to the page**, so paste only code from a provider you trust. Empty adds nothing.",
       "examples": [
         {
           "value": "<script defer src=\"https://umami.example.com/script.js\" data-website-id=\"<site id>\"></script>",
@@ -179,7 +179,7 @@
       "card": "branding",
       "type": "bool",
       "label": "Sync the icon library",
-      "description": "Keeps the vendor and channel icon library up to date from the npm registry, checked every 24 hours. A newer version is used once it is verified; a failed check keeps the current icons. Off keeps the icons embedded in this build. Every node syncs on its own; browsers always load icons from this site.",
+      "description": "Keeps the vendor and channel icon library up to date from the npm registry, checked every 24 hours. A newer version is used once it is verified; **a failed check keeps the current icons**. Off keeps the icons embedded in this build. **Every node syncs on its own**; browsers always load icons from this site.",
       "related": [
         "BrandIconRegistry",
         "BrandIconFaviconFetchEnabled"
@@ -229,7 +229,7 @@
       "card": "branding",
       "type": "bool",
       "label": "Fetch icons for unknown vendors",
-      "description": "When a vendor or channel without a built-in icon is saved, the server fetches its website's favicon and caches it. Browsers still load every icon from this site. Off leaves those vendors without a fetched icon.",
+      "description": "When a vendor or channel without a built-in icon is saved, the server fetches its website's favicon and caches it. Browsers **still load every icon from this site**. Off leaves those vendors without a fetched icon.",
       "related": [
         "BrandIconSyncEnabled"
       ],
@@ -248,7 +248,7 @@
       "card": "display",
       "type": "bool",
       "label": "Show amounts in US dollars",
-      "description": "Shows balances, quotas and costs as US dollar amounts in the console, the logs and the billing API. Each amount is quota / quota per dollar. Off shows raw quota numbers. Only the display changes, not what is charged.",
+      "description": "Shows balances, quotas and costs as US dollar amounts in the console, the logs and the billing API. Each amount is quota / quota per dollar. Off shows raw quota numbers. Only the display changes, **not what is charged**.",
       "examples": [
         {
           "value": "true",
@@ -277,7 +277,7 @@
       "card": "display",
       "type": "bool",
       "label": "Report API key quota in the billing API",
-      "description": "The billing API reports the calling API key's quota instead of the user's balance. This covers the OpenAI-style endpoints /v1/dashboard/billing/subscription and /usage. A key with unlimited quota still reports the user's balance, and organization keys always report their own quota. Off always reports the user's balance.",
+      "description": "The billing API **reports the calling API key's quota instead of the user's balance**. This covers the OpenAI-style endpoints /v1/dashboard/billing/subscription and /usage. A key with unlimited quota still reports the user's balance, and **organization keys always report their own quota**. Off always reports the user's balance.",
       "related": [
         "DisplayInCurrencyEnabled"
       ],
@@ -297,7 +297,7 @@
       "type": "float",
       "min": 1,
       "label": "Quota per dollar",
-      "description": "How many quota units make one US dollar; every conversion between quota and dollars uses it. A top-up of $1 credits this much quota, and dollar amounts in the console, logs and billing API are quota divided by it. Balances are stored in quota, so changing it on a running site changes what every balance is worth: keep 500000 unless the site is new.",
+      "description": "How many quota units make one US dollar; every conversion between quota and dollars uses it. A top-up of $1 credits this much quota, and dollar amounts in the console, logs and billing API are quota divided by it. **Balances are stored in quota**, so changing it on a running site changes what every balance is worth: **keep 500000 unless the site is new**.",
       "examples": [
         {
           "value": "500000",
@@ -342,7 +342,7 @@
         }
       ],
       "label": "Default language",
-      "description": "The language emails and the home page use when a person's language is unknown. Users who picked a language in the console get emails in theirs; the home page uses it when the browser's language is not supported. The email template editor opens on it. Empty means English.",
+      "description": "The language emails and the home page use when a person's language is unknown. Users who picked a language in the console **get emails in theirs**; the home page uses it when the browser's language is not supported. The email template editor opens on it. Empty means English.",
       "related": [
         "MailTemplates"
       ],
@@ -360,7 +360,7 @@
       "card": "external-links",
       "type": "url",
       "label": "Top-up link",
-      "description": "An outside shop where users buy redemption codes, opened in a new tab from the top-up page. Empty hides the button.",
+      "description": "An outside shop where users buy redemption codes, opened in a new tab from the top-up page. Empty **hides the button**.",
       "examples": [
         {
           "value": "https://shop.example.com/codes",
@@ -382,7 +382,7 @@
       "card": "external-links",
       "type": "url",
       "label": "Docs link",
-      "description": "Where the site's documentation lives, linked from the footer, the account menu and the API pages. /llms.txt and the agent skill file point to it too. Empty hides the external docs links; signed-in users still get the console's built-in docs.",
+      "description": "Where the site's documentation lives, linked from the footer, the account menu and the API pages. /llms.txt and the agent skill file point to it too. Empty **hides the external docs links**; signed-in users **still get the console's built-in docs**.",
       "examples": [
         {
           "value": "https://docs.example.com",
@@ -406,7 +406,7 @@
       "card": "version-notice",
       "type": "text",
       "label": "Announcement",
-      "description": "A banner at the top of the console for signed-in users, until each one reads or closes it. It shows again whenever the text changes. Markdown and HTML are supported. Empty shows no announcement.",
+      "description": "A banner at the top of the console for signed-in users, until each one reads or closes it. It **shows again whenever the text changes**. Markdown and HTML are supported. Empty shows no announcement.",
       "examples": [
         {
           "value": "Maintenance on Saturday 02:00-03:00 UTC: requests may fail for a few minutes.",
@@ -431,16 +431,16 @@
         {
           "value": "builtin",
           "label": "Built-in accounts",
-          "description": "This site manages users, passwords, email codes and passkeys, optionally with GitHub, WeChat and other third-party sign-in. No external service is needed."
+          "description": "This site manages users, passwords, email codes and passkeys, optionally with GitHub, WeChat and other third-party sign-in. **No external service** is needed."
         },
         {
           "value": "external",
           "label": "External identity provider",
-          "description": "An OIDC service handles sign-in, sign-up, phone numbers, two-step verification and third-party sign-in. This site shows no sign-in form of its own: /login goes straight to the provider."
+          "description": "An OIDC service handles sign-in, sign-up, phone numbers, two-step verification and third-party sign-in. This site shows **no sign-in form of its own**: /login goes straight to the provider."
         }
       ],
       "label": "Account system",
-      "description": "Whether this site manages its own accounts or leaves them to an external identity provider. With an external provider, the site's password, email code, passkey and social sign-in switches stop applying to regular users; only root keeps the emergency sign-in at /login/admin. Switching to external needs an enabled identity provider marked as the site identity, and saving asks for confirmation either way.",
+      "description": "Whether this site manages its own accounts or leaves them to an external identity provider. With an external provider, the site's password, email code, passkey and social sign-in switches **stop applying** to regular users; **only root keeps the emergency sign-in** at /login/admin. Switching to external needs an enabled identity provider marked as the site identity, and saving asks for confirmation either way.",
       "related": [
         "AdminLoginEnabled",
         "PasswordLoginEnabled",
@@ -462,7 +462,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Password sign-in",
-      "description": "Users can sign in with their username or email and password. When off, regular users sign in with an email code, a passkey or a social account; root can still use its password to reach the console. Only applies with built-in accounts.",
+      "description": "Users can sign in with their username or email and password. When off, regular users sign in with an email code, a passkey or a social account; root can still use its password to reach the console. Only applies **with built-in accounts**.",
       "related": [
         "PasswordRegisterEnabled",
         "EmailCodeLoginEnabled",
@@ -482,7 +482,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Email code sign-in",
-      "description": "Users can sign in with a code sent to their verified email instead of a password. It needs a working mail service: without one the option is not offered on the sign-in page. Only applies with built-in accounts.",
+      "description": "Users can sign in with a code sent to their verified email instead of a password. It needs a **working mail service**: without one the option is not offered on the sign-in page. Only applies **with built-in accounts**.",
       "related": [
         "PasswordLoginEnabled",
         "PasskeyLoginEnabled"
@@ -502,7 +502,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Passkeys",
-      "description": "Users can add passkeys (fingerprint, face or a hardware key) on their security page and sign in with them. When off, passkeys can neither be added nor used. With an external identity provider only root can use them, for the emergency sign-in.",
+      "description": "Users can add passkeys (fingerprint, face or a hardware key) on their security page and sign in with them. When off, **passkeys can neither be added nor used**. With an external identity provider only root can use them, for the emergency sign-in.",
       "related": [
         "PasswordLoginEnabled",
         "AdminLoginEnabled"
@@ -522,7 +522,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "New user sign-up",
-      "description": "Whether new accounts can be created at all. When off, nobody can sign up: not with a password, not on a first social or identity provider sign-in, and organizations cannot create member accounts. Existing users still sign in.",
+      "description": "Whether new accounts can be created at all. When off, **nobody can sign up**: not with a password, not on a first social or identity provider sign-in, and organizations cannot create member accounts. Existing users **still sign in**.",
       "related": [
         "PasswordRegisterEnabled",
         "InviteCodeRegisterEnabled",
@@ -542,7 +542,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Password sign-up",
-      "description": "New users can sign up with a username and password. When off, new accounts come only from social sign-in, and organizations cannot create member accounts. Needs New user sign-up on; only applies with built-in accounts.",
+      "description": "New users can sign up with a username and password. When off, new accounts come only from social sign-in, and organizations cannot create member accounts. **Needs New user sign-up on**; **only applies with built-in accounts**.",
       "related": [
         "RegisterEnabled",
         "EmailVerificationEnabled",
@@ -561,7 +561,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Email verification at sign-up",
-      "description": "Password sign-up asks for an email and the code sent to it, and the account keeps that email as verified. It needs a working mail service. Social sign-ups are not affected. With the email domain restriction on, codes only go to allowed domains.",
+      "description": "Password sign-up asks for an email and the code sent to it, and the account keeps that email as verified. It **needs a working mail service**. Social sign-ups are not affected. With the email domain restriction on, codes only go to allowed domains.",
       "related": [
         "PasswordRegisterEnabled",
         "EmailDomainRestrictionEnabled",
@@ -580,7 +580,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Invite code required to sign up",
-      "description": "New users must enter a valid invite code, both for password sign-up and for a first social sign-in. Invite codes are managed on the invite codes page. Existing users and member accounts created by organizations do not need one.",
+      "description": "New users **must enter a valid invite code**, both for password sign-up and for a first social sign-in. Invite codes are managed on the invite codes page. Existing users and member accounts created by organizations do not need one.",
       "related": [
         "RegisterEnabled",
         "PasswordRegisterEnabled"
@@ -599,7 +599,7 @@
       "card": "login-methods",
       "type": "bool",
       "label": "Bot check",
-      "description": "Cloudflare Turnstile checks that a person is behind sign-in, sign-up, password reset and the emails with codes. It cannot be turned on before the Turnstile site key is saved, and it needs the secret key too. A passed check covers the session for 10 minutes by default.",
+      "description": "Cloudflare Turnstile checks that a person is behind sign-in, sign-up, password reset and the emails with codes. It **cannot be turned on before the Turnstile site key is saved**, and it **needs the secret key too**. A passed check covers the session for 10 minutes by default.",
       "related": [
         "TurnstileSiteKey",
         "TurnstileSecretKey"
@@ -619,7 +619,7 @@
       "card": "admin-login",
       "type": "bool",
       "label": "Admin emergency sign-in",
-      "description": "Keeps /login/admin open so root can sign in with its password or passkey when the identity provider is down. Only root gets through; account lockout, rate limits and the bot check still apply. It exists only with an external identity provider. When off, nobody can reach the console while the provider is down.",
+      "description": "Keeps /login/admin open so root can sign in with its password or passkey when the identity provider is down. **Only root gets through**; account lockout, rate limits and the bot check still apply. It **exists only with an external identity provider**. When off, **nobody can reach the console** while the provider is down.",
       "related": [
         "AccountSystem",
         "PasskeyLoginEnabled"
@@ -639,7 +639,7 @@
       "card": "github-oauth",
       "type": "bool",
       "label": "GitHub sign-in",
-      "description": "Users can sign in and sign up with their GitHub account. It cannot be turned on before the GitHub client ID is saved. Only applies with built-in accounts.",
+      "description": "Users can sign in and sign up with their GitHub account. It cannot be turned on before the GitHub client ID is saved. Only applies **with built-in accounts**.",
       "related": [
         "GitHubClientId",
         "GitHubClientSecret",
@@ -658,7 +658,7 @@
       "card": "github-oauth",
       "type": "string",
       "label": "GitHub client ID",
-      "description": "The client ID of the OAuth app you registered on GitHub. Register it with this site's address as the homepage URL and <server address>/oauth/github as the callback URL.",
+      "description": "The client ID of the OAuth app you registered on GitHub. Register it with this site's address as the homepage URL and **<server address>/oauth/github as the callback URL**.",
       "related": [
         "GitHubOAuthEnabled",
         "GitHubClientSecret"
@@ -676,7 +676,7 @@
       "card": "github-oauth",
       "type": "secret",
       "label": "GitHub client secret",
-      "description": "The client secret of the same GitHub OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "description": "The client secret of the same GitHub OAuth app. It is **never shown again after saving**; leave the field empty to keep the stored one.",
       "related": [
         "GitHubOAuthEnabled",
         "GitHubClientId"
@@ -694,7 +694,7 @@
       "card": "github-oauth",
       "type": "bool",
       "label": "Match GitHub accounts by ID only",
-      "description": "GitHub sign-in no longer matches old accounts by their GitHub login name, only by GitHub's numeric account ID. When off, an account from before IDs were stored is matched once by login name and then keeps the ID. A login name can be renamed and taken by someone else, so turn it on once old accounts have signed in.",
+      "description": "GitHub sign-in no longer matches old accounts by their GitHub login name, only by GitHub's numeric account ID. When off, an account from before IDs were stored is matched once by login name and then keeps the ID. A login name can be renamed and **taken by someone else**, so **turn it on once old accounts have signed in**.",
       "related": [
         "GitHubOAuthEnabled"
       ],
@@ -713,7 +713,7 @@
       "card": "wechat-auth",
       "type": "bool",
       "label": "WeChat sign-in",
-      "description": "Users can sign in and sign up through your WeChat official account. They follow it, get a code and enter it on the sign-in page. It needs a WeChat login server and cannot be turned on before its address is saved. Only applies with built-in accounts.",
+      "description": "Users can sign in and sign up through your WeChat official account. They follow it, get a code and enter it on the sign-in page. It **needs a WeChat login server** and cannot be turned on before its address is saved. Only applies **with built-in accounts**.",
       "related": [
         "WeChatServerAddress",
         "WeChatServerToken",
@@ -757,7 +757,7 @@
       "card": "wechat-auth",
       "type": "secret",
       "label": "WeChat login server token",
-      "description": "The access token the site sends to the WeChat login server with every check, as set on that server. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "description": "The access token the site sends to the WeChat login server with every check, as set on that server. It is **never shown again after saving**; leave the field empty to keep the stored one.",
       "related": [
         "WeChatServerAddress"
       ],
@@ -796,7 +796,7 @@
       "card": "lark-auth",
       "type": "bool",
       "label": "Lark sign-in",
-      "description": "Users can sign in and sign up with their Lark (Feishu) account. It uses the app whose App ID and App Secret you enter on this card. Only applies with built-in accounts.",
+      "description": "Users can sign in and sign up with their Lark (Feishu) account. It uses the app whose App ID and App Secret you enter on this card. Only applies **with built-in accounts**.",
       "related": [
         "LarkClientId",
         "LarkClientSecret"
@@ -815,7 +815,7 @@
       "card": "lark-auth",
       "type": "string",
       "label": "Lark App ID",
-      "description": "The App ID of the Lark (Feishu) app users sign in with. Create a web app on the Lark open platform and set its redirect URL to <server address>/oauth/lark.",
+      "description": "The App ID of the Lark (Feishu) app users sign in with. Create a web app on the Lark open platform and **set its redirect URL to <server address>/oauth/lark**.",
       "related": [
         "LarkAuthEnabled",
         "LarkClientSecret"
@@ -834,7 +834,7 @@
       "card": "lark-auth",
       "type": "secret",
       "label": "Lark App Secret",
-      "description": "The App Secret of the same Lark app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "description": "The App Secret of the same Lark app. It is **never shown again after saving**; leave the field empty to keep the stored one.",
       "related": [
         "LarkAuthEnabled",
         "LarkClientId"
@@ -853,7 +853,7 @@
       "card": "linuxdo-oauth",
       "type": "bool",
       "label": "LINUX DO sign-in",
-      "description": "Users can sign in and sign up with their LINUX DO account. It cannot be turned on before the client ID and client secret are saved. Only applies with built-in accounts.",
+      "description": "Users can sign in and sign up with their LINUX DO account. It cannot be turned on before the client ID and client secret are saved. Only applies **with built-in accounts**.",
       "related": [
         "LinuxDoClientId",
         "LinuxDoClientSecret",
@@ -873,7 +873,7 @@
       "card": "linuxdo-oauth",
       "type": "string",
       "label": "LINUX DO client ID",
-      "description": "The client ID of the OAuth app you registered on LINUX DO, with <server address>/oauth/linuxdo as its callback URL.",
+      "description": "The client ID of the OAuth app you registered on LINUX DO, with **<server address>/oauth/linuxdo** as its callback URL.",
       "related": [
         "LinuxDoOAuthEnabled",
         "LinuxDoClientSecret"
@@ -891,7 +891,7 @@
       "card": "linuxdo-oauth",
       "type": "secret",
       "label": "LINUX DO client secret",
-      "description": "The client secret of the same LINUX DO OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "description": "The client secret of the same LINUX DO OAuth app. It is **never shown again after saving**; leave the field empty to keep the stored one.",
       "related": [
         "LinuxDoOAuthEnabled",
         "LinuxDoClientId"
@@ -909,7 +909,7 @@
       "card": "linuxdo-oauth",
       "type": "bool",
       "label": "Minimum trust level",
-      "description": "LINUX DO accounts below the minimum trust level cannot sign up or be linked. Whether existing users are checked too is up to the dynamic limit. It needs LINUX DO sign-in on.",
+      "description": "LINUX DO accounts below the minimum trust level **cannot sign up or be linked**. Whether existing users are checked too is up to the dynamic limit. It **needs LINUX DO sign-in on**.",
       "related": [
         "LinuxDoOAuthLowestTrustLevel",
         "LinuxDoOAuthDynamicTrustLevel",
@@ -930,7 +930,7 @@
       "min": 1,
       "max": 4,
       "label": "Lowest LINUX DO trust level",
-      "description": "The lowest LINUX DO trust level allowed in, from 1 to 4: 1 basic, 2 member, 3 regular, 4 leader. Only applies while the minimum trust level is on.",
+      "description": "The lowest LINUX DO trust level allowed in, from 1 to 4: 1 basic, 2 member, 3 regular, 4 leader. **Only applies while the minimum trust level is on**.",
       "examples": [
         {
           "value": "1",
@@ -961,7 +961,7 @@
       "card": "linuxdo-oauth",
       "type": "bool",
       "label": "Check existing users too",
-      "description": "The minimum trust level is checked on every LINUX DO sign-in, also for existing users. An existing user whose level is now too low is refused. When off, only new sign-ups are checked. It needs the minimum trust level on.",
+      "description": "The minimum trust level is checked on every LINUX DO sign-in, also for existing users. An existing user **whose level is now too low is refused**. When off, only new sign-ups are checked. It **needs the minimum trust level on**.",
       "related": [
         "LinuxDoOAuthTrustLevelEnabled",
         "LinuxDoOAuthLowestTrustLevel"
@@ -980,7 +980,7 @@
       "card": "turnstile",
       "type": "string",
       "label": "Turnstile site key",
-      "description": "The site key of the widget you created in the Cloudflare Turnstile dashboard. The sign-in and sign-up pages load the check with it. The invisible widget type disturbs users least.",
+      "description": "The site key of the widget you created in the Cloudflare Turnstile dashboard. The sign-in and sign-up pages load the check with it. The **invisible widget type** disturbs users least.",
       "related": [
         "TurnstileSecretKey",
         "TurnstileCheckEnabled"
@@ -999,7 +999,7 @@
       "card": "turnstile",
       "type": "secret",
       "label": "Turnstile secret key",
-      "description": "The secret key of the same Turnstile widget; the server uses it to confirm each check with Cloudflare. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "description": "The secret key of the same Turnstile widget; the server uses it to confirm each check with Cloudflare. It is **never shown again after saving**; leave the field empty to keep the stored one.",
       "related": [
         "TurnstileSiteKey",
         "TurnstileCheckEnabled"
@@ -1018,7 +1018,7 @@
       "card": "email-domain",
       "type": "bool",
       "label": "Email domain restriction",
-      "description": "Sign-up verification codes only go to emails on the allowed domains, which keeps out throwaway mailboxes. Organizations cannot create member accounts with other emails either. It only stops password sign-up while email verification is on, and it cannot be turned on with an empty domain list.",
+      "description": "Sign-up verification codes **only go to emails on the allowed domains**, which keeps out throwaway mailboxes. Organizations cannot create member accounts with other emails either. It only stops password sign-up while email verification is on, and it **cannot be turned on with an empty domain list**.",
       "related": [
         "EmailDomainWhitelist",
         "EmailVerificationEnabled"
@@ -1038,7 +1038,7 @@
       "card": "email-domain",
       "type": "list",
       "label": "Allowed email domains",
-      "description": "The email domains allowed while the restriction is on, one per line (stored comma-separated). A domain matches exactly: example.com does not allow mail.example.com.",
+      "description": "The email domains allowed while the restriction is on, one per line (stored comma-separated). A domain **matches exactly**: example.com does not allow mail.example.com.",
       "examples": [
         {
           "value": "gmail.com,outlook.com",
@@ -1066,7 +1066,7 @@
       "type": "int",
       "min": 0,
       "label": "New user quota",
-      "description": "The quota a new account starts with, granted once when it is created and logged as a sign-up bonus. In quota units: 500,000 = $1 at the default quota per unit; the field also takes dollars. Accounts an organization creates for its members start at 0, and changing it leaves existing balances alone. 0 gives new users nothing until they top up or redeem a code.",
+      "description": "The quota a new account starts with, **granted once when it is created** and logged as a sign-up bonus. In quota units: 500,000 = $1 at the default quota per unit; the field also takes dollars. Accounts an organization creates for its members start at 0, and **changing it leaves existing balances alone**. 0 gives new users nothing until they top up or redeem a code.",
       "examples": [
         {
           "value": "1000000",
@@ -1098,7 +1098,7 @@
       "type": "int",
       "min": 0,
       "label": "Fixed pre-charge",
-      "description": "A fixed amount added to the up-front reservation of every token-priced request, on top of its estimated cost. The reservation (estimated input + reserved output tokens + this) is held from the balance or the API key's quota while the request runs and settled to the real cost when it ends, so it decides who may start a request, never what is charged. A balance below the reservation is refused with insufficient quota. In quota units: 500 = $0.001. Requests priced per call or per minute reserve their own price instead.",
+      "description": "A fixed amount added to the up-front reservation of every token-priced request, on top of its estimated cost. The reservation (estimated input + reserved output tokens + this) is held from the balance or the API key's quota while the request runs and settled to the real cost when it ends, so it **decides who may start a request**, **never what is charged**. A balance below the reservation **is refused with insufficient quota**. In quota units: 500 = $0.001. Requests priced per call or per minute reserve their own price instead.",
       "examples": [
         {
           "value": "500",
@@ -1133,7 +1133,7 @@
       "type": "int",
       "min": 0,
       "label": "Reserved output tokens",
-      "description": "How many output tokens a token-priced request reserves up front, or the request's own max_tokens when smaller. Reserving its likely output keeps concurrent requests from driving a balance far below zero; the charge is settled to the real usage when the request ends. 0 reserves no output, only the input estimate and the fixed pre-charge.",
+      "description": "How many output tokens a token-priced request reserves up front, or the request's own max_tokens when smaller. Reserving its likely output keeps concurrent requests from **driving a balance far below zero**; the charge is **settled to the real usage** when the request ends. 0 reserves no output, only the input estimate and the fixed pre-charge.",
       "examples": [
         {
           "value": "4096",
@@ -1162,7 +1162,7 @@
       "card": "quota",
       "type": "bool",
       "label": "Quota warning emails",
-      "description": "Email users when their balance falls below the warning threshold, and again when it runs out. Each email is sent once; another goes out only after the balance has clearly recovered and fallen again. Needs a mail service. Users can turn the emails off or set their own threshold in their personal settings; organization API keys never send them. When off nobody gets them, and settlement skips the balance read the check needs.",
+      "description": "Email users when their balance falls below the warning threshold, and again when it runs out. Each email is sent once; another goes out only after the balance has clearly recovered and fallen again. **Needs a mail service**. Users can turn the emails off or set their own threshold in their personal settings; **organization API keys never send them**. When off nobody gets them, and settlement skips the balance read the check needs.",
       "related": [
         "QuotaRemindThreshold"
       ],
@@ -1183,7 +1183,7 @@
       "type": "int",
       "min": 0,
       "label": "Warning threshold",
-      "description": "The balance below which a user gets the \"running low\" email, in quota units (500,000 = $1). It is the default for users who have not set their own threshold. After an email the next one waits until the balance has gone back above the threshold plus 10% of it (or plus the fixed pre-charge, if larger) and fallen again. 0 sends only the \"used up\" email.",
+      "description": "The balance below which a user gets the \"running low\" email, in quota units (500,000 = $1). It is **the default for users who have not set their own threshold**. After an email the next one waits until the balance has gone back above the threshold plus 10% of it (or plus the fixed pre-charge, if larger) and fallen again. 0 **sends only the \"used up\" email**.",
       "examples": [
         {
           "value": "1000",
@@ -1215,7 +1215,7 @@
       "min": 0,
       "max": 99.99,
       "label": "Payment cost",
-      "description": "What taking a payment costs the site, as a percentage of the amount: card fees and currency conversion. Nobody is charged it. It only lowers the revenue the price check and the margin figures compare channel costs with: net revenue = catalog price x the default group's ratio x (1 - payment cost). 0 counts payments as free.",
+      "description": "What taking a payment costs the site, as a percentage of the amount: card fees and currency conversion. **Nobody is charged** it. It **only lowers the revenue** the price check and the margin figures compare channel costs with: net revenue = catalog price x the default group's ratio x (1 - payment cost). 0 counts payments as free.",
       "examples": [
         {
           "value": "4",
@@ -1246,7 +1246,7 @@
       "card": "billing-rules",
       "type": "bool",
       "label": "Charge empty replies",
-      "description": "Charge token-priced requests whose reply has no output tokens for their input. When off such requests are free, although the upstream may still bill you for the input. Requests priced per call or per minute are charged either way, and a request with no tokens at all is never charged.",
+      "description": "Charge token-priced requests whose reply has no output tokens for their input. When off such requests **are free**, although **the upstream may still bill you for the input**. Requests priced per call or per minute are charged either way, and a request with no tokens at all is never charged.",
       "examples": [
         {
           "value": "true",
@@ -1271,7 +1271,7 @@
       "card": "billing-rules",
       "type": "bool",
       "label": "Approximate token counting",
-      "description": "Count tokens locally as 0.38 tokens per byte of text instead of running the model's tokenizer. Local counts are used for the up-front reservation and when an upstream reply carries no usage; replies that report their usage are billed by it. It saves CPU on busy instances at the cost of accuracy, worst for text outside the Latin alphabet.",
+      "description": "Count tokens locally as 0.38 tokens per byte of text instead of running the model's tokenizer. Local counts are used for the up-front reservation and when an upstream reply carries no usage; replies that report their usage are billed by it. It saves CPU on busy instances **at the cost of accuracy**, worst for text outside the Latin alphabet.",
       "examples": [
         {
           "value": "true",
@@ -1310,7 +1310,7 @@
         }
       ],
       "label": "Automatic price sync",
-      "description": "What the automatic price syncs (at startup, daily and when a channel is saved) write for models that already have a price. New models are always added and locked prices never change. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync.",
+      "description": "What the automatic price syncs (at startup, daily and when a channel is saved) write for models that already have a price. **New models are always added** and **locked prices never change**. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync.",
       "examples": [
         {
           "value": "increases",
@@ -1336,7 +1336,7 @@
       "card": "quota-reset",
       "type": "string",
       "label": "Reset time zone",
-      "description": "The time zone whose midnight starts each daily, weekly and monthly limit period. It applies to API key period limits, organization budgets and member budgets. An IANA name; empty or unknown names fall back to UTC. Changing it moves the boundary of the current period.",
+      "description": "The time zone whose midnight starts each daily, weekly and monthly limit period. It applies to API key period limits, organization budgets and member budgets. An IANA name; empty or unknown names **fall back to UTC**. Changing it **moves the boundary of the current period**.",
       "examples": [
         {
           "value": "UTC",
@@ -1379,7 +1379,7 @@
         }
       ],
       "label": "Week starts on",
-      "description": "The day weekly limit periods start, at midnight in the reset time zone. Daily and monthly periods are not affected.",
+      "description": "The day weekly limit periods start, at midnight in the reset time zone. Daily and monthly periods **are not affected**.",
       "examples": [
         {
           "value": "monday",
@@ -1406,7 +1406,7 @@
       "card": "invite-reward",
       "type": "bool",
       "label": "Invite rewards",
-      "description": "Pay invite rewards: sign-up bonuses for the inviter and the invitee, and the inviter's rebate on the first top-up. When off none are paid and the site hides its invite entries; who invited whom is still recorded.",
+      "description": "Pay invite rewards: sign-up bonuses for the inviter and the invitee, and the inviter's rebate on the first top-up. When off **none are paid and the site hides its invite entries**; who invited whom is still recorded.",
       "related": [
         "QuotaForInviter",
         "QuotaForInvitee",
@@ -1429,7 +1429,7 @@
       "type": "int",
       "min": 0,
       "label": "Inviter sign-up bonus",
-      "description": "The quota an inviter gets each time someone signs up with their invite link or code. In quota units (500,000 = $1). 0 pays nothing at sign-up; the first top-up rebate is set separately.",
+      "description": "The quota an inviter gets each time someone signs up with their invite link or code. In quota units (500,000 = $1). 0 pays nothing at sign-up; **the first top-up rebate is set separately**.",
       "examples": [
         {
           "value": "1000000",
@@ -1459,7 +1459,7 @@
       "type": "int",
       "min": 0,
       "label": "Invitee sign-up bonus",
-      "description": "Extra quota a new user gets for signing up with an invite link or code, on top of the new user quota. In quota units (500,000 = $1). 0 gives invited users only the new user quota.",
+      "description": "Extra quota a new user gets for signing up with an invite link or code, **on top of the new user quota**. In quota units (500,000 = $1). 0 gives invited users only the new user quota.",
       "examples": [
         {
           "value": "500000",
@@ -1496,7 +1496,7 @@
         }
       ],
       "label": "First top-up rebate type",
-      "description": "How the inviter's rebate on an invited user's first paid top-up is counted: a fixed quota or a percentage of the top-up. The first top-up rebate sets the amount.",
+      "description": "How the inviter's rebate on an invited user's first paid top-up is counted: **a fixed quota** or a **percentage of the top-up**. The first top-up rebate sets the amount.",
       "related": [
         "InviterRewardValue"
       ],
@@ -1515,7 +1515,7 @@
       "type": "int",
       "min": 0,
       "label": "First top-up rebate",
-      "description": "What an inviter earns when someone they invited makes a first paid top-up. For the fixed type it is quota units (500,000 = $1); for the percentage type a whole percentage from 0 to 100 of the quota bought. Only the first paid top-up earns it: later top-ups and redemption codes earn nothing. 0 turns the rebate off.",
+      "description": "What an inviter earns when someone they invited makes a first paid top-up. For the fixed type it is quota units (500,000 = $1); for the percentage type a whole percentage from 0 to 100 of the quota bought. **Only the first paid top-up earns it**: later top-ups and redemption codes earn nothing. 0 **turns the rebate off**.",
       "examples": [
         {
           "value": "10",
@@ -1548,7 +1548,7 @@
       "unit": "CNY/USD",
       "min": 0,
       "label": "CNY collection rate",
-      "description": "How many yuan one US dollar of top-up costs at gateways that charge in CNY. A top-up of $X costs X x this rate there, times the gateway's own rate, plus its fee. It changes neither balances nor the quota a top-up buys, and USD gateways ignore it. Use the real exchange rate; for promotions use top-up discounts or a gateway's rate.",
+      "description": "How many yuan one US dollar of top-up costs at gateways that charge in CNY. A top-up of $X costs X x this rate there, times the gateway's own rate, plus its fee. It **changes neither balances nor the quota** a top-up buys, and **USD gateways ignore it**. Use the real exchange rate; for promotions use top-up discounts or a gateway's rate.",
       "examples": [
         {
           "value": "7.3",
@@ -1583,7 +1583,7 @@
       "unit": "USD",
       "min": 0,
       "label": "Minimum top-up",
-      "description": "The smallest top-up a user or an organization can pay, in whole US dollars. Smaller amounts are refused before a payment is created. 0 and 1 both allow any amount from $1.",
+      "description": "The smallest top-up a user or an organization can pay, in whole US dollars. Smaller amounts are **refused before a payment is created**. 0 and 1 both allow any amount from $1.",
       "examples": [
         {
           "value": "1",
@@ -1611,7 +1611,7 @@
       "card": "payment",
       "type": "url",
       "label": "Payment callback address",
-      "description": "The address payment gateways send their payment notices to, when it differs from the server address. Empty uses the gateway's own callback domain, then the server address. Notices go to <address>/api/payment/notify/<gateway id> (EPay: <address>/api/user/epay/notify), which must be reachable from the internet, or paid orders are never credited.",
+      "description": "The address payment gateways send their payment notices to, when it differs from the server address. Empty uses the gateway's own callback domain, then the server address. Notices go to <address>/api/payment/notify/<gateway id> (EPay: <address>/api/user/epay/notify), which **must be reachable** from the internet, or **paid orders are never credited**.",
       "examples": [
         {
           "value": "https://pay.example.com",
@@ -1637,7 +1637,7 @@
       "card": "payment",
       "type": "json",
       "label": "Top-up discounts",
-      "description": "Discounts for fixed top-up amounts: a JSON object from a whole-dollar amount to the share of the price the user pays. Only those exact amounts are discounted; others pay full price. The quota is never discounted: $100 always buys 100 x 500,000 quota at the default quota per unit. A gateway's percentage fee is charged on the discounted price. Empty means no discounts.",
+      "description": "Discounts for fixed top-up amounts: a JSON object from a whole-dollar amount to the share of the price the user pays. **Only those exact amounts are discounted**; others pay full price. The quota is never discounted: $100 always buys 100 x 500,000 quota at the default quota per unit. A gateway's percentage fee **is charged on the discounted price**. Empty means no discounts.",
       "examples": [
         {
           "value": "{\"100\":0.95}",
@@ -1679,7 +1679,7 @@
         }
       ],
       "label": "Order by",
-      "description": "Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. Users always pay the catalog price times their group ratio; this setting affects only the platform's cost. With lowest cost, a supply is called earlier only when it meets both the minimum saving and the minimum success rate; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.",
+      "description": "Whether a supply's cost (its channel's list price with the channel's fee) affects the call order. **Users always pay the catalog price times their group ratio**; this setting **affects only the platform's cost**. With lowest cost, a supply is called earlier only when it **meets both the minimum saving and the minimum success rate**; supplies of similar cost keep the call order and share a tier by weight, and supplies of unknown cost come last.",
       "examples": [
         {
           "value": "priority",
@@ -1714,7 +1714,7 @@
       "min": 0,
       "max": 99,
       "label": "Minimum saving",
-      "description": "With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.",
+      "description": "With cost first, **how much cheaper a supply must be** than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply **does not take all of a model's traffic**. 0 puts any supply that is cheaper by more than 0.1% ahead.",
       "examples": [
         {
           "value": "5",
@@ -1747,7 +1747,7 @@
       "min": 0,
       "max": 100,
       "label": "Minimum success rate",
-      "description": "With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
+      "description": "With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it **is ordered as if its cost were unknown**, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time **is not judged**. 0 turns the check off. It is also the uptime over the last day a host of a Vercel AI Gateway or OpenRouter model needs to be in the order of hosts the channel asks for, whichever cost order is set.",
       "examples": [
         {
           "value": "95",
@@ -1779,7 +1779,7 @@
       "card": "supply-mode",
       "type": "bool",
       "label": "Route by supplies",
-      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so every model a channel serves keeps working. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
+      "description": "Requests are **routed through each public model's supplies** instead of the channels' model lists and model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is still missing), so **every model a channel serves keeps working**. While on, requests are billed by the public model, only published models are listed, the providers page orders the channels, and the call order, the order-by setting, intake rules and pause rules decide where a request goes. New installations start with it on. Turning it off goes back to the channels' model lists at once and **keeps the supplies**.",
       "examples": [
         {
           "value": "false",
@@ -1811,7 +1811,7 @@
       "card": "supply-intake-rules",
       "type": "json",
       "label": "Intake rules for new upstream models",
-      "description": "What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them as a whole, and a channel can use rules of its own.",
+      "description": "What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and **the first rule whose conditions all hold decides**; a model no rule matches **waits for review**. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; **saved rules replace them** as a whole, and a channel can use rules of its own.",
       "examples": [
         {
           "value": "[{\"name\":\"Previews wait\",\"patterns\":[\"*-preview*\",\"*-exp*\"],\"action\":\"pending\"},{\"name\":\"Chat joins\",\"endpoints\":[\"chat\",\"responses\"],\"action\":\"enable\",\"placement\":\"auto\"},{\"name\":\"Rest waits\",\"action\":\"pending\"}]",
@@ -1841,7 +1841,7 @@
       "card": "session-affinity",
       "type": "bool",
       "label": "Keep each session on one channel",
-      "description": "Requests of one client session go to the channel that served it first, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, each request is routed on its own.",
+      "description": "Requests of one client session **go to the channel that served it first**, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are **always sticky**, whatever this says. When off, each request is routed on its own.",
       "related": [
         "SessionAffinityStrict",
         "SessionAffinityTTLSeconds",
@@ -1862,7 +1862,7 @@
       "card": "session-affinity",
       "type": "bool",
       "label": "Do not move a session on failure",
-      "description": "When a session's channel fails, the caller gets the error instead of a retry on another channel. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) still move the session. Leave it off to favour availability.",
+      "description": "When a session's channel fails, **the caller gets the error instead of a retry on another channel**. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) **still move the session**. Leave it off to favour availability.",
       "related": [
         "SessionAffinityEnabled",
         "RetryTimes"
@@ -1883,7 +1883,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Session lifetime",
-      "description": "How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.",
+      "description": "How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) **always keep 1 hour**. 0 uses 1 hour as well.",
       "examples": [
         {
           "value": "3600",
@@ -1941,7 +1941,7 @@
       "page": "routing-policies",
       "type": "bool",
       "label": "Own routing policies",
-      "description": "Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.",
+      "description": "Users and organizations can **create routing policies of their own**, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy **overrides a platform policy of the same name** for its own keys. When off, **own policies are kept but no longer apply**, and only platform policies resolve.",
       "related": [
         "PersonalRoutingPolicyMaxCount",
         "OrganizationRoutingPolicyMaxCount"
@@ -1962,7 +1962,7 @@
       "type": "int",
       "min": 0,
       "label": "Policies per user",
-      "description": "How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "description": "How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; **only new ones are refused**. 0 sets no limit.",
       "examples": [
         {
           "value": "20",
@@ -1992,7 +1992,7 @@
       "type": "int",
       "min": 0,
       "label": "Policies per organization",
-      "description": "How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "description": "How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; **only new ones are refused**. 0 sets no limit.",
       "examples": [
         {
           "value": "20",
@@ -2021,7 +2021,7 @@
       "type": "int",
       "min": 0,
       "label": "Retries",
-      "description": "How many other channels a failed request is tried on before the caller gets the error. Rate limits, upstream 5xx errors, rejected keys and exhausted balances are retried; invalid requests (most 400s), 408 timeouts, the gateway's own errors and requests pinned to one channel are not. The retries never exceed the channels that serve the model and stop once the retry time limit has passed. 0 returns the first failure.",
+      "description": "How many other channels a failed request is tried on before the caller gets the error. Rate limits, upstream 5xx errors, rejected keys and exhausted balances **are retried**; invalid requests (most 400s), 408 timeouts, the gateway's own errors and requests pinned to one channel are not. The retries never exceed the channels that serve the model and stop once the retry time limit has passed. 0 **returns the first failure**.",
       "examples": [
         {
           "value": "2",
@@ -2058,7 +2058,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Rate limit cooldown",
-      "description": "How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 only skips the channel for the failed request.",
+      "description": "How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; **its other models are not affected**. When the upstream says when the limit resets, **that time is used instead**. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 **only skips the channel for the failed request**.",
       "examples": [
         {
           "value": "5",
@@ -2095,7 +2095,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Retry time limit",
-      "description": "No new retry starts once this many seconds have passed since the request arrived. It is checked before each retry and does not cut an attempt that is already running, so long generations still finish. When it stops the retries, the caller gets a 503 saying the upstream is at capacity. 0 starts no retry at all.",
+      "description": "No new retry starts once this many seconds have passed since the request arrived. It is checked before each retry and **does not cut an attempt that is already running**, so long generations still finish. When it stops the retries, **the caller gets a 503** saying the upstream is at capacity. 0 starts no retry at all.",
       "examples": [
         {
           "value": "10",
@@ -2123,7 +2123,7 @@
       "card": "retry",
       "type": "json",
       "label": "Per-status cooldown",
-      "description": "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
+      "description": "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it **keeps the channel away from that one model**. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so **a 429 entry is never reached**, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 **is never cooled**. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
       "examples": [
         {
           "value": "{\"503\": 120}",
@@ -2160,7 +2160,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Model not found pause",
-      "description": "How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.",
+      "description": "How long a channel is kept away from a model after its upstream says the model does not exist. **There is no field for it on this page**: change it through the option API (PUT /api/option/). It covers errors such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which **also notifies admins**; custom rules carry their own seconds. 0 never pauses for it.",
       "examples": [
         {
           "value": "21600",
@@ -2195,7 +2195,7 @@
       "card": "supply-pause-rules",
       "type": "json",
       "label": "Custom pause rules",
-      "description": "A JSON array of pause rules that replaces the built-in rules as a whole; empty uses the built-in ones. Rules are tried in order and the first match decides, after the channel's own rules. A rule matches on any of status_codes, keywords (substrings of the error, \"re:\" for a regular expression), error_types or error_codes, plus the flags unusable, model_not_found, rate_limit_reset and per_status_config; times and window_seconds make it count matches first. action is \"pause\" (for seconds, on the whole channel or, by default, the model) or \"retry\" (move on without pausing). probe sends a test request before resuming and doubles the pause when it fails; notify tells admins. Pauses under a minute are kept in memory only. Saved rules carry their own seconds, so the rate limit and model-not-found settings no longer apply to them.",
+      "description": "A JSON array of pause rules that **replaces the built-in rules as a whole**; empty uses the built-in ones. Rules are tried in order and **the first match decides**, after the channel's own rules. A rule matches on any of status_codes, keywords (substrings of the error, \"re:\" for a regular expression), error_types or error_codes, plus the flags unusable, model_not_found, rate_limit_reset and per_status_config; times and window_seconds make it count matches first. action is \"pause\" (for seconds, on the whole channel or, by default, the model) or \"retry\" (move on without pausing). probe sends a test request before resuming and doubles the pause when it fails; notify tells admins. Pauses under a minute are kept in memory only. Saved rules carry their own seconds, so the rate limit and model-not-found settings **no longer apply to them**.",
       "examples": [
         {
           "value": "[{\"name\":\"quota\",\"status_codes\":[402],\"keywords\":[\"credit balance is too low\"],\"action\":\"pause\",\"seconds\":1800,\"scope\":\"channel\",\"probe\":true,\"notify\":true,\"category\":\"quota\"}]",
@@ -2234,7 +2234,7 @@
       "card": "channel-auto",
       "type": "bool",
       "label": "Disable channels that can no longer serve",
-      "description": "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It applies to channel tests: on live requests such errors pause the channel through the pause rules instead. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.",
+      "description": "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It **applies to channel tests**: on live requests such errors **pause the channel through the pause rules instead**. A disabled channel **comes back only through a passing test with automatic recovery on, or by hand**.",
       "related": [
         "AutomaticEnableChannelEnabled",
         "DisableChannelKeywords",
@@ -2256,7 +2256,7 @@
       "card": "channel-auto",
       "type": "bool",
       "label": "Re-enable channels that pass a test",
-      "description": "A channel that was disabled automatically is enabled again when it passes a channel test. The test is a test of all channels, scheduled or started by hand, and must answer within the maximum response time. Channels an admin disabled are never enabled again on their own. When off, every disabled channel waits for an admin.",
+      "description": "A channel that was disabled automatically is **enabled again when it passes a channel test**. The test is a test of all channels, scheduled or started by hand, and must answer within the maximum response time. Channels an admin disabled **are never enabled** again on their own. When off, every disabled channel waits for an admin.",
       "related": [
         "AutomaticDisableChannelEnabled",
         "ChannelTestMode",
@@ -2278,7 +2278,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Maximum response time",
-      "description": "A channel test slower than this many seconds disables an enabled channel and keeps a disabled one off. It applies to tests of all channels (scheduled in the All channels mode, or started from the channels page), whether or not automatic disabling is on; live requests are never timed against it. 0 sets no limit.",
+      "description": "A channel test slower than this many seconds **disables an enabled channel** and keeps a disabled one off. It applies to tests of all channels (scheduled in the All channels mode, or started from the channels page), whether or not automatic disabling is on; **live requests are never timed against it**. 0 sets no limit.",
       "examples": [
         {
           "value": "5",
@@ -2312,7 +2312,7 @@
       "card": "channel-auto",
       "type": "list",
       "label": "Disable keywords",
-      "description": "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and pauses the channel through the built-in credential rule (1 hour, tested before resuming); in a channel test it disables the channel when automatic disabling is on. Empty leaves only the built-in checks of status codes and known messages.",
+      "description": "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. **Matching is case-sensitive**, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and **pauses the channel** through the built-in credential rule (1 hour, tested before resuming); in a channel test it **disables the channel when automatic disabling is on**. Empty leaves only the built-in checks of status codes and known messages.",
       "examples": [
         {
           "value": "Your account is currently blocked",
@@ -2359,7 +2359,7 @@
         }
       ],
       "label": "Scheduled channel test",
-      "description": "Which channels the gateway tests on its own, every test interval. Each test is one small request to the channel's test model and is billed by the upstream. The CHANNEL_TEST_FREQUENCY environment variable, when set, overrides this: all channels every that many minutes.",
+      "description": "Which channels the gateway tests on its own, every test interval. Each test is one small request to the channel's test model and is **billed by the upstream**. The CHANNEL_TEST_FREQUENCY environment variable, when set, **overrides this**: all channels every that many minutes.",
       "related": [
         "ChannelTestIntervalMinutes",
         "AutomaticEnableChannelEnabled",
@@ -2382,7 +2382,7 @@
       "unit": "minutes",
       "min": 1,
       "label": "Test interval",
-      "description": "Minutes between two scheduled channel tests, at least one. A new interval applies from the next round, without a restart. Shorter intervals bring channels back sooner but send more test requests.",
+      "description": "Minutes between two scheduled channel tests, at least one. A new interval applies from the next round, without a restart. Shorter intervals bring channels back sooner but **send more test requests**.",
       "examples": [
         {
           "value": "10",
@@ -2411,7 +2411,7 @@
       "unit": "minutes",
       "min": 0,
       "label": "Account credential refresh",
-      "description": "How often the OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked. Credentials expiring before the next check (plus 15 minutes) are refreshed even on idle or auto-disabled channels, so they do not fail on their first request after a quiet night; channels disabled by hand are skipped. A channel whose refresh starts failing sends one channel credential notice. 0 turns the background refresh off.",
+      "description": "How often the OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked. Credentials expiring before the next check (plus 15 minutes) are **refreshed even on idle or auto-disabled channels**, so they do not fail on their first request after a quiet night; **channels disabled by hand are skipped**. A channel whose refresh starts failing sends one channel credential notice. 0 **turns the background refresh off**.",
       "examples": [
         {
           "value": "30",
@@ -2439,7 +2439,7 @@
       "card": "error-handling",
       "type": "bool",
       "label": "Hide upstream errors",
-      "description": "Callers get a generic error instead of the upstream's own text, which may name the provider or show parts of a key. Upstream errors other than 400 become a 503 with the unified message (a 429 stays a 429 so clients back off), rejected channel keys get a fixed message, and a missing model a 404. 400 errors pass through, since they are about the request. Turn it off only for a while, to see what the upstream really says.",
+      "description": "Callers get **a generic error instead of the upstream's own text**, which may name the provider or show parts of a key. Upstream errors other than 400 become a 503 with the unified message (a 429 stays a 429 so clients back off), rejected channel keys get a fixed message, and a missing model a 404. **400 errors pass through**, since they are about the request. **Turn it off only for a while**, to see what the upstream really says.",
       "related": [
         "ChannelFailErrorMessage"
       ],
@@ -2458,7 +2458,7 @@
       "card": "error-handling",
       "type": "string",
       "label": "Unified error message",
-      "description": "The message callers get when an upstream fails and upstream errors are hidden. The request id is added to it so a caller can quote it. Empty uses \"Upstream for the current group is at capacity, please try again later\". It has no effect while upstream errors are shown.",
+      "description": "The message callers get when an upstream fails and upstream errors are hidden. The request id is added to it so a caller can quote it. Empty uses \"Upstream for the current group is at capacity, please try again later\". It has **no effect while upstream errors are shown**.",
       "examples": [
         {
           "value": "Service busy, please retry in a minute",
@@ -2481,7 +2481,7 @@
       "card": "model-name-match",
       "type": "bool",
       "label": "Ignore case in model names",
-      "description": "The model name a caller sends matches channels and prices whatever its case. When on, GPT-4o finds the channels and the price of gpt-4o, including wildcard prices. When off, names must match exactly and a differently cased name gets no channel.",
+      "description": "The model name a caller sends matches channels and prices **whatever its case**. When on, GPT-4o finds the channels and the price of gpt-4o, including wildcard prices. When off, names must match exactly and a differently cased name **gets no channel**.",
       "related": [
         "UnifiedRequestResponseModelEnabled"
       ],
@@ -2499,7 +2499,7 @@
       "card": "model-name-match",
       "type": "bool",
       "label": "Answer with the requested model name",
-      "description": "The model field of every response carries the name the caller asked for, not the upstream model it was mapped to. Some clients check that the reply names the model they requested. When off, it is done only for channels and supplies that switch it on themselves.",
+      "description": "The model field of every response **carries the name the caller asked for**, not the upstream model it was mapped to. Some clients check that the reply names the model they requested. When off, it is done only for channels and supplies that switch it on themselves.",
       "examples": [
         {
           "value": "true",
@@ -2528,7 +2528,7 @@
       "card": "native-protocol",
       "type": "bool",
       "label": "Claude Messages API",
-      "description": "Callers can use the Anthropic Messages format (/claude/v1/messages and the coding agent endpoints) besides the OpenAI format. Claude Code and the Anthropic SDKs need it. When off, those endpoints answer 403 and llms.txt no longer lists them.",
+      "description": "Callers can use the Anthropic Messages format (/claude/v1/messages and the coding agent endpoints) besides the OpenAI format. Claude Code and the Anthropic SDKs need it. When off, **those endpoints answer 403** and llms.txt no longer lists them.",
       "related": [
         "GeminiAPIEnabled",
         "ClaudePromptCachingEnabled"
@@ -2548,7 +2548,7 @@
       "card": "native-protocol",
       "type": "bool",
       "label": "Gemini API",
-      "description": "Callers can use the Google Gemini format (the /gemini/v1beta endpoints, Live API included) besides the OpenAI format. Gemini CLI and the Google SDKs need it. When off, those endpoints answer 403.",
+      "description": "Callers can use the Google Gemini format (the /gemini/v1beta endpoints, Live API included) besides the OpenAI format. Gemini CLI and the Google SDKs need it. When off, **those endpoints answer 403**.",
       "related": [
         "ClaudeAPIEnabled",
         "GeminiOpenThink"
@@ -2568,7 +2568,7 @@
       "card": "native-protocol",
       "type": "bool",
       "label": "Add prompt cache markers",
-      "description": "Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.",
+      "description": "Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then **read it at the cache price**. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; **a channel set to On or Off decides for itself**, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.",
       "examples": [
         {
           "value": "true",
@@ -2598,7 +2598,7 @@
       "card": "native-protocol",
       "type": "bool",
       "label": "Pass upstream responses through",
-      "description": "Keeps upstream responses as close to the original as possible. Non-streaming Claude and Bedrock responses are passed byte for byte, streams keep their model field, and upstream headers such as anthropic-ratelimit-*, x-ratelimit-* and x-amzn-* reach the caller. When off, responses are rebuilt like those of any other channel.",
+      "description": "Keeps upstream responses as close to the original as possible. Non-streaming Claude and Bedrock responses are **passed byte for byte**, streams keep their model field, and upstream headers such as anthropic-ratelimit-*, x-ratelimit-* and x-amzn-* reach the caller. When off, responses are rebuilt like those of any other channel.",
       "related": [
         "UnifiedRequestResponseModelEnabled"
       ],
@@ -2620,7 +2620,7 @@
       "min": 0,
       "max": 1,
       "label": "Default thinking budget",
-      "description": "The share of max_tokens Claude may spend thinking when a request asks for thinking without its own budget. It applies to OpenAI-format requests sent to Claude. budget_tokens = max_tokens x this value, and never below 1024. A request that names an effort gets 0.2, 0.5 or 0.8 for low, medium and high instead.",
+      "description": "The share of max_tokens Claude may spend thinking when a request asks for thinking without its own budget. It applies to **OpenAI-format requests sent to Claude**. budget_tokens = max_tokens x this value, and never below 1024. A request that names an effort gets 0.2, 0.5 or 0.8 for low, medium and high instead.",
       "examples": [
         {
           "value": "0.8",
@@ -2652,7 +2652,7 @@
       "card": "native-protocol",
       "type": "json",
       "label": "Default max tokens",
-      "description": "The max_tokens sent to Claude when an OpenAI-format or Responses request sets no output limit. Claude requires one, so it is a JSON object of model name and tokens, with \"default\" for every other model. Requests that set max_tokens or max_completion_tokens keep their own. Empty means {\"default\": 8192}; an object without \"default\" leaves unlisted models without a limit and Claude rejects them, and text that is not valid JSON is ignored.",
+      "description": "The max_tokens sent to Claude when an OpenAI-format or Responses request sets no output limit. **Claude requires one**, so it is a JSON object of model name and tokens, with \"default\" for every other model. Requests that set max_tokens or max_completion_tokens keep their own. Empty means {\"default\": 8192}; an object without \"default\" leaves unlisted models without a limit and **Claude rejects them**, and text that is not valid JSON is ignored.",
       "examples": [
         {
           "value": "{\"default\": 8192}",
@@ -2680,7 +2680,7 @@
       "card": "native-protocol",
       "type": "json",
       "label": "Show Gemini thoughts",
-      "description": "Gemini models whose responses include their thought summaries, as a JSON object of model name and true. It only applies to models that can think; unlisted models keep thoughts out unless the request asks for them. Empty lists none, and text that is not valid JSON is ignored.",
+      "description": "Gemini models whose responses include their thought summaries, as a JSON object of model name and true. It **only applies to models that can think**; unlisted models keep thoughts out unless the request asks for them. Empty lists none, and text that is not valid JSON is ignored.",
       "examples": [
         {
           "value": "{\"gemini-2.5-pro\": true}",
@@ -2706,7 +2706,7 @@
       "type": "int",
       "min": 0,
       "label": "Max prompt tokens",
-      "description": "Requests to AWS Bedrock channels with more input tokens than this are refused before reaching the upstream. They get a 400 \"prompt is too long\", which Claude Code reads like Anthropic's own; Bedrock would otherwise hang on them until its timeout. A model's context length in the catalog takes precedence; other channel types are not checked. 0 turns the check off.",
+      "description": "Requests to AWS Bedrock channels with more input tokens than this are **refused before reaching the upstream**. They get a 400 \"prompt is too long\", which Claude Code reads like Anthropic's own; Bedrock would otherwise hang on them until its timeout. A model's context length in the catalog takes precedence; other channel types are not checked. 0 **turns the check off**.",
       "examples": [
         {
           "value": "1000000",
@@ -2733,7 +2733,7 @@
       "card": "supply-intake-rules",
       "type": "bool",
       "label": "Run the inclusion rules",
-      "description": "Runs the inclusion rules after each daily model library sync, so new releases join the catalog on their own. Edited on the Models page, Inclusion rules tab. Off, the library still syncs but nothing is added or retired automatically.",
+      "description": "Runs the inclusion rules after each daily model library sync, so **new releases join the catalog on their own**. Edited on the Models page, Inclusion rules tab. Off, the library still syncs but **nothing** is added or retired automatically.",
       "related": [
         "ModelLibraryRulesApply",
         "ModelLibraryRules"
@@ -2754,7 +2754,7 @@
       "card": "supply-intake-rules",
       "type": "bool",
       "label": "Apply the inclusion rules",
-      "description": "Lets the inclusion rules change the catalog: on, they add and retire models and notify admins of what they did. Off is a dry run: they change nothing and only notify admins of what they would do. Edited on the Models page, Inclusion rules tab.",
+      "description": "Lets the inclusion rules change the catalog: on, **they add and retire models** and notify admins of what they did. Off is **a dry run**: they change nothing and only notify admins of what they would do. Edited on the Models page, Inclusion rules tab.",
       "examples": [
         {
           "value": "false",
@@ -2784,7 +2784,7 @@
       "card": "supply-intake-rules",
       "type": "json",
       "label": "Inclusion rules",
-      "description": "The rules that decide which library models join the catalog and which catalog models are retired. They are saved as a JSON list and edited on the Models page, Inclusion rules tab. Rules are tried in order and the first one whose conditions all hold decides: enable, add disabled, leave out or retire. Conditions are labs, id patterns, release age, whether a channel can supply the model, deprecated, open weights and endpoints. Each model is decided once, so a model you remove is not added back. Empty uses the built-in rules; an empty list does nothing.",
+      "description": "The rules that decide which library models join the catalog and which catalog models are retired. They are saved as a JSON list and edited on the Models page, Inclusion rules tab. **Rules are tried in order** and the first one whose conditions all hold decides: enable, add disabled, leave out or retire. Conditions are labs, id patterns, release age, whether a channel can supply the model, deprecated, open weights and endpoints. Each model is decided once, so **a model you remove is not added back**. Empty uses the built-in rules; an empty list does nothing.",
       "examples": [
         {
           "value": "[{\"name\":\"Retire deprecated models\",\"deprecated\":true,\"action\":\"retire\"}]",
@@ -2820,7 +2820,7 @@
       "card": "log-consume",
       "type": "bool",
       "label": "Consume logs",
-      "description": "Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. When off no new records are written and charging goes on as before, but the log list, the usage statistics built from logs and per-user histories have a gap. Top-ups, sign-up bonuses and other system logs are written either way.",
+      "description": "Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. When off no new records are written and **charging goes on as before**, but the log list, the usage statistics built from logs and per-user histories **have a gap**. Top-ups, sign-up bonuses and other system logs are written either way.",
       "related": [
         "LogAutoDeleteEnabled",
         "LogIOEnabled"
@@ -2839,7 +2839,7 @@
       "card": "log-consume",
       "type": "bool",
       "label": "Log failed requests",
-      "description": "Write an error log when a request still fails after its retries, with the error the client got and every channel tried. Requests refused locally (insufficient quota, invalid parameters) are not logged.",
+      "description": "Write an error log when a request still fails after its retries, with the error the client got and every channel tried. Requests refused locally (insufficient quota, invalid parameters) **are not logged**.",
       "keywords": [
         "error log",
         "failed request",
@@ -2854,7 +2854,7 @@
       "card": "log-consume",
       "type": "bool",
       "label": "Hourly channel metrics",
-      "description": "Count attempts, successes, latency, time to first token and output speed per channel, model and hour. The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off nothing new is counted; stored hours stay until they expire.",
+      "description": "Count attempts, successes, latency, time to first token and output speed per channel, model and hour. The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off **nothing new is counted**; stored hours stay until they expire.",
       "related": [
         "ChannelMetricsRetentionDays"
       ],
@@ -2876,7 +2876,7 @@
       "unit": "days",
       "min": 0,
       "label": "Keep metrics for (days)",
-      "description": "How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 keeps them forever.",
+      "description": "How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 **keeps them forever**.",
       "examples": [
         {
           "value": "30",
@@ -2902,7 +2902,7 @@
       "card": "log-consume",
       "type": "bool",
       "label": "Delete old consume logs",
-      "description": "Delete consume logs older than the retention days every night at 03:00 server time, with their kept bodies. Error and system logs stay, and so do the daily usage statistics already built from the deleted logs.",
+      "description": "Delete consume logs older than the retention days every night at 03:00 server time, with their kept bodies. **Error and system logs stay**, and so do the daily usage statistics already built from the deleted logs.",
       "related": [
         "LogAutoDeleteDays",
         "LogConsumeEnabled"
@@ -2924,7 +2924,7 @@
       "unit": "days",
       "min": 0,
       "label": "Keep consume logs for (days)",
-      "description": "How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the nightly cleanup; 0 deletes nothing.",
+      "description": "How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the nightly cleanup; 0 **deletes nothing**.",
       "examples": [
         {
           "value": "30",
@@ -2950,7 +2950,7 @@
       "card": "log-io",
       "type": "bool",
       "label": "Allow keeping request bodies",
-      "description": "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
+      "description": "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) **no API key keeps them** and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and **never include API keys or auth headers**.",
       "related": [
         "organization.log_io_policy"
       ],
@@ -2970,7 +2970,7 @@
       "card": "safety",
       "type": "bool",
       "label": "Content safety check",
-      "description": "Check the text of every request with the safety tool before it goes to a channel, and refuse matches with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini Live sessions are checked; images and audio are not.",
+      "description": "Check the text of every request with the safety tool before it goes to a channel, and refuse matches with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini Live sessions are checked; **images and audio are not**.",
       "related": [
         "SafeToolName",
         "SafeKeyWords"
@@ -2997,7 +2997,7 @@
         }
       ],
       "label": "Safety tool",
-      "description": "The tool that runs the content safety check. Keyword is the one built in. A tool that is not installed refuses every request.",
+      "description": "The tool that runs the content safety check. Keyword is the one built in. A tool that is not installed **refuses every request**.",
       "related": [
         "EnableSafe",
         "SafeKeyWords"
@@ -3015,7 +3015,7 @@
       "card": "safety",
       "type": "list",
       "label": "Blocked keywords",
-      "description": "The words the Keyword tool blocks, one per line. A request is refused when its text contains any of them, ignoring case, also inside longer words. Empty lines are ignored.",
+      "description": "The words the Keyword tool blocks, one per line. A request is refused when its text contains any of them, ignoring case, **also inside longer words**. Empty lines are ignored.",
       "examples": [
         {
           "value": "casino",
@@ -3044,7 +3044,7 @@
       "card": "image-proxy",
       "type": "url",
       "label": "Image download proxy",
-      "description": "An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and without a proxy the image hosts see this server's IP. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty downloads directly.",
+      "description": "An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and **without a proxy the image hosts see this server's IP**. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty **downloads directly**.",
       "examples": [
         {
           "value": "socks5://127.0.0.1:1080",
@@ -3073,7 +3073,7 @@
       "card": "image-proxy",
       "type": "url",
       "label": "Cloudflare Worker image proxy",
-      "description": "A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It takes precedence over the image download proxy. Some image hosts refuse Cloudflare, and those images then fail. Empty uses no Worker.",
+      "description": "A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It **takes precedence over the image download proxy**. Some image hosts refuse Cloudflare, and **those images then fail**. Empty uses no Worker.",
       "examples": [
         {
           "value": "https://img-proxy.example.workers.dev",
@@ -3099,7 +3099,7 @@
       "card": "image-proxy",
       "type": "secret",
       "label": "Cloudflare Worker key",
-      "description": "The key sent to the Cloudflare Worker with every image download, for a Worker that checks one. Leave it empty when the Worker checks none or no Worker is set.",
+      "description": "The key sent to the Cloudflare Worker with every image download, **for a Worker that checks one**. Leave it empty when the Worker checks none or no Worker is set.",
       "related": [
         "CFWorkerImageUrl"
       ],
@@ -3149,7 +3149,7 @@
         }
       ],
       "label": "Image storage",
-      "description": "Where generated images are kept so a request that asks for an image URL gets a link. Gemini, Cloudflare Workers AI and Stability AI return image data only. Off answers with base64 instead: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change applies at once on every node.",
+      "description": "Where generated images are kept so a request that asks for an image URL **gets a link**. Gemini, Cloudflare Workers AI and Stability AI return image data only. **Off answers with base64 instead**: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change **applies at once on every node**.",
       "related": [
         "ImageStorageRehostUpstream",
         "ServerAddress"
@@ -3172,7 +3172,7 @@
       "card": "image-storage",
       "type": "bool",
       "label": "Also store upstream image and video links",
-      "description": "Image and video links from upstreams are swapped for links on this site, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on as it is. When off, upstream links pass through.",
+      "description": "Image and video links from upstreams are **swapped for links on this site**, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is **passed on as it is**. When off, upstream links pass through.",
       "related": [
         "ImageStorageProvider"
       ],
@@ -3193,7 +3193,7 @@
       "card": "image-storage",
       "type": "url",
       "label": "S3 endpoint",
-      "description": "The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and are signed.",
+      "description": "The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and **are signed**.",
       "examples": [
         {
           "value": "https://<account>.r2.cloudflarestorage.com",
@@ -3224,7 +3224,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "S3 region",
-      "description": "The region requests are signed for; usually left empty. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.",
+      "description": "The region requests are signed for; **usually left empty**. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.",
       "examples": [
         {
           "value": "us-east-1",
@@ -3246,7 +3246,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "S3 bucket",
-      "description": "The bucket images are uploaded to. It can stay private unless a public URL is set.",
+      "description": "The bucket images are uploaded to. It **can stay private unless a public URL is set**.",
       "related": [
         "ImageStorageS3Endpoint",
         "ImageStorageS3CDNURL"
@@ -3263,7 +3263,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "S3 access key ID",
-      "description": "The ID of an access key that may write to the bucket; its secret goes in the next field.",
+      "description": "The ID of an access key that **may write to the bucket**; its secret goes in the next field.",
       "related": [
         "ImageStorageS3AccessKeySecret"
       ],
@@ -3280,7 +3280,7 @@
       "card": "image-storage",
       "type": "secret",
       "label": "S3 access key secret",
-      "description": "The secret of the S3 access key. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "description": "The secret of the S3 access key. It is **stored encrypted when an encryption key is set**, never shown again, and **saving the field empty keeps the stored one**.",
       "related": [
         "ImageStorageS3AccessKeyId"
       ],
@@ -3297,7 +3297,7 @@
       "card": "image-storage",
       "type": "url",
       "label": "S3 public URL",
-      "description": "A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links signed for 1 hour, and the bucket can stay private.",
+      "description": "A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links **signed for 1 hour**, and the bucket can stay private.",
       "examples": [
         {
           "value": "https://img.example.com",
@@ -3323,7 +3323,7 @@
       "unit": "days",
       "min": 0,
       "label": "S3 Expires header",
-      "description": "Days written into the Expires header of each uploaded image, for caches and CDNs. It deletes nothing: use a lifecycle rule of the storage for that. 0 writes no header.",
+      "description": "Days written into the Expires header of each uploaded image, for caches and CDNs. **It deletes nothing**: use a lifecycle rule of the storage for that. 0 writes no header.",
       "examples": [
         {
           "value": "1",
@@ -3375,7 +3375,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "OSS region",
-      "description": "The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) need it, or uploads fail.",
+      "description": "The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) **need it, or uploads fail**.",
       "examples": [
         {
           "value": "cn-hangzhou",
@@ -3397,7 +3397,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "OSS bucket",
-      "description": "The OSS bucket images are uploaded to; it can stay private, since links are signed.",
+      "description": "The OSS bucket images are uploaded to; **it can stay private, since links are signed**.",
       "related": [
         "ImageStorageOSSEndpoint"
       ],
@@ -3413,7 +3413,7 @@
       "card": "image-storage",
       "type": "string",
       "label": "OSS AccessKey ID",
-      "description": "The AccessKey ID of a RAM user that may write to the bucket; its secret goes in the next field.",
+      "description": "The AccessKey ID of a RAM user that **may write to the bucket**; its secret goes in the next field.",
       "related": [
         "ImageStorageOSSAccessKeySecret"
       ],
@@ -3431,7 +3431,7 @@
       "card": "image-storage",
       "type": "secret",
       "label": "OSS AccessKey secret",
-      "description": "The AccessKey secret of the OSS user. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "description": "The AccessKey secret of the OSS user. It is **stored encrypted when an encryption key is set**, never shown again, and **saving the field empty keeps the stored one**.",
       "related": [
         "ImageStorageOSSAccessKeyId"
       ],
@@ -3448,7 +3448,7 @@
       "card": "image-storage",
       "type": "secret",
       "label": "SM.MS API token",
-      "description": "The API token of your account on the free image host, used for uploads. Images there are public.",
+      "description": "The API token of your account on the free image host, used for uploads. Images there **are public**.",
       "related": [
         "ImageStorageProvider"
       ],
@@ -3466,7 +3466,7 @@
       "card": "image-storage",
       "type": "secret",
       "label": "Imgur client ID",
-      "description": "The client ID of an application registered with Imgur, used for anonymous uploads. Images there are public.",
+      "description": "The client ID of an application registered with Imgur, used for anonymous uploads. Images there **are public**.",
       "related": [
         "ImageStorageProvider"
       ],
@@ -3483,7 +3483,7 @@
       "card": "mj-notify",
       "type": "bool",
       "label": "Midjourney callbacks",
-      "description": "Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call comes from the upstream, not this site, so it carries the upstream's view of the task and tells the upstream the caller's address. When off, the address is dropped and callers poll the task status.",
+      "description": "Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call **comes from the upstream, not this site**, so it carries the upstream's view of the task and **tells the upstream the caller's address**. When off, the address is dropped and callers poll the task status.",
       "keywords": [
         "Midjourney",
         "notifyHook",
@@ -3499,7 +3499,7 @@
       "card": "builtin-chat",
       "type": "bool",
       "label": "Built-in chat",
-      "description": "Lets users try models in the console's playground and shows the quick-start chat on the dashboard. Off keeps the playground pages visible but disables running a request, and points users to the API docs instead. API keys and requests from other clients are not affected.",
+      "description": "Lets users try models in the console's playground and shows the quick-start chat on the dashboard. Off keeps the playground pages visible but **disables running a request**, and points users to the API docs instead. API keys and requests from other clients are **not affected**.",
       "keywords": [
         "playground",
         "chat",
@@ -3514,7 +3514,7 @@
       "card": "smtp",
       "type": "string",
       "label": "Mail service preset",
-      "description": "Which preset the mail service in use was set up from, such as resend, ses, gmail or custom. It only shapes the console form; sending reads the server, port and account. Like every SMTP setting it mirrors the mail service in use and changes with it.",
+      "description": "Which preset the mail service in use was set up from, such as resend, ses, gmail or custom. It **only shapes the console form**; sending reads the server, port and account. Like every SMTP setting it **mirrors the mail service in use and changes with it**.",
       "related": [
         "SMTPServer"
       ],
@@ -3533,7 +3533,7 @@
       "card": "smtp",
       "type": "string",
       "label": "SMTP server",
-      "description": "The host name of the SMTP server every email is sent through. It mirrors the mail service in use: add, edit or switch services on the Mail services card. Empty means the site cannot send mail, so login codes, password resets and quota warnings stop. When the deployment sets smtp.url (SMTP_URL), that wins and the console is read-only.",
+      "description": "The host name of the SMTP server every email is sent through. It mirrors the mail service in use: add, edit or switch services on the Mail services card. Empty means **the site cannot send mail**, so login codes, password resets and quota warnings stop. When the deployment sets smtp.url (SMTP_URL), **that wins** and **the console is read-only**.",
       "examples": [
         {
           "value": "smtp.resend.com",
@@ -3562,7 +3562,7 @@
       "min": 1,
       "max": 65535,
       "label": "SMTP port",
-      "description": "The port of the SMTP server: usually 465 for SSL/TLS and 587 for STARTTLS. With encryption Auto the port decides the encryption, and port 587 logs in with LOGIN instead of PLAIN. It mirrors the mail service in use.",
+      "description": "The port of the SMTP server: usually 465 for SSL/TLS and 587 for STARTTLS. With encryption Auto the port decides the encryption, and **port 587 logs in with LOGIN instead of PLAIN**. It mirrors the mail service in use.",
       "examples": [
         {
           "value": "465",
@@ -3594,7 +3594,7 @@
       "card": "smtp",
       "type": "string",
       "label": "SMTP username",
-      "description": "The user name the mail service logs in to the SMTP server with; for a mailbox it is the mailbox address. When no sender address is set, mail is sent from it. It mirrors the mail service in use.",
+      "description": "The user name the mail service logs in to the SMTP server with; for a mailbox it is the mailbox address. When no sender address is set, **mail is sent from it**. It mirrors the mail service in use.",
       "related": [
         "SMTPToken",
         "SMTPFrom"
@@ -3613,7 +3613,7 @@
       "card": "smtp",
       "type": "string",
       "label": "Sender address",
-      "description": "The address every email comes from. It must be an address the service lets you send from: one on a domain you verified with it, or the mailbox itself. It mirrors the mail service in use.",
+      "description": "The address every email comes from. It **must be an address the service lets you send from**: one on a domain you verified with it, or the mailbox itself. It mirrors the mail service in use.",
       "examples": [
         {
           "value": "noreply@example.com",
@@ -3638,7 +3638,7 @@
       "card": "smtp",
       "type": "string",
       "label": "Sender name",
-      "description": "The display name shown before the sender address. Empty shows the address alone. It mirrors the mail service in use.",
+      "description": "The display name shown before the sender address. Empty **shows the address alone**. It mirrors the mail service in use.",
       "examples": [
         {
           "value": "Example AI",
@@ -3662,7 +3662,7 @@
       "card": "smtp",
       "type": "string",
       "label": "Reply-to address",
-      "description": "Where replies to the site's emails go instead of the sender address. Empty sends replies to the sender address. It mirrors the mail service in use.",
+      "description": "Where replies to the site's emails go **instead of the sender address**. Empty sends replies to the sender address. It mirrors the mail service in use.",
       "examples": [
         {
           "value": "support@example.com",
@@ -3684,7 +3684,7 @@
       "card": "smtp",
       "type": "secret",
       "label": "SMTP password",
-      "description": "The password, app password or API key the mail service logs in with. It is never shown again after saving and is encrypted in the database when ENCRYPTION_KEY is set. It mirrors the mail service in use.",
+      "description": "The password, app password or API key the mail service logs in with. It is **never shown again** after saving and is encrypted in the database when ENCRYPTION_KEY is set. It mirrors the mail service in use.",
       "related": [
         "SMTPAccount"
       ],
@@ -3730,7 +3730,7 @@
         }
       ],
       "label": "Encryption",
-      "description": "How the connection to the SMTP server is encrypted. Auto picks by port and suits almost every service. It mirrors the mail service in use.",
+      "description": "How the connection to the SMTP server is encrypted. **Auto picks by port** and suits almost every service. It mirrors the mail service in use.",
       "related": [
         "SMTPPort"
       ],
@@ -3749,7 +3749,7 @@
       "card": "mail-templates",
       "type": "json",
       "label": "Email templates",
-      "description": "Your own subject and body for each email users get, per console language. The emails are the verification code, password reset, low balance and quota used up. Stored as JSON {\"<template>\": {\"<language>\": {\"subject\", \"body\"}}}; a template or language left out, or an empty subject or body, uses the built-in text of that language. Variables are a name in double curly braces, HTML-escaped in the body; the server adds the shared header with the logo and the footer. Unknown templates or languages are refused on save.",
+      "description": "Your own subject and body for each email users get, **per console language**. The emails are the verification code, password reset, low balance and quota used up. Stored as JSON {\"<template>\": {\"<language>\": {\"subject\", \"body\"}}}; a template or language left out, or an empty subject or body, uses the built-in text of that language. Variables are a name in double curly braces, HTML-escaped in the body; the server adds the shared header with the logo and the footer. Unknown templates or languages are **refused on save**.",
       "examples": [
         {
           "value": "{\"verification\":{\"en_US\":{\"subject\":\"Your {{site}} code\",\"body\":\"\"}}}",
@@ -3777,7 +3777,7 @@
       "card": "notifications",
       "type": "list",
       "label": "Turned-off notice kinds",
-      "description": "The kinds of admin notices that are not sent to any notice channel; the card's switches write it. Comma separated; empty sends every kind. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, price_source, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.",
+      "description": "The kinds of admin notices that are **not sent to any notice channel**; the card's switches write it. Comma separated; **empty sends every kind**. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, price_source, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.",
       "examples": [
         {
           "value": "price_change,model_drift",
@@ -3804,7 +3804,7 @@
       "type": "int",
       "min": 0,
       "label": "Notices per kind per hour",
-      "description": "The most notices of one kind sent in an hour; the rest are dropped. The hour starts with the first notice of the kind, and the first notice after a limited hour says how many were dropped. Each kind counts on its own, on each node. 0 means no limit.",
+      "description": "The most notices of one kind sent in an hour; **the rest are dropped**. The hour starts with the first notice of the kind, and the first notice after a limited hour says how many were dropped. Each kind counts on its own, **on each node**. 0 means no limit.",
       "examples": [
         {
           "value": "20",
@@ -3834,7 +3834,7 @@
       "type": "list",
       "unit": "%",
       "label": "Subscription usage alert tiers",
-      "description": "The usage levels, in percent, at which a subscription channel (Codex, Claude Code) sends a notice for a usage window. Each tier fires once per window period and again after the window resets. Comma separated, each between 1 and 100; empty means 50, 75, 100 and 0 turns the alerts off. A channel's own tiers on its monitoring tab win over these. The notices are of the subscription_usage kind.",
+      "description": "The usage levels, in percent, at which a subscription channel (Codex, Claude Code) sends a notice for a usage window. Each tier **fires once per window period** and again after the window resets. Comma separated, each between 1 and 100; empty means 50, 75, 100 and 0 turns the alerts off. A channel's own tiers on its monitoring tab **win over these**. The notices are of the subscription_usage kind.",
       "examples": [
         {
           "value": "80, 95",
@@ -3865,7 +3865,7 @@
       "card": "org-policy",
       "type": "bool",
       "label": "Organizations",
-      "description": "Users can create and join organizations that share a balance, members, budgets and API keys. When off, users no longer see organizations and the organization API refuses every request; site admins still manage the existing ones, which are kept as they are.",
+      "description": "Users can create and join organizations that share a balance, members, budgets and API keys. When off, users no longer see organizations and **the organization API refuses every request**; site admins still manage the existing ones, **which are kept as they are**.",
       "related": [
         "OrganizationMaxPerUser",
         "OrganizationDefaultMaxMembers",
@@ -3885,7 +3885,7 @@
       "card": "org-policy",
       "type": "bool",
       "label": "Personal balance transfer into organizations",
-      "description": "An organization's owner or admins can move their own personal balance into the organization's shared balance. The transfer is one-way: nothing moves back to a personal account. When off, transfers are refused.",
+      "description": "An organization's owner or admins can move their own personal balance into the organization's shared balance. **The transfer is one-way**: nothing moves back to a personal account. When off, transfers are refused.",
       "related": [
         "OrganizationEnabled",
         "OrganizationDissolveQuotaRefund"
@@ -3906,7 +3906,7 @@
       "type": "int",
       "min": 0,
       "label": "Organizations per user",
-      "description": "How many organizations one user can create. Organizations they only joined do not count, nor deleted ones. 0 means no limit.",
+      "description": "How many organizations one user can create. **Organizations they only joined do not count**, nor deleted ones. 0 means **no limit**.",
       "examples": [
         {
           "value": "3",
@@ -3939,7 +3939,7 @@
       "type": "int",
       "min": 0,
       "label": "Default member limit",
-      "description": "How many members an organization can have when a site admin has not set a limit for that organization. Changing it applies to every organization without a limit of its own, existing ones included. 0 means no limit.",
+      "description": "How many members an organization can have when a site admin has not set a limit for that organization. Changing it applies to every organization without a limit of its own, **existing ones included**. 0 means **no limit**.",
       "examples": [
         {
           "value": "10",
@@ -3980,7 +3980,7 @@
         }
       ],
       "label": "Balance of a deleted organization",
-      "description": "What happens to an organization's remaining shared balance when it is deleted, by its owner or a site admin. It has no field on the settings page and is only set through the option API (PUT /api/option/). Any value other than owner discards the balance.",
+      "description": "What happens to an organization's remaining shared balance when it is deleted, by its owner or a site admin. It has no field on the settings page and is **only set through the option API** (PUT /api/option/). Any value other than owner **discards the balance**.",
       "related": [
         "OrganizationQuotaTransferEnabled",
         "OrganizationEnabled"
@@ -4002,7 +4002,7 @@
       "type": "int",
       "default": "0",
       "label": "Priority",
-      "description": "The order channels are tried in for a model: the highest priority takes requests first. A lower priority is used only while every channel above it is unavailable; channels of one priority share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. While supplies route requests, the call order on the Providers page orders channels instead, and new supplies of the channel start from its priority.",
+      "description": "The order channels are tried in for a model: **the highest priority takes requests first**. A lower priority is **used only while every channel above it is unavailable**; channels of one priority share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. While supplies route requests, **the call order on the Providers page orders channels instead**, and new supplies of the channel start from its priority.",
       "examples": [
         {
           "value": "10",
@@ -4036,7 +4036,7 @@
       "min": 0,
       "default": "1",
       "label": "Weight",
-      "description": "How channels of the same priority share a model's requests: each takes its weight over the sum of the weights. Channels of other priorities are not counted. While supplies route requests, the supplies' own weights decide, and new supplies of the channel start from its weight.",
+      "description": "How channels of the same priority share a model's requests: each takes its weight over the sum of the weights. Channels of other priorities **are not counted**. While supplies route requests, the supplies' **own weights decide**, and new supplies of the channel start from its weight.",
       "examples": [
         {
           "value": "3",
@@ -4068,7 +4068,7 @@
       "min": 0,
       "default": "empty (unknown)",
       "label": "Cost ratio",
-      "description": "What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. It is used only where the channel publishes no synced price: the channel cost is then catalog price x cost ratio x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; users are never charged by it. Empty or 0 means unknown.",
+      "description": "What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. It is **used only where the channel publishes no synced price**: the channel cost is then catalog price x cost ratio x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; **users are never charged by it**. Empty or 0 means unknown.",
       "examples": [
         {
           "value": "0.8",
@@ -4104,7 +4104,7 @@
       "min": 0,
       "default": "the provider's published fee",
       "label": "Fee rate",
-      "description": "What the channel's provider charges on top of its list prices, usually when you buy credit: cash paid / credit received - 1. A channel's cost is its list price x (1 + fee rate); costs decide which supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.",
+      "description": "What the channel's provider charges on top of its list prices, usually when you buy credit: cash paid / credit received - 1. A channel's cost is **its list price x (1 + fee rate)**; costs decide which supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.",
       "examples": [
         {
           "value": "5",
@@ -4140,7 +4140,7 @@
       "field": "fee_note",
       "type": "string",
       "label": "Fee source",
-      "description": "Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required once the fee rate is above 0. Only admins see it; users see a generic label.",
+      "description": "Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required once the fee rate is above 0. **Only admins see it**; users see a generic label.",
       "related": [
         "channel.fee_rate"
       ],
@@ -4159,7 +4159,7 @@
       "type": "list",
       "default": "default",
       "label": "Groups",
-      "description": "The user groups the channel serves: a request is only sent to channels of the group it runs in. A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. A channel needs at least one group.",
+      "description": "The user groups the channel serves: a request is **only sent to channels of the group it runs in**. A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. A channel **needs at least one group**.",
       "examples": [
         {
           "value": "default",
@@ -4189,7 +4189,7 @@
       "field": "model_mapping",
       "type": "json",
       "label": "Model mapping",
-      "description": "Renames on this channel only: a requested model name is sent upstream as another name. Use it only when the upstream wants its own names, such as deployment names; matching models to the catalog needs nothing here. A target starting with + bills by the requested name. Requests routed through a supply use the supply's upstream model instead. Saving a change rewrites the channel's model list to the requested names.",
+      "description": "Renames on this channel only: a requested model name is sent upstream as another name. Use it only when the upstream wants its own names, such as deployment names; **matching models to the catalog needs nothing here**. A target starting with + bills by the requested name. Requests routed through a supply use the supply's upstream model instead. Saving a change **rewrites the channel's model list** to the requested names.",
       "examples": [
         {
           "value": "{\"gpt-4o\": \"my-gpt4o-deployment\"}",
@@ -4237,7 +4237,7 @@
       ],
       "default": "1",
       "label": "Pre-billing",
-      "description": "How the gateway counts a request's input before sending it, to hold the user's credit until the reply's usage is known. The count also stands in for the input when an upstream reports no usage, such as some streams. Leaving images or everything out saves server work on heavy requests; the prompt token limit is still checked.",
+      "description": "How the gateway counts a request's input before sending it, to hold the user's credit until the reply's usage is known. The count also **stands in for the input when an upstream reports no usage**, such as some streams. Leaving images or everything out saves server work on heavy requests; **the prompt token limit is still checked**.",
       "related": [
         "MaxPromptTokens"
       ],
@@ -4257,7 +4257,7 @@
       "field": "disabled_stream",
       "type": "list",
       "label": "Models with streaming disabled",
-      "description": "Models this channel must not stream: streaming requests for them skip it for another channel serving the model. Requests without streaming still use it. Empty means every model streams.",
+      "description": "Models this channel must not stream: streaming requests for them **skip it for another channel** serving the model. Requests without streaming **still use it**. Empty means every model streams.",
       "examples": [
         {
           "value": "o1,o1-pro",
@@ -4297,7 +4297,7 @@
       ],
       "default": "inherit",
       "label": "Prompt caching injection",
-      "description": "Whether the gateway adds cache_control marks to Claude requests on this channel, so the upstream caches the prompt. Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go and which models match (Claude names by default).",
+      "description": "Whether the gateway **adds cache_control marks to Claude requests** on this channel, so the upstream caches the prompt. Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go and which models match (Claude names by default).",
       "related": [
         "ClaudePromptCachingEnabled"
       ],
@@ -4318,7 +4318,7 @@
       "field": "proxy",
       "type": "url",
       "label": "Proxy",
-      "description": "A proxy for this channel's upstream requests only, http or socks5. Only needed when this server cannot reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for proxies that pin one exit per session. Empty connects directly.",
+      "description": "A proxy for **this channel's upstream requests only**, http or socks5. Only needed when this server cannot reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for proxies that pin one exit per session. Empty **connects directly**.",
       "examples": [
         {
           "value": "http://127.0.0.1:1080",
@@ -4344,7 +4344,7 @@
       "field": "test_model",
       "type": "string",
       "label": "Test model",
-      "description": "The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model from the channel's list, else its first chat model; a channel without a chat model then cannot be tested.",
+      "description": "The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model from the channel's list, else its first chat model; a channel without a chat model then **cannot be tested**.",
       "examples": [
         {
           "value": "gpt-4o-mini",
@@ -4367,7 +4367,7 @@
       "unit": "USD / 1M tokens",
       "min": 0,
       "label": "Catalog price",
-      "description": "What the model costs before the group ratio, per million input and output tokens (or per request or minute). Users pay catalog price x their group ratio, whichever channel serves the request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is refused by default.",
+      "description": "What the model costs before the group ratio, per million input and output tokens (or per request or minute). **Users pay catalog price x their group ratio**, whichever channel serves the request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is **refused by default**.",
       "examples": [
         {
           "value": "3 / 15",
@@ -4413,7 +4413,7 @@
       ],
       "default": "policy",
       "label": "Supply order",
-      "description": "Whether the model's supplies follow the call order of the Providers page or keep their own numbers. Changing a supply's priority or weight on the Supplies tab sets the model to set by hand; switching back to the call order drops those numbers.",
+      "description": "Whether the model's supplies follow the call order of the Providers page or keep their own numbers. Changing a supply's priority or weight on the Supplies tab **sets the model to set by hand**; switching back to the call order **drops those numbers**.",
       "examples": [
         {
           "value": "policy",
@@ -4444,7 +4444,7 @@
       "type": "int",
       "default": "the channel's priority; a supply added by hand joins below the lowest tier",
       "label": "Priority",
-      "description": "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
+      "description": "This supply's tier among the model's supplies: **higher tiers take requests first**, lower ones back them up. A lower tier is **used only while every supply above it is unavailable**. Supplies of one priority form a tier and share it by weight. Under the call order the policy sets it; **a supply with its own number no longer follows its channel**.",
       "examples": [
         {
           "value": "2",
@@ -4478,7 +4478,7 @@
       "min": 0,
       "default": "the channel's weight",
       "label": "Weight",
-      "description": "This supply's share of its tier: its weight over the tier's total. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.",
+      "description": "This supply's share of its tier: its weight over the tier's total. 0 **counts as 1**. Under the call order a provider's weight is split equally between its channels.",
       "examples": [
         {
           "value": "3",
@@ -4509,7 +4509,7 @@
       "type": "bool",
       "default": "on; off for a supply an intake rule adds for review",
       "label": "Use this supply",
-      "description": "Whether the supply takes the model's requests. Off, it keeps its settings but is skipped. Supplies an intake rule added wait switched off until you switch them on; switching a supply on also accepts its cost, so the price check leaves it alone.",
+      "description": "Whether the supply takes the model's requests. Off, it **keeps its settings but is skipped**. Supplies an intake rule added wait switched off until you switch them on; switching a supply on **also accepts its cost**, so the price check leaves it alone.",
       "related": [
         "SupplyIntakeRules"
       ],
@@ -4529,7 +4529,7 @@
       "type": "string",
       "default": "filled in from the channel's mapping, its model list or its platform's naming",
       "label": "Upstream model",
-      "description": "The model name this supply sends to its channel's upstream. The client still asks for the public name and is billed by it; the channel's model mapping does not apply. A supply stops taking requests when the upstream stops listing this name in two checks in a row.",
+      "description": "The model name this supply sends to its channel's upstream. The client still asks for the public name and is billed by it; **the channel's model mapping does not apply**. A supply **stops taking requests** when the upstream stops listing this name in two checks in a row.",
       "examples": [
         {
           "value": "claude-sonnet-4-5@20250929",
@@ -4558,7 +4558,7 @@
       "type": "json",
       "default": "created from the channels' priorities when supply routing starts",
       "label": "Call order",
-      "description": "The order channels take requests in while supplies route them, edited as the list on the Providers page. Each position is a provider (every channel of one type and address) or a single channel; positions shared by several split their requests by weight, and a provider's weight is split equally between its channels. Channels not placed come last, newest last. Models set by hand keep their own order.",
+      "description": "The order channels take requests in while supplies route them, edited as the list on the Providers page. Each position is a provider (every channel of one type and address) or a single channel; positions shared by several **split their requests by weight**, and a provider's weight is split equally between its channels. Channels **not placed come last**, newest last. Models set by hand **keep their own order**.",
       "examples": [
         {
           "value": "[[{\"provider\":\"14:\",\"weight\":1}],[{\"channel_id\":7,\"weight\":1}]]",
@@ -4592,7 +4592,7 @@
       "min": 0,
       "default": "1",
       "label": "Group ratio",
-      "description": "The multiplier on the catalog (official) price for users of the group: every request is charged catalog price x ratio, whatever channel serves it. The default group's ratio is the site's normal price and margin; other groups give discounts or charge more. 0 makes the group's requests free.",
+      "description": "The multiplier on the catalog (official) price for users of the group: every request is charged catalog price x ratio, **whatever channel serves it**. The default group's ratio is the site's normal price and margin; other groups give discounts or charge more. 0 **makes the group's requests free**.",
       "examples": [
         {
           "value": "1.12",
@@ -4631,7 +4631,7 @@
       "min": 0,
       "default": "300",
       "label": "API rate",
-      "description": "How many API requests each user of the group may send per minute, counted per user across all their keys. Requests over it get 429. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts of up to 10 seconds' worth.",
+      "description": "How many API requests each user of the group may send per minute, **counted per user across all their keys**. Requests over it **get 429**. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts of up to 10 seconds' worth.",
       "examples": [
         {
           "value": "300",
@@ -4658,7 +4658,7 @@
       "type": "bool",
       "default": "off",
       "label": "Public",
-      "description": "Whether users outside the group may pick it for their API keys, as a key's group or backup group. Off, only users in the group use it. Requests through a picked group are billed at its ratio.",
+      "description": "Whether users outside the group **may pick it for their API keys**, as a key's group or backup group. Off, only users in the group use it. Requests through a picked group are **billed at its ratio**.",
       "related": [
         "token.group",
         "token.backup_group",
@@ -4679,7 +4679,7 @@
       "type": "bool",
       "default": "off",
       "label": "Auto upgrade",
-      "description": "Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is checked after each paid order; gifted credit (sign-up and invite bonuses, redemption codes, admin changes) does not count. When several groups match, the one with the highest minimum wins. A user an admin put in another group is moved too.",
+      "description": "Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is checked after each paid order; **gifted credit** (sign-up and invite bonuses, redemption codes, admin changes) does not count. When several groups match, **the one with the highest minimum wins**. A user an admin put in another group **is moved too**.",
       "related": [
         "user_group.min",
         "user_group.max"
@@ -4702,7 +4702,7 @@
       "min": 0,
       "default": "0",
       "label": "Minimum paid top-ups",
-      "description": "The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with auto upgrade on.",
+      "description": "The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with **auto upgrade on**.",
       "examples": [
         {
           "value": "100",
@@ -4734,7 +4734,7 @@
       "min": 0,
       "default": "0",
       "label": "Maximum paid top-ups",
-      "description": "The total paid top-ups at which the group stops matching (exclusive), so a bigger spender moves on to the next group. 0 means no upper bound. Only used with auto upgrade on.",
+      "description": "The total paid top-ups at which the group **stops matching (exclusive)**, so a bigger spender moves on to the next group. 0 means **no upper bound**. Only used with auto upgrade on.",
       "examples": [
         {
           "value": "500",
@@ -4763,7 +4763,7 @@
       "field": "decision_model",
       "type": "string",
       "label": "Decision model",
-      "description": "The model that reads a session's first user message and picks one of the routes. A decision model is best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the caller once per session, and it cannot be another routing policy.",
+      "description": "The model that reads a session's first user message and picks one of the routes. A decision model is best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the **caller once per session**, and it **cannot be another routing policy**.",
       "examples": [
         {
           "value": "gpt-4.1-mini",
@@ -4807,7 +4807,7 @@
       ],
       "default": "auto",
       "label": "Scoring",
-      "description": "How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a non-reasoning model on a channel that returns them; Claude, reasoning models and most aggregators do not. A decision model ignores this setting.",
+      "description": "How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a **non-reasoning model on a channel that returns them**; Claude, reasoning models and most aggregators do not. A decision model **ignores this setting**.",
       "related": [
         "routing_policy.threshold",
         "routing_policy.decision_model"
@@ -4829,7 +4829,7 @@
       "max": 1,
       "default": "0.5",
       "label": "Confidence threshold",
-      "description": "The confidence the chosen route needs, from 0 to 1; below it the request goes to the fallback model. Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. Self-reported confidence is only a ranking, so it compares less exactly than logprobs.",
+      "description": "The confidence the chosen route needs, from 0 to 1; **below it the request goes to the fallback model**. Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. Self-reported confidence is only a ranking, so it compares less exactly than logprobs.",
       "examples": [
         {
           "value": "0.5",
@@ -4862,7 +4862,7 @@
       "field": "fallback_model",
       "type": "string",
       "label": "Fallback model",
-      "description": "Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. A decision that times out counts as failed. Put your safest model here; it cannot be another routing policy.",
+      "description": "Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. A decision that times out counts as failed. **Put your safest model here**; it **cannot be another routing policy**.",
       "examples": [
         {
           "value": "claude-sonnet-4-5",
@@ -4891,7 +4891,7 @@
       "max": 604800,
       "default": "3600",
       "label": "Pin per session",
-      "description": "How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. 0 classifies every request; at most 7 days.",
+      "description": "How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the upstream prompt cache warm and **never switch models mid-conversation**. 0 **classifies every request**; at most 7 days.",
       "examples": [
         {
           "value": "3600",
@@ -4922,7 +4922,7 @@
       "min": 0,
       "default": "the site default",
       "label": "Member limit",
-      "description": "The most members the organization may have, set by platform admins. It only stops new members from joining; existing members are not removed. Follow the site default, unlimited (0) or a number.",
+      "description": "The most members the organization may have, set by platform admins. It only stops new members from joining; **existing members are not removed**. Follow the site default, unlimited (0) or a number.",
       "examples": [
         {
           "value": "20",
@@ -4951,7 +4951,7 @@
       "type": "list",
       "default": "empty (every model)",
       "label": "Approved models",
-      "description": "The most the organization may use, set by platform admins: every list of the organization stays inside it. Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows a prefix, so new releases of a family follow; exact names need approving one by one. Empty means no limit.",
+      "description": "The most the organization may use, set by platform admins: **every list of the organization stays inside it**. Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows a prefix, so new releases of a family follow; **exact names need approving one by one**. Empty means **no limit**.",
       "examples": [
         {
           "value": "claude-*, gpt-5*",
@@ -4982,7 +4982,7 @@
       "type": "list",
       "default": "empty (every approved model)",
       "label": "Default model access",
-      "description": "What members may use unless they have limits of their own, set by organization owners and admins. It is a named list or a list of models. Members with their own limits are not affected, and keys can only narrow what their creator may use. A name ending in * allows a prefix. Empty means every approved model.",
+      "description": "What members may use unless they have limits of their own, set by organization owners and admins. It is a named list or a list of models. Members with their own limits **are not affected**, and keys can only narrow what their creator may use. A name ending in * allows a prefix. Empty means **every approved model**.",
       "examples": [
         {
           "value": "claude-haiku-*, gpt-4.1-mini",
@@ -5011,7 +5011,7 @@
       "min": 0,
       "default": "none",
       "label": "Organization budget",
-      "description": "The most all members together may spend per day, week or month; then the organization's requests are refused. They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the platform's reset time zone; changing the period restarts the count. None means no organization-wide cap.",
+      "description": "The most all members together may spend per day, week or month; then **the organization's requests are refused**. They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the platform's reset time zone; **changing the period restarts the count**. None means no organization-wide cap.",
       "examples": [
         {
           "value": "1000 monthly",
@@ -5045,7 +5045,7 @@
       "min": 0,
       "default": "none",
       "label": "Member budget",
-      "description": "The most one member may spend per day, week or month in the organization, set on the member's limits. Once used up, that member's requests are refused until the next period, while the organization budget caps everyone together. Keys the organization owns have no member budget. None means no cap of the member's own.",
+      "description": "The most one member may spend per day, week or month in the organization, set on the member's limits. Once used up, **that member's requests are refused until the next period**, while the organization budget caps everyone together. Keys the organization owns **have no member budget**. None means no cap of the member's own.",
       "examples": [
         {
           "value": "100 weekly",
@@ -5089,7 +5089,7 @@
       ],
       "default": "off",
       "label": "Request and response retention",
-      "description": "Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: a key's creator cannot. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.",
+      "description": "Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: **a key's creator cannot**. Stored bodies **never include API keys or auth headers**, are deleted after 30 days, and **only owners and platform admins can read them**. Members are told on their keys who turned retention on and when. Shown **only while the site allows retention**.",
       "examples": [
         {
           "value": "off",
@@ -5121,7 +5121,7 @@
       "type": "string",
       "default": "empty (the user's group)",
       "label": "Group",
-      "description": "The user group the key's requests run in: only channels of that group serve them, billed at its ratio. It must be the user's own group or a public one. Empty uses the user's group.",
+      "description": "The user group the key's requests run in: **only channels of that group serve them**, billed at its ratio. It **must be the user's own group or a public one**. Empty uses the user's group.",
       "examples": [
         {
           "value": "vip",
@@ -5147,7 +5147,7 @@
       "field": "backup_group",
       "type": "string",
       "label": "Backup group",
-      "description": "A second group tried when the key's group has no channel that can take the request. A request served there is billed at the backup group's ratio and marked in the logs. With a group or backup group set, the user's own group is not tried.",
+      "description": "A second group tried when the key's group has no channel that can take the request. A request served there is **billed at the backup group's ratio** and marked in the logs. With a group or backup group set, the user's own group **is not tried**.",
       "examples": [
         {
           "value": "default",
@@ -5172,7 +5172,7 @@
       "field": "setting.limits.limit_model_setting",
       "type": "list",
       "label": "Model limits",
-      "description": "The models the key may call; others are refused. A name ending in * allows a prefix. With the switch on and no model selected, the key is not restricted. On an organization key it can only narrow what its creator may use, and may be a named list.",
+      "description": "The models the key may call; **others are refused**. A name ending in * allows a prefix. With the switch on and no model selected, **the key is not restricted**. On an organization key it **can only narrow what its creator may use**, and may be a named list.",
       "examples": [
         {
           "value": "gpt-4.1-mini, claude-haiku-*",
@@ -5200,7 +5200,7 @@
       "min": 0,
       "default": "empty (no limit)",
       "label": "Spending limit",
-      "description": "The most the key may spend; once used up, its requests are refused. With a reset period it is the limit per period instead. It only caps the key: the account balance always applies. Empty means no limit of the key's own.",
+      "description": "The most the key may spend; once used up, **its requests are refused**. With a reset period it is the limit per period instead. It only caps the key: **the account balance always applies**. Empty means no limit of the key's own.",
       "examples": [
         {
           "value": "10",
@@ -5246,7 +5246,7 @@
         }
       ],
       "label": "Reset period",
-      "description": "How often the key's spending limit starts over. Without a period the limit is spent once. Periods start at midnight in the platform's reset time zone, weeks on its week start; changing the period restarts the count. A period needs a limit above 0.",
+      "description": "How often the key's spending limit starts over. Without a period **the limit is spent once**. Periods start at midnight in the platform's reset time zone, weeks on its week start; **changing the period restarts the count**. A period **needs a limit above 0**.",
       "related": [
         "token.quota",
         "QuotaResetTimezone",

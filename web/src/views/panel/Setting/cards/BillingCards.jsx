@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import PropTypes from 'prop-types';
+import { Emphasis } from '@/components/settings/SettingHelp';
 
 import QuotaInput from '@/components/QuotaInput';
 import { FormField } from '@/components/ui/form-field';
@@ -165,7 +166,7 @@ export function InviteRewardCard({ ctx }) {
   const description = settingDescription(t, 'InviteRewardEnabled');
 
   return (
-    <OptionCard ctx={ctx} id="invite-reward" description={description} enableKey="InviteRewardEnabled">
+    <OptionCard ctx={ctx} id="invite-reward" description={<Emphasis text={description} />} enableKey="InviteRewardEnabled">
       <div className="grid gap-5 sm:grid-cols-2">
         <QuotaRow ctx={ctx} id="QuotaForInviter" />
         <QuotaRow ctx={ctx} id="QuotaForInvitee" />
