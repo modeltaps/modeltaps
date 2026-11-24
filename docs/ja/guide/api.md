@@ -156,7 +156,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 | `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI（`/v1` と同じ） | その他の OpenAI 互換コーディングエージェント |
 | `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages（`/claude` と同じ） | その他の Anthropic 互換コーディングエージェント |
 
-利用ログには各リクエストを送ったエージェントが記録されます。接続先アドレスで判定し、それ以外のアドレスでは User-Agent から識別します（Claude Code、Codex、OpenCode、Gemini CLI）。組織ではツール別の利用状況を確認できます。[組織](/ja/guide/organization#利用状況) を参照してください。
+利用ログには各リクエストを送ったエージェントが記録されます。接続先アドレスで判定し、それ以外のアドレスでは User-Agent から識別します（Claude Code、Codex、OpenCode、Gemini CLI。User-Agent を送らない Goose は `Agent-Session-Id` ヘッダーで識別）。組織ではツール別の利用状況を確認できます。[組織](/ja/guide/organization#利用状況) を参照してください。
 
 これらの設定はコンソールでも作れます。**API キー** ページでキーの ⋯ メニュー（またはヘッダーの **接続** ボタン）から **ツールに接続** を選ぶと、サイトのアドレス、キー、既定のモデルが入った設定が表示されます。
 

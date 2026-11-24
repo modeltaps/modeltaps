@@ -5363,6 +5363,9 @@
       },
       "codex": {
         "verified": "プロンプトキャッシュ：確認済み。Codex の prompt_cache_key はそのまま上流に届き、同じセッションは同じチャネルを使います。"
+      },
+      "goose": {
+        "verified": "プロンプトキャッシュ：確認済み。Goose 内蔵の Anthropic プロバイダーが cache_control を送り、同じセッションは同じチャネルを使います。"
       }
     },
     "verify": {

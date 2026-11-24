@@ -98,7 +98,8 @@ describe('tool guides', () => {
 
   it('marks caching by model and protocol', () => {
     expect(guide('claude-code').cache).toBe('verified');
-    expect(guide('goose').cache).toBe('unverified');
+    expect(guide('goose').cache).toBe('verified');
+    expect(guide('opencode').cache).toBe('unverified');
     expect(guide('goose', { model: 'gpt-5.5' }).cache).toBe('depends');
   });
 });

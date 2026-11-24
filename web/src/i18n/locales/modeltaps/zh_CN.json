@@ -5373,6 +5373,9 @@
       },
       "codex": {
         "verified": "提示缓存：已实测。Codex 的 prompt_cache_key 原样转发，同一会话固定在一条渠道上。"
+      },
+      "goose": {
+        "verified": "提示缓存：已实测。Goose 内置的 Anthropic provider 会带 cache_control，同一会话固定在一条渠道上。"
       }
     },
     "verify": {

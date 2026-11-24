@@ -5498,6 +5498,9 @@
       },
       "codex": {
         "verified": "Prompt caching: confirmed. Codex's prompt_cache_key reaches the upstream and one session stays on one channel."
+      },
+      "goose": {
+        "verified": "Prompt caching: confirmed. Goose’s built-in Anthropic provider sends cache_control and one session stays on one channel."
       }
     },
     "verify": {

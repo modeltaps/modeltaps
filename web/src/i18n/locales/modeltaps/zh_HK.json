@@ -5372,6 +5372,9 @@
       },
       "codex": {
         "verified": "提示快取：已實測。Codex 的 prompt_cache_key 原樣轉發，同一工作階段固定在一條渠道上。"
+      },
+      "goose": {
+        "verified": "提示快取：已實測。Goose 內建的 Anthropic provider 會帶 cache_control，同一工作階段固定在一條渠道上。"
       }
     },
     "verify": {

@@ -32,9 +32,9 @@ const RANGES = [
 
 // Coding agents the backend records in logs.client (common/agentclient), in display order.
 // Product names stay untranslated; the generic coding-agent endpoint and "no agent" are labels.
-const TOOLS = ['claude-code', 'codex', 'opencode', 'gemini-cli', 'coding-agent'];
+const TOOLS = ['claude-code', 'codex', 'opencode', 'gemini-cli', 'goose', 'coding-agent'];
 const ALL_TOOLS = 'all';
-const TOOL_NAMES = { 'claude-code': 'Claude Code', codex: 'Codex', opencode: 'OpenCode', 'gemini-cli': 'Gemini CLI' };
+const TOOL_NAMES = { 'claude-code': 'Claude Code', codex: 'Codex', opencode: 'OpenCode', 'gemini-cli': 'Gemini CLI', goose: 'Goose' };
 
 function toolLabel(t, client) {
   if (!client) return t('orgPage.usage.toolOther');

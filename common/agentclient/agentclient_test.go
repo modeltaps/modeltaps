@@ -1,6 +1,9 @@
 package agentclient
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
 func TestFromUserAgent(t *testing.T) {
 	cases := map[string]string{
@@ -24,21 +27,34 @@ func TestFromUserAgent(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	cases := []struct {
-		endpoint, userAgent, want string
+		endpoint, userAgent, session, want string
 	}{
-		{"", "", ""},
-		{"", "claude-cli/2.1.0", ClaudeCode},
-		// A client endpoint names the client whatever the User-Agent says.
-		{ClaudeCode, "curl/8.7.1", ClaudeCode},
-		{Codex, "opencode/1.0.0", Codex},
-		// The generic endpoint is refined by a User-Agent that names the agent.
-		{CodingAgent, "", CodingAgent},
-		{CodingAgent, "curl/8.7.1", CodingAgent},
-		{CodingAgent, "opencode/1.0.0", OpenCode},
+		{"", "", "", ""},
+		{"", "claude-cli/2.1.0", "", ClaudeCode},
+		// A client endpoint names the client whatever the headers say.
+		{ClaudeCode, "curl/8.7.1", "", ClaudeCode},
+		{Codex, "opencode/1.0.0", "", Codex},
+		// The generic endpoint is refined by headers that name the agent.
+		{CodingAgent, "", "", CodingAgent},
+		{CodingAgent, "curl/8.7.1", "", CodingAgent},
+		{CodingAgent, "opencode/1.0.0", "", OpenCode},
+		// Goose sends no User-Agent, only its session header.
+		{CodingAgent, "", "20261124_2", Goose},
+		{"", "", "20261124_2", Goose},
+		// The session header alone does not override a User-Agent.
+		{CodingAgent, "curl/8.7.1", "20261124_2", CodingAgent},
+		{CodingAgent, "opencode/1.0.0", "x", OpenCode},
 	}
 	for _, tc := range cases {
-		if got := Resolve(tc.endpoint, tc.userAgent); got != tc.want {
-			t.Errorf("Resolve(%q, %q) = %q, want %q", tc.endpoint, tc.userAgent, got, tc.want)
+		header := http.Header{}
+		if tc.userAgent != "" {
+			header.Set("User-Agent", tc.userAgent)
+		}
+		if tc.session != "" {
+			header.Set(GooseSessionHeader, tc.session)
+		}
+		if got := Resolve(tc.endpoint, header); got != tc.want {
+			t.Errorf("Resolve(%q, ua=%q, session=%q) = %q, want %q", tc.endpoint, tc.userAgent, tc.session, got, tc.want)
 		}
 	}
 }

@@ -156,7 +156,7 @@ Coding agents have endpoints of their own. The path says which agent is calling;
 | `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI, same as `/v1` | Other OpenAI-compatible coding agents |
 | `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages, same as `/claude` | Other Anthropic-compatible coding agents |
 
-Usage logs record which agent sent each request: the endpoint decides, and on the other endpoints the agent is recognised from its User-Agent (Claude Code, Codex, OpenCode, Gemini CLI). Organizations can break their usage down by tool; see [Organizations](/guide/organization#usage).
+Usage logs record which agent sent each request: the endpoint decides, and on the other endpoints the agent is recognised from its User-Agent (Claude Code, Codex, OpenCode, Gemini CLI; Goose, which sends no User-Agent, from its `Agent-Session-Id` header). Organizations can break their usage down by tool; see [Organizations](/guide/organization#usage).
 
 The console writes these configurations for you: on **API Keys**, open a key's ⋯ menu (or the **Connect** button in the header) and choose **Connect a tool**. It fills in your site address, the key and a default model.
 

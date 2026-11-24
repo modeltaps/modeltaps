@@ -9,6 +9,7 @@
 package agentclient
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -21,11 +22,12 @@ const (
 	Codex       = "codex"
 	OpenCode    = "opencode"
 	GeminiCLI   = "gemini-cli"
+	Goose       = "goose"
 	CodingAgent = "coding-agent"
 )
 
 // Known lists the client IDs the relay can record, in display order.
-var Known = []string{ClaudeCode, Codex, OpenCode, GeminiCLI, CodingAgent}
+var Known = []string{ClaudeCode, Codex, OpenCode, GeminiCLI, Goose, CodingAgent}
 
 // EndpointContextKey holds the client named by the endpoint the request came in on.
 const EndpointContextKey = "agent_client_endpoint"
@@ -47,6 +49,11 @@ var userAgentRules = []struct {
 	{"gemini-cli/", GeminiCLI},
 }
 
+// GooseSessionHeader is the header Goose sends with every model request. Goose (1.60) sends no
+// User-Agent at all, on both its Anthropic and its OpenAI-compatible providers, so a request
+// with this header and no User-Agent is taken to come from Goose.
+const GooseSessionHeader = "Agent-Session-Id"
+
 // FromUserAgent returns the client a User-Agent belongs to, "" when it is not a known one.
 func FromUserAgent(userAgent string) string {
 	ua := strings.ToLower(strings.TrimSpace(userAgent))
@@ -58,15 +65,28 @@ func FromUserAgent(userAgent string) string {
 	return ""
 }
 
+// FromHeaders returns the client named by a request's headers: its User-Agent, or Goose's
+// session header when there is no User-Agent. "" when neither names a known client.
+func FromHeaders(header http.Header) string {
+	userAgent := header.Get("User-Agent")
+	if client := FromUserAgent(userAgent); client != "" {
+		return client
+	}
+	if strings.TrimSpace(userAgent) == "" && header.Get(GooseSessionHeader) != "" {
+		return Goose
+	}
+	return ""
+}
+
 // Resolve returns the client to record for a request: the endpoint's client when the endpoint
-// names one (/claude-code, /codex), otherwise the User-Agent's. The generic /coding-agent
-// endpoint only says "a coding agent", so a User-Agent that names the agent refines it.
-func Resolve(endpointClient, userAgent string) string {
+// names one (/claude-code, /codex), otherwise the one its headers name. The generic
+// /coding-agent endpoint only says "a coding agent", so headers that name the agent refine it.
+func Resolve(endpointClient string, header http.Header) string {
 	switch endpointClient {
 	case "":
-		return FromUserAgent(userAgent)
+		return FromHeaders(header)
 	case CodingAgent:
-		if client := FromUserAgent(userAgent); client != "" {
+		if client := FromHeaders(header); client != "" {
 			return client
 		}
 	}
@@ -78,7 +98,7 @@ func FromContext(c *gin.Context) string {
 	if c == nil || c.Request == nil {
 		return ""
 	}
-	return Resolve(c.GetString(EndpointContextKey), c.GetHeader("User-Agent"))
+	return Resolve(c.GetString(EndpointContextKey), c.Request.Header)
 }
 
 // Claude Code model IDs on the /claude-code endpoint.

@@ -156,7 +156,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 | `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI，与 `/v1` 相同 | 其他 OpenAI 兼容的编程 Agent |
 | `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages，与 `/claude` 相同 | 其他 Anthropic 兼容的编程 Agent |
 
-用量日志会记下每次请求来自哪个 Agent：以接入地址为准，走其他地址时按 User-Agent 识别（Claude Code、Codex、OpenCode、Gemini CLI）。组织可以按工具查看用量，见 [组织](/zh/guide/organization#用量)。
+用量日志会记下每次请求来自哪个 Agent：以接入地址为准，走其他地址时按 User-Agent 识别（Claude Code、Codex、OpenCode、Gemini CLI；Goose 不发 User-Agent，按它的 `Agent-Session-Id` 头识别）。组织可以按工具查看用量，见 [组织](/zh/guide/organization#用量)。
 
 控制台可以直接生成这些配置：在 **API Key** 页打开某把 Key 的 ⋯ 菜单（或页头的 **接入** 按钮），选 **接入工具**，会填好站点地址、Key 和默认模型。
 

@@ -165,7 +165,7 @@ const goose = {
   site: 'https://goose-docs.ai',
   docs: '/guide/api#goose',
   needsModel: true,
-  cache: ({ model, anthropic }) => (anthropic && isClaudeModel(model) ? CACHE.unverified : CACHE.depends),
+  cache: ({ model, anthropic }) => (anthropic && isClaudeModel(model) ? CACHE.verified : CACHE.depends),
   // Claude models use Goose's built-in Anthropic provider, which adds cache_control markers on
   // its own; other models a custom OpenAI-compatible provider with model discovery.
   methods: ({ base, key, model, providerId, anthropic }) => {
