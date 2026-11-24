@@ -2,12 +2,26 @@ import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, Bot, CircleCheck, CircleDashed, Inbox, Loader2, Plug, ListChecks } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Bot,
+  Check,
+  ChevronRight,
+  CircleCheck,
+  CircleDashed,
+  Copy,
+  Inbox,
+  ListChecks,
+  Loader2,
+  Plug,
+  Search,
+  TriangleAlert
+} from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Combobox } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import CodeBlock from '@/components/ui/code-block';
 import { toast } from '@/components/ui/sonner';
 import BrandIcon from '@/components/brand/BrandIcon';
@@ -17,48 +31,175 @@ import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { maskSecret } from 'utils/maskSecret';
 import { resolveServerAddress } from 'utils/serverAddress';
-import { PasteKeyField, normalizePastedKey, pastedKeyMatches } from '../KeySecret';
+import { PasteKeyField, normalizePastedKey, pastedKeyMatches, useCopied } from '../KeySecret';
 import { PairingCodeReveal, buildAgentPrompt, useSkillUrl } from '../PairingCode';
-import { availableTools, buildToolGuide, findTool, pickModel } from './tools';
+import { CATEGORIES, POPULAR, availableTools, buildToolGuide, findTool, isPrivateAddress, pickModel, searchTools } from './tools';
 
-// "Connect a tool" (AGENT-8): pick a tool, then copy its configuration with this site's address,
-// the key and a default model filled in. The configurations come from ./tools.js. Keys are
-// stored as hashes only (SEC-47): the snippets hold the real key only when it is known (`secret`,
-// right after this page created or reset it) or pasted; otherwise a placeholder. The "Let the AI
-// set it up" tab hands the key over with a pairing code instead, so it never enters the chat.
-
-const activeTabClass = 'data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm';
+// "Connect a tool" (AGENT-8, AGENT-9). A directory of tools (the popular ones, a search box and
+// the full list by category); picking one shows the way to connect it that asks the least of the
+// user, then the other ways, with the hand-written config file folded away at the end. Every
+// value comes from ./tools.js with this site's address, the key and a default model filled in.
+// Keys are stored as hashes only (SEC-47): the real key is in the values only when it is known
+// (`secret`, right after this page created or reset it) or pasted; otherwise a placeholder.
 
 const CACHE_ICON = { verified: CircleCheck, unverified: CircleDashed, depends: CircleDashed };
+const APP_ICON = { ccswitch: 'ccswitch', cherry: 'cherrystudio' };
+const APP_SITE = { ccswitch: 'https://ccswitch.io', cherry: 'https://cherry-ai.com' };
 
-function ToolCard({ tool, selected, onSelect }) {
+const toolName = (t, tool) => tool.name || t('connectTool.other.name');
+
+// The back arrow sized to the text beside it (its strokes as tall as the glyphs).
+function BackArrow() {
+  return (
+    <svg viewBox="0 0 8 16" className="h-[1em] w-[0.5em]" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M6.5 1.5 1.5 8l5 6.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function ToolIcon({ tool, className }) {
   const { t } = useTranslation();
-  const name = tool.name || t('connectTool.other.name');
+  return tool.icon ? (
+    <BrandIcon icon={tool.icon} fallbackText={toolName(t, tool)} className={cn('size-5 shrink-0', className)} />
+  ) : (
+    <Plug className={cn('size-5 shrink-0 text-muted-foreground', className)} aria-hidden="true" />
+  );
+}
+
+ToolIcon.propTypes = { tool: PropTypes.object.isRequired, className: PropTypes.string };
+
+function ToolCard({ tool, onSelect }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       onClick={() => onSelect(tool.id)}
-      aria-pressed={selected}
       data-testid={`tool-${tool.id}`}
-      className={cn(
-        'flex min-w-0 items-center gap-2.5 rounded-lg border bg-field px-3 py-2.5 text-left transition-colors',
-        selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-foreground/30'
-      )}
+      className="flex min-w-0 items-center gap-2.5 rounded-lg border border-border bg-field px-3 py-2.5 text-left transition-colors hover:border-foreground/30"
     >
-      {tool.icon ? (
-        <BrandIcon icon={tool.icon} fallbackText={name} className="size-5 shrink-0" />
-      ) : (
-        <Plug className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-      )}
+      <ToolIcon tool={tool} />
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-foreground">{name}</span>
-        <span className="block truncate text-xs text-muted-foreground">{t(`connectTool.kind.${tool.kind}`)}</span>
+        <span className="block truncate text-sm font-medium text-foreground">{toolName(t, tool)}</span>
+        <span className="block truncate text-xs text-muted-foreground">{t(`connectTool.method.${tool.primary}Short`)}</span>
       </span>
     </button>
   );
 }
 
-ToolCard.propTypes = { tool: PropTypes.object.isRequired, selected: PropTypes.bool, onSelect: PropTypes.func.isRequired };
+ToolCard.propTypes = { tool: PropTypes.object.isRequired, onSelect: PropTypes.func.isRequired };
+
+function ToolGrid({ tools, onSelect }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {tools.map((x) => (
+        <ToolCard key={x.id} tool={x} onSelect={onSelect} />
+      ))}
+    </div>
+  );
+}
+
+ToolGrid.propTypes = { tools: PropTypes.array.isRequired, onSelect: PropTypes.func.isRequired };
+
+// The directory: popular tools, then every tool by category; a search narrows it to one list.
+function Directory({ tools, onSelect }) {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState('');
+  const found = searchTools(tools, query);
+  const popular = POPULAR.map((id) => tools.find((x) => x.id === id)).filter(Boolean);
+  return (
+    <div className="space-y-5">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t('connectTool.search', { count: tools.length })}
+          aria-label={t('connectTool.searchLabel')}
+          className="pl-9"
+        />
+      </div>
+      {query.trim() ? (
+        found.length ? (
+          <ToolGrid tools={found} onSelect={onSelect} />
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 rounded-md border border-border px-4 py-6 text-center">
+            <Inbox className="size-6 text-muted-foreground/60" aria-hidden="true" />
+            <p className="max-w-sm text-sm text-muted-foreground">{t('connectTool.noMatch')}</p>
+            <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onSelect('other')}>
+              {t('connectTool.useOther')}
+            </Button>
+          </div>
+        )
+      ) : (
+        <>
+          <section className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground">{t('connectTool.popular')}</h3>
+            <ToolGrid tools={popular} onSelect={onSelect} />
+          </section>
+          {CATEGORIES.map((category) => {
+            const list = tools.filter((x) => x.category === category && !POPULAR.includes(x.id));
+            if (!list.length) return null;
+            return (
+              <section key={category} className="space-y-2">
+                <h3 className="text-xs font-medium text-muted-foreground">{t(`connectTool.category.${category}`)}</h3>
+                <ToolGrid tools={list} onSelect={onSelect} />
+              </section>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+Directory.propTypes = { tools: PropTypes.array.isRequired, onSelect: PropTypes.func.isRequired };
+
+// One value to paste into the tool's own settings screen. A key shows masked and copies in full.
+function ValueRow({ label, value, secret, missing, onCopy }) {
+  const { t } = useTranslation();
+  const [copied, markCopied] = useCopied();
+  return (
+    <div className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-2">
+      <span className="truncate font-mono text-xs text-muted-foreground" title={label}>
+        {label}
+      </span>
+      <code
+        className="min-w-0 truncate rounded-md border border-border bg-muted/40 px-2.5 py-1.5 font-mono text-[13px]"
+        title={secret ? undefined : value}
+      >
+        {missing ? (
+          <span className="font-sans text-muted-foreground">{t('connectTool.keyMissing')}</span>
+        ) : secret ? (
+          maskSecret(value)
+        ) : (
+          value
+        )}
+      </code>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-8 shrink-0 rounded-md text-muted-foreground hover:text-foreground"
+        aria-label={`${t('token_index.copy')} ${label}`}
+        disabled={missing}
+        onClick={() => {
+          onCopy(value, label);
+          markCopied();
+        }}
+      >
+        {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
+      </Button>
+    </div>
+  );
+}
+
+ValueRow.propTypes = {
+  label: PropTypes.string,
+  value: PropTypes.string,
+  secret: PropTypes.bool,
+  missing: PropTypes.bool,
+  onCopy: PropTypes.func.isRequired
+};
 
 function GuideBlock({ block, tool }) {
   const { t } = useTranslation();
@@ -80,10 +221,109 @@ function GuideBlock({ block, tool }) {
 
 GuideBlock.propTypes = { block: PropTypes.object.isRequired, tool: PropTypes.object.isRequired };
 
-// The "Let the AI set it up" tab: the agent reads skill.md and redeems a pairing code. A code
-// is known right after creation (`pairing`); otherwise one can be issued here, which gives the
-// key a new secret once the agent redeems it.
-function AgentTab({ token, tool, pairing, canIssue, onCopy }) {
+// Import buttons that open a local app's own confirmation dialog. They need the real key: the
+// link carries it, so the hint suggests a key of its own for the import.
+function DeeplinkMethod({ method, keyKnown, onCreateKey }) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-2.5">
+      <div className="flex flex-wrap gap-2">
+        {method.links.map((link) => (
+          <Button key={link.app} asChild={keyKnown} disabled={!keyKnown} className="gap-2 rounded-lg" data-testid={`import-${link.app}`}>
+            {keyKnown ? (
+              <a href={link.url}>
+                <BrandIcon icon={APP_ICON[link.app]} fallbackText={link.app} className="size-4" />
+                {t(`connectTool.import.${link.app}`)}
+              </a>
+            ) : (
+              <span>
+                <BrandIcon icon={APP_ICON[link.app]} fallbackText={link.app} className="size-4" />
+                {t(`connectTool.import.${link.app}`)}
+              </span>
+            )}
+          </Button>
+        ))}
+      </div>
+      {!keyKnown && (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            {t('connectTool.import.needKey')}{' '}
+            {onCreateKey && (
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={onCreateKey}>
+                {t('connectTool.import.newKey')}
+              </Button>
+            )}
+          </span>
+        </p>
+      )}
+      {method.links.map((link) => (
+        <p key={link.app} className="text-xs text-muted-foreground">
+          {t(`connectTool.import.${link.app}Hint`)}{' '}
+          <a href={APP_SITE[link.app]} target="_blank" rel="noreferrer" className="font-medium text-primary hover:underline">
+            {t('connectTool.import.getApp')}
+          </a>
+        </p>
+      ))}
+      <p className="text-xs text-muted-foreground">{t('connectTool.import.keyInLink')}</p>
+    </div>
+  );
+}
+
+DeeplinkMethod.propTypes = { method: PropTypes.object.isRequired, keyKnown: PropTypes.bool, onCreateKey: PropTypes.func };
+
+// Numbered steps in the tool's own settings screen, then the values to paste.
+function FieldsMethod({ method, tool, base, keyKnown, onCopy }) {
+  const { t } = useTranslation();
+  const steps = t(`connectTool.steps.${method.steps}`, { returnObjects: true, tool: tool.name });
+  return (
+    <div className="space-y-3">
+      {Array.isArray(steps) && (
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-foreground">
+          {steps.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
+      )}
+      <div className="space-y-1.5">
+        {method.fields.map((f) => (
+          <ValueRow key={f.label} label={f.label} value={f.value} secret={f.secret} missing={f.secret && !keyKnown} onCopy={onCopy} />
+        ))}
+      </div>
+      {tool.note === 'cursorPublic' && isPrivateAddress(base) && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <span>{t('connectTool.note.cursorPublic')}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+FieldsMethod.propTypes = {
+  method: PropTypes.object.isRequired,
+  keyKnown: PropTypes.bool,
+  tool: PropTypes.object.isRequired,
+  base: PropTypes.string,
+  onCopy: PropTypes.func.isRequired
+};
+
+function CodeMethod({ method, tool }) {
+  return (
+    <div className="space-y-4">
+      {method.blocks.map((b, i) => (
+        <GuideBlock key={i} block={b} tool={tool} />
+      ))}
+    </div>
+  );
+}
+
+CodeMethod.propTypes = { method: PropTypes.object.isRequired, tool: PropTypes.object.isRequired };
+
+// "Let the AI set it up": the agent reads skill.md and redeems a pairing code. A code is known
+// right after creation (`pairing`); otherwise one can be issued here, which gives the key a new
+// secret once the agent redeems it.
+function AgentMethod({ token, tool, pairing, canIssue, onCopy }) {
   const { t } = useTranslation();
   const skillUrl = useSkillUrl();
   const [issued, setIssued] = useState(null);
@@ -107,7 +347,7 @@ function AgentTab({ token, tool, pairing, canIssue, onCopy }) {
 
   const prompt = code
     ? [
-        t('connectTool.agent.promptTool', { tool: tool.name || t('connectTool.other.name') }),
+        t('connectTool.agent.promptTool', { tool: toolName(t, tool) }),
         buildAgentPrompt(t, { skillUrl, code: code.code, expiresAt: code.expiresAt })
       ].join('\n\n')
     : '';
@@ -140,7 +380,7 @@ function AgentTab({ token, tool, pairing, canIssue, onCopy }) {
   );
 }
 
-AgentTab.propTypes = {
+AgentMethod.propTypes = {
   token: PropTypes.object.isRequired,
   tool: PropTypes.object.isRequired,
   pairing: PropTypes.object,
@@ -148,12 +388,40 @@ AgentTab.propTypes = {
   onCopy: PropTypes.func.isRequired
 };
 
-export default function ToolConnectDialog({ open, onOpenChange, token, tokens, secrets, pairing, canIssueFor, serverAddress, onCopy }) {
+// A folded section for the ways after the first.
+function Fold({ title, children, testId }) {
+  return (
+    <details className="group rounded-lg border border-border" data-testid={testId}>
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden="true" />
+        {title}
+      </summary>
+      <div className="border-t border-border px-3 py-3">{children}</div>
+    </details>
+  );
+}
+
+Fold.propTypes = { title: PropTypes.node, children: PropTypes.node, testId: PropTypes.string };
+
+export default function ToolConnectDialog({
+  open,
+  onOpenChange,
+  token,
+  tokens,
+  secrets,
+  pairing,
+  canIssueFor,
+  serverAddress,
+  onCopy,
+  onCreateKey
+}) {
   const { t, i18n } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo) || {};
   const anthropic = Boolean(siteInfo.ClaudeAPIEnabled);
+  const gemini = Boolean(siteInfo.GeminiAPIEnabled);
   const base = resolveServerAddress(serverAddress ?? siteInfo.server_address);
-  const tools = useMemo(() => availableTools({ anthropic }), [anthropic]);
+  const siteName = siteInfo.system_name || 'Modeltaps';
+  const tools = useMemo(() => availableTools({ anthropic, gemini }), [anthropic, gemini]);
 
   const [toolId, setToolId] = useState('');
   const [pickedId, setPickedId] = useState(null);
@@ -161,7 +429,6 @@ export default function ToolConnectDialog({ open, onOpenChange, token, tokens, s
   const [models, setModels] = useState([]);
   const [model, setModel] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState('');
 
   // Opened from a key row or a new key: that key. From the page header: a key picked here.
   const choices = useMemo(() => (tokens || []).filter((x) => x.status === 1), [tokens]);
@@ -177,7 +444,6 @@ export default function ToolConnectDialog({ open, onOpenChange, token, tokens, s
       setPasted('');
       setToolId('');
       setPickedId(null);
-      setTab('');
     }
     onOpenChange(next);
   };
@@ -207,27 +473,51 @@ export default function ToolConnectDialog({ open, onOpenChange, token, tokens, s
     if (tool?.needsModel) setModel(pickModel(models, tool.prefer));
   }, [tool, models]);
 
-  const guide = useMemo(() => (tool ? buildToolGuide(tool, { base, key, model, anthropic }) : null), [tool, base, key, model, anthropic]);
-  const tabs = guide ? [...guide.methods.map((m) => m.id), ...(current ? ['ai'] : [])] : [];
-  const activeTab = tabs.includes(tab) ? tab : tabs[0];
+  const guide = useMemo(
+    () => (tool ? buildToolGuide(tool, { base, key, model, anthropic, siteName }) : null),
+    [tool, base, key, model, anthropic, siteName]
+  );
   const modelMissing = tool?.needsModel && !loading && models.length === 0;
   const CacheIcon = guide ? CACHE_ICON[guide.cache] : null;
   const docs = tool?.docs ? docsUrl(siteInfo.docs_link, i18n.language, tool.docs) : '';
   const keyOptions = useMemo(() => choices.map((x) => ({ value: String(x.id), label: `${x.name} (${x.key_hint || ''})` })), [choices]);
 
+  const renderMethod = (m) => {
+    if (m.id === 'deeplink') return <DeeplinkMethod method={m} keyKnown={Boolean(key)} onCreateKey={onCreateKey} />;
+    if (m.id === 'fields') return <FieldsMethod method={m} tool={tool} base={base} keyKnown={Boolean(key)} onCopy={onCopy} />;
+    return <CodeMethod method={m} tool={tool} />;
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="gap-1 px-6 py-4">
-          <DialogTitle>{t('connectTool.title')}</DialogTitle>
-          <DialogDescription>{t('connectTool.desc')}</DialogDescription>
+          {tool ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setToolId('')}
+                className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                data-testid="tool-back"
+              >
+                <BackArrow />
+                {t('connectTool.allTools')}
+              </button>
+              <DialogTitle className="flex items-center gap-2">
+                <ToolIcon tool={tool} />
+                {t('connectTool.titleFor', { tool: toolName(t, tool) })}
+              </DialogTitle>
+              <DialogDescription>{t(`connectTool.method.${guide.primary.id}Desc`)}</DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle>{t('connectTool.title')}</DialogTitle>
+              <DialogDescription>{t('connectTool.desc')}</DialogDescription>
+            </>
+          )}
         </DialogHeader>
         <DialogBody className="space-y-5 px-6 py-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label={t('connectTool.pickTool')}>
-            {tools.map((x) => (
-              <ToolCard key={x.id} tool={x} selected={x.id === toolId} onSelect={setToolId} />
-            ))}
-          </div>
+          {!tool && <Directory tools={tools} onSelect={setToolId} />}
 
           {tool && !current && (
             <div className="flex flex-col items-center gap-1.5 rounded-md border border-border px-4 py-6 text-center">
@@ -289,37 +579,37 @@ export default function ToolConnectDialog({ open, onOpenChange, token, tokens, s
               )}
 
               {!modelMissing && !loading && guide && (
-                <Tabs value={activeTab} onValueChange={setTab}>
-                  <TabsList
-                    className={cn(
-                      'grid h-auto w-full p-1',
-                      tabs.length === 3 ? 'grid-cols-3' : tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-1'
-                    )}
-                  >
-                    {tabs.map((id) => (
-                      <TabsTrigger key={id} value={id} className={activeTabClass}>
-                        {t(`connectTool.method.${id}`)}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {guide.methods.map((m) => (
-                    <TabsContent key={m.id} value={m.id} className="space-y-4">
-                      {m.blocks.map((b, i) => (
-                        <GuideBlock key={i} block={b} tool={tool} />
+                <>
+                  <section className="space-y-3 rounded-lg border border-primary/40 p-4" data-testid="tool-primary">
+                    <h3 className="text-sm font-semibold text-foreground">{t(`connectTool.method.${guide.primary.id}`)}</h3>
+                    {renderMethod(guide.primary)}
+                  </section>
+                  {(guide.others.length > 0 || current) && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-medium text-muted-foreground">{t('connectTool.otherWays')}</h3>
+                      {guide.others.map((m) => (
+                        <Fold key={m.id} title={t(`connectTool.method.${m.id}`)} testId={`tool-way-${m.id}`}>
+                          {renderMethod(m)}
+                        </Fold>
                       ))}
-                    </TabsContent>
-                  ))}
-                  <TabsContent value="ai">
-                    <AgentTab
-                      key={current.id}
-                      token={current}
-                      tool={tool}
-                      pairing={pairing}
-                      canIssue={canIssueFor ? canIssueFor(current) : false}
-                      onCopy={onCopy}
-                    />
-                  </TabsContent>
-                </Tabs>
+                      <Fold title={t('connectTool.method.ai')} testId="tool-way-ai">
+                        <AgentMethod
+                          key={current.id}
+                          token={current}
+                          tool={tool}
+                          pairing={pairing}
+                          canIssue={canIssueFor ? canIssueFor(current) : false}
+                          onCopy={onCopy}
+                        />
+                      </Fold>
+                      {guide.manual && (
+                        <Fold title={t('connectTool.method.file')} testId="tool-way-file">
+                          {renderMethod(guide.manual)}
+                        </Fold>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               {guide && (
@@ -384,5 +674,7 @@ ToolConnectDialog.propTypes = {
   // Whether the viewer may issue a new pairing code for a key (the same rule as reset).
   canIssueFor: PropTypes.func,
   serverAddress: PropTypes.string,
-  onCopy: PropTypes.func.isRequired
+  onCopy: PropTypes.func.isRequired,
+  // Opens the new key dialog (a key of its own for an import link).
+  onCreateKey: PropTypes.func
 };

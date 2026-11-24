@@ -5318,27 +5318,97 @@
   "connectTool": {
     "menu": "接入工具",
     "title": "接入工具",
-    "desc": "選你用的工具。下面的設定已經填好本站地址、API Key 和預設模型，複製到工具裏即可。",
-    "pickTool": "工具",
+    "titleFor": "接入 {{tool}}",
+    "desc": "選你用的工具，按提示完成接入。地址、Key 和模型已經替你填好。",
+    "allTools": "全部工具",
+    "search": "搜尋 {{count}} 個工具",
+    "searchLabel": "搜尋工具",
+    "noMatch": "沒有找到這個工具。大多數工具都支援 OpenAI 相容介面，可以按通用方式接入。",
+    "useOther": "按通用方式接入",
+    "popular": "常用",
     "noKey": "還沒有啟用的 API Key。先建立一個，再來接入工具。",
     "key": "使用哪把 Key",
+    "keyMissing": "先在上方貼上 Key",
     "model": "預設模型",
     "copied": "已複製 ✓",
     "install": "安裝 {{tool}}",
     "docs": "文件",
-    "kind": {
-      "terminal": "編程 Agent（終端）",
+    "otherWays": "其他方式",
+    "category": {
+      "terminal": "編程 Agent",
+      "editor": "編輯器與外掛",
       "desktop": "桌面 Agent",
-      "other": "OpenAI / Anthropic 相容"
+      "chat": "聊天用戶端",
+      "other": "其他"
     },
     "other": {
       "name": "其他工具"
     },
     "method": {
-      "file": "設定檔",
-      "command": "命令",
-      "values": "地址和 Key",
+      "deeplink": "一鍵匯入",
+      "deeplinkShort": "一鍵匯入",
+      "deeplinkDesc": "點一下按鈕，由本機的設定工具替你完成設定，不用改檔案。",
+      "fields": "在工具設定裏填寫",
+      "fieldsShort": "設定裏填寫",
+      "fieldsDesc": "工具自帶設定介面：按步驟把下面幾個值貼上即可。",
+      "command": "執行一條命令",
+      "commandShort": "一條命令",
+      "commandDesc": "在終端裏執行一條命令即可完成設定。",
+      "file": "手動編輯設定檔",
       "ai": "讓 AI 設定"
+    },
+    "import": {
+      "ccswitch": "匯入到 CC Switch",
+      "cherry": "匯入到 Cherry Studio",
+      "ccswitchHint": "點按鈕會打開本機的 CC Switch，確認後由它寫好工具的設定；需要先安裝 CC Switch。",
+      "cherryHint": "點按鈕會打開本機的 Cherry Studio 並加入這個服務商（需要 1.4.8 或更新版本）。",
+      "getApp": "下載",
+      "needKey": "匯入連結裏要帶完整的 Key：先在上方貼上這把 Key，或者",
+      "newKey": "為這次匯入新建一把 Key",
+      "keyInLink": "連結裏含有 Key，不要發給別人；以後不用了，在 API Key 頁停用這把 Key 即可。"
+    },
+    "steps": {
+      "gooseAnthropic": [
+        "打開 Goose，進入「Settings → Models」，設定提供方（providers）。",
+        "選 Anthropic，填入下面的 ANTHROPIC_HOST 和 API Key。",
+        "選擇下面這個模型。"
+      ],
+      "gooseCustom": [
+        "在 Goose 的「Settings → Models」裏加入自訂提供方，類型選 OpenAI 相容。",
+        "填入下面的 API URL、API Key 和模型名。"
+      ],
+      "hermes": [
+        "執行 hermes model，選擇自訂的 OpenAI 相容端點。",
+        "按提示填入下面的 Base URL、API Key 和模型。"
+      ],
+      "cursor": [
+        "打開 Cursor 的「Settings → Models」。",
+        "在 API Keys 裏填 OpenAI API Key，打開「Override OpenAI Base URL」並填入 Base URL。",
+        "在模型列表裏加入下面的 Model ID 並啟用。"
+      ],
+      "cline": [
+        "打開 {{tool}} 的設定，API Provider 選「OpenAI Compatible」。",
+        "填入 Base URL、API Key 和 Model ID，儲存。"
+      ],
+      "openWebUI": [
+        "以管理員身分打開「管理員設定 → 外部連線」。",
+        "在 OpenAI API 下加入連線，填入 Base URL 和 API Key，儲存。",
+        "在模型下拉裏選擇下面的模型。"
+      ],
+      "lobeChat": [
+        "打開「設定 → AI 服務商」，選 OpenAI（或新建自訂服務商）。",
+        "填入 API 代理地址（Base URL）和 API Key，並啟用該服務商。",
+        "在模型列表裏加入或選取下面的模型。"
+      ],
+      "cherryStudio": [
+        "打開「設定 → 模型服務」，點「新增」，類型選 OpenAI。",
+        "填入下面的 API 地址和 API Key，再點「管理」加入模型。"
+      ],
+      "other": [
+        "在工具裏找到自訂提供方、OpenAI 相容或 Anthropic 相容的設定。",
+        "OpenAI 相容的填 OpenAI 地址，Anthropic 相容的填 Anthropic 地址（不帶 /v1），再填 API Key。",
+        "工具一般會自己補路徑；如果它要求完整地址，在 OpenAI 地址後加 /chat/completions。"
+      ]
     },
     "note": {
       "mergeJson": "檔案已存在就合併進去，不存在就新建。",
@@ -5351,7 +5421,8 @@
       "openclawConfig": "合併進 ~/.openclaw/openclaw.json，然後重啟 OpenClaw。",
       "openaiBase": "OpenAI 相容地址：工具要填 OpenAI API 地址時用這個。",
       "anthropicBase": "Anthropic 相容地址，不帶 /v1：工具會自己補 /v1/messages。",
-      "apiKey": "API Key"
+      "apiKey": "API Key",
+      "cursorPublic": "Cursor 從它自己的伺服器呼叫模型，而這個地址只有本機或內網能存取：請改用站點的公網地址。"
     },
     "modelHint": {
       "goose": "Claude 模型走 Goose 內建的 Anthropic provider，會帶上提示快取標記；其他模型走自訂的 OpenAI 相容 provider。",

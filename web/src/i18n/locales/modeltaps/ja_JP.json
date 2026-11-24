@@ -5309,27 +5309,97 @@
   "connectTool": {
     "menu": "ツールに接続",
     "title": "ツールに接続",
-    "desc": "使うツールを選んでください。下の設定にはこのサイトのアドレス、API キー、既定のモデルが入っているので、そのままツールにコピーできます。",
-    "pickTool": "ツール",
+    "titleFor": "{{tool}} に接続",
+    "desc": "使うツールを選び、手順に沿って接続してください。アドレス、キー、モデルは入力済みです。",
+    "allTools": "すべてのツール",
+    "search": "{{count}} 個のツールを検索",
+    "searchLabel": "ツールを検索",
+    "noMatch": "該当するツールがありません。多くのツールは OpenAI 互換 API に対応しているので、汎用の方法で接続できます。",
+    "useOther": "汎用の方法で接続",
+    "popular": "よく使われるツール",
     "noKey": "有効な API キーがまだありません。先にキーを作成してから接続してください。",
     "key": "使用するキー",
+    "keyMissing": "先に上でキーを貼り付けてください",
     "model": "既定のモデル",
     "copied": "コピーしました ✓",
     "install": "{{tool}} をインストール",
     "docs": "ドキュメント",
-    "kind": {
-      "terminal": "コーディングエージェント（ターミナル）",
+    "otherWays": "その他の方法",
+    "category": {
+      "terminal": "コーディングエージェント",
+      "editor": "エディターと拡張機能",
       "desktop": "デスクトップエージェント",
-      "other": "OpenAI / Anthropic 互換"
+      "chat": "チャットアプリ",
+      "other": "その他"
     },
     "other": {
       "name": "その他のツール"
     },
     "method": {
-      "file": "設定ファイル",
-      "command": "コマンド",
-      "values": "アドレスとキー",
+      "deeplink": "ワンクリックでインポート",
+      "deeplinkShort": "ワンクリック",
+      "deeplinkDesc": "ボタンを押すと、このコンピューターの設定アプリが代わりに設定します。ファイルの編集は不要です。",
+      "fields": "ツールの設定画面で入力",
+      "fieldsShort": "設定画面で入力",
+      "fieldsDesc": "ツールに設定画面があります。手順に沿って下の値を貼り付けてください。",
+      "command": "コマンドを 1 つ実行",
+      "commandShort": "コマンド 1 つ",
+      "commandDesc": "ターミナルでコマンドを 1 つ実行すると設定が完了します。",
+      "file": "設定ファイルを手で編集",
       "ai": "AI に設定させる"
+    },
+    "import": {
+      "ccswitch": "CC Switch にインポート",
+      "cherry": "Cherry Studio にインポート",
+      "ccswitchHint": "このコンピューターの CC Switch が開き、確認するとツールの設定を書き込みます。CC Switch のインストールが必要です。",
+      "cherryHint": "このコンピューターの Cherry Studio が開き、このプロバイダーを追加します（1.4.8 以降）。",
+      "getApp": "ダウンロード",
+      "needKey": "インポートリンクには完全なキーが含まれます。先に上でキーを貼り付けるか、",
+      "newKey": "このインポート用にキーを作成",
+      "keyInLink": "リンクにはキーが含まれるので、他の人に送らないでください。不要になったら API キーページでこのキーを無効にしてください。"
+    },
+    "steps": {
+      "gooseAnthropic": [
+        "Goose を開き、Settings → Models でプロバイダーを設定します。",
+        "Anthropic を選び、下の ANTHROPIC_HOST と API キーを入力します。",
+        "下のモデルを選びます。"
+      ],
+      "gooseCustom": [
+        "Goose の Settings → Models で、OpenAI 互換タイプのカスタムプロバイダーを追加します。",
+        "下の API URL、API キー、モデル名を入力します。"
+      ],
+      "hermes": [
+        "hermes model を実行し、カスタムの OpenAI 互換エンドポイントを選びます。",
+        "求められたら下のベース URL、API キー、モデルを入力します。"
+      ],
+      "cursor": [
+        "Cursor の Settings → Models を開きます。",
+        "API Keys に OpenAI API キーを入力し、「Override OpenAI Base URL」をオンにしてベース URL を入力します。",
+        "下のモデル ID をモデル一覧に追加して有効にします。"
+      ],
+      "cline": [
+        "{{tool}} の設定を開き、API Provider で「OpenAI Compatible」を選びます。",
+        "ベース URL、API キー、モデル ID を入力して保存します。"
+      ],
+      "openWebUI": [
+        "管理者として「管理者設定 → 接続」を開きます。",
+        "OpenAI API に接続を追加し、ベース URL と API キーを入力して保存します。",
+        "モデルメニューで下のモデルを選びます。"
+      ],
+      "lobeChat": [
+        "「設定 → AI サービスプロバイダー」を開き、OpenAI（またはカスタムプロバイダー）を選びます。",
+        "API プロキシ URL（ベース URL）と API キーを入力し、プロバイダーを有効にします。",
+        "モデル一覧で下のモデルを追加または選択します。"
+      ],
+      "cherryStudio": [
+        "「設定 → モデルサービス」を開き、「追加」で OpenAI タイプを選びます。",
+        "下の API アドレスと API キーを入力し、「管理」でモデルを追加します。"
+      ],
+      "other": [
+        "ツールで、カスタム・OpenAI 互換・Anthropic 互換プロバイダーの設定を探します。",
+        "OpenAI 互換には OpenAI のアドレス、Anthropic 互換には Anthropic のアドレス（/v1 なし）を入れ、API キーを入力します。",
+        "多くのツールはパスを自分で付けます。完全なアドレスを求められたら、OpenAI のアドレスに /chat/completions を付けてください。"
+      ]
     },
     "note": {
       "mergeJson": "ファイルがあればマージし、なければ新規作成します。",
@@ -5342,7 +5412,8 @@
       "openclawConfig": "~/.openclaw/openclaw.json にマージし、OpenClaw を再起動してください。",
       "openaiBase": "OpenAI 互換のベース URL：ツールが OpenAI API のアドレスを求める場合に使います。",
       "anthropicBase": "Anthropic 互換のベース URL（/v1 なし）：ツールが /v1/messages を自分で付けます。",
-      "apiKey": "API キー"
+      "apiKey": "API キー",
+      "cursorPublic": "Cursor は自社のサーバーからモデルを呼び出しますが、このアドレスはこのコンピューターかネットワーク内からしか届きません。サイトの公開アドレスを使ってください。"
     },
     "modelHint": {
       "goose": "Claude モデルは Goose 内蔵の Anthropic プロバイダーを使い、プロンプトキャッシュのマーカーが付きます。その他のモデルはカスタムの OpenAI 互換プロバイダーを使います。",

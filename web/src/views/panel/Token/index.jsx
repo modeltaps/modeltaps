@@ -933,6 +933,10 @@ export default function Token() {
           canIssueFor={canResetKey}
           serverAddress={siteInfo?.server_address}
           onCopy={copyText}
+          onCreateKey={() => {
+            setConnectTarget(null);
+            openCreate();
+          }}
         />
       </div>
     </>

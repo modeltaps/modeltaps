@@ -5444,27 +5444,97 @@
   "connectTool": {
     "menu": "Connect a tool",
     "title": "Connect a tool",
-    "desc": "Pick the tool you use. Its configuration below already holds this site's address, the API key and a default model; copy it into the tool.",
-    "pickTool": "Tool",
+    "titleFor": "Connect {{tool}}",
+    "desc": "Pick the tool you use and follow its steps. The address, key and model are filled in for you.",
+    "allTools": "All tools",
+    "search": "Search {{count}} tools",
+    "searchLabel": "Search tools",
+    "noMatch": "No tool by that name. Most tools accept an OpenAI-compatible API: connect yours the generic way.",
+    "useOther": "Connect the generic way",
+    "popular": "Popular",
     "noKey": "No enabled API key yet. Create one first, then connect a tool.",
     "key": "Key to use",
+    "keyMissing": "Paste the key above first",
     "model": "Default model",
     "copied": "Copied ✓",
     "install": "Install {{tool}}",
     "docs": "Documentation",
-    "kind": {
-      "terminal": "Coding agent (terminal)",
-      "desktop": "Desktop agent",
-      "other": "OpenAI / Anthropic compatible"
+    "otherWays": "Other ways",
+    "category": {
+      "terminal": "Coding agents",
+      "editor": "Editors and extensions",
+      "desktop": "Desktop agents",
+      "chat": "Chat apps",
+      "other": "Other"
     },
     "other": {
       "name": "Other tools"
     },
     "method": {
-      "file": "Config file",
-      "command": "Command",
-      "values": "Address and key",
+      "deeplink": "One-click import",
+      "deeplinkShort": "One-click import",
+      "deeplinkDesc": "Click the button and a setup app on your computer configures the tool for you. No files to edit.",
+      "fields": "Fill in the tool's settings",
+      "fieldsShort": "In its settings",
+      "fieldsDesc": "The tool has its own settings screen: follow the steps and paste the values below.",
+      "command": "Run one command",
+      "commandShort": "One command",
+      "commandDesc": "Run one command in a terminal to finish the setup.",
+      "file": "Edit the config file by hand",
       "ai": "Let the AI set it up"
+    },
+    "import": {
+      "ccswitch": "Import to CC Switch",
+      "cherry": "Import to Cherry Studio",
+      "ccswitchHint": "Opens CC Switch on this computer; after you confirm, it writes the tool's configuration. CC Switch must be installed.",
+      "cherryHint": "Opens Cherry Studio on this computer and adds this provider (version 1.4.8 or later).",
+      "getApp": "Download",
+      "needKey": "The import link carries the full key: paste the key above first, or",
+      "newKey": "create a key for this import",
+      "keyInLink": "The link contains the key: don't share it. To revoke it later, disable the key on the API Keys page."
+    },
+    "steps": {
+      "gooseAnthropic": [
+        "Open Goose and go to Settings → Models, then configure providers.",
+        "Pick Anthropic and enter the ANTHROPIC_HOST and API key below.",
+        "Choose the model below."
+      ],
+      "gooseCustom": [
+        "In Goose, go to Settings → Models and add a custom provider of the OpenAI-compatible type.",
+        "Enter the API URL and API key below, and the model name."
+      ],
+      "hermes": [
+        "Run hermes model and choose a custom OpenAI-compatible endpoint.",
+        "Enter the base URL, API key and model below when asked."
+      ],
+      "cursor": [
+        "Open Cursor Settings → Models.",
+        "Under API Keys, enter the OpenAI API key, turn on “Override OpenAI Base URL” and enter the base URL.",
+        "Add the model ID below to the model list and turn it on."
+      ],
+      "cline": [
+        "Open the {{tool}} settings and choose “OpenAI Compatible” as the API provider.",
+        "Enter the base URL, API key and model ID, then save."
+      ],
+      "openWebUI": [
+        "As an admin, open Admin Settings → Connections.",
+        "Under OpenAI API, add a connection with the base URL and API key, then save.",
+        "Pick the model below in the model menu."
+      ],
+      "lobeChat": [
+        "Open Settings → AI Service Provider and choose OpenAI (or add a custom provider).",
+        "Enter the API proxy URL (base URL) and API key, and turn the provider on.",
+        "Add or select the model below in its model list."
+      ],
+      "cherryStudio": [
+        "Open Settings → Model Provider, click Add and choose the OpenAI type.",
+        "Enter the API address and API key below, then click Manage to add models."
+      ],
+      "other": [
+        "In the tool, find the settings for a custom, OpenAI-compatible or Anthropic-compatible provider.",
+        "Use the OpenAI address for OpenAI-compatible settings and the Anthropic one (no /v1) for Anthropic-compatible ones, then the API key.",
+        "Tools append the path themselves; if yours asks for the full address, add /chat/completions to the OpenAI one."
+      ]
     },
     "note": {
       "mergeJson": "Merge into the file if it exists; create it otherwise.",
@@ -5477,7 +5547,8 @@
       "openclawConfig": "Merge into ~/.openclaw/openclaw.json, then restart OpenClaw.",
       "openaiBase": "OpenAI-compatible base URL: for tools that ask for an OpenAI API address.",
       "anthropicBase": "Anthropic-compatible base URL, without /v1: the tool appends /v1/messages itself.",
-      "apiKey": "API key"
+      "apiKey": "API key",
+      "cursorPublic": "Cursor calls the model from its own servers, and this address is only reachable from this computer or network: use the site's public address."
     },
     "modelHint": {
       "goose": "Claude models use Goose's built-in Anthropic provider, which sends prompt cache markers; other models use a custom OpenAI-compatible provider.",

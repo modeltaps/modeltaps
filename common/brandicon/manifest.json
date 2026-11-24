@@ -676,6 +676,46 @@
       "mono": true,
       "color": true,
       "scale": 1
+    },
+    "cursor": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "cline": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "roocode": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "kilocode": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "cherrystudio": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "openwebui": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "lobehub": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "ccswitch": {
+      "mono": true,
+      "color": false,
+      "scale": 1
     }
   },
   "aliases": {
