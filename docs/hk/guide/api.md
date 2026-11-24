@@ -158,7 +158,9 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 
 用量日誌會記下每次請求來自哪個 Agent：以接入地址為準，走其他地址時按 User-Agent 識別（Claude Code、Codex、OpenCode、Gemini CLI）。組織可以按工具查看用量，見 [組織](/hk/guide/organization#用量)。
 
-### Claude Code
+控制台可以直接產生這些設定：在 **API Key** 頁打開某把 Key 的 ⋯ 選單（或頁頭的 **接入** 按鈕），選 **接入工具**，會填好站點地址、Key 和預設模型。
+
+### Claude Code {#claude-code}
 
 把網關寫進 `~/.claude/settings.json`（也可以在 shell 裏 export 同樣的變數）：
 
@@ -178,7 +180,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 - 設定 `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` 後，`/model` 會以 `claude-code/<模型>` 的形式列出你的 Key 可調用的全部對話模型。可接受一百萬 tokens 及以上輸入的模型以 `[1m]` 結尾，Claude Code 會據此使用該上下文長度。網關會去掉前綴和後綴，用量與日誌裏顯示的是真實模型名。生圖、音頻和向量模型不會列出。
 - `cache_control` 快取斷點原樣送到上游，同一個 Claude Code 會話的請求固定在同一個渠道上，上游提示快取可以持續命中。`/context` 的 token 數來自 `/v1/messages/count_tokens`，這是估算值，不計費。
 
-### Codex
+### Codex {#codex}
 
 在 `~/.codex/config.toml` 裏加一個 provider，並把 API Key 放進它指定的環境變數：
 
@@ -202,7 +204,57 @@ export MODELTAPS_API_KEY=sk-替換為你的key
 - `model_catalog_url` 讓 Codex 從 Modeltaps 讀取模型目錄：`/model` 裏能看到你的 Key 可調用的對話模型，Codex 也不再提示找不到模型元數據。每個條目帶的是 Codex 自己的系統提示，行為和用它內建模型時一樣。
 - Codex 發送的 `prompt_cache_key` 原樣送到上游，同一個 Codex 會話的請求固定在同一個渠道上。
 
-### 其他編程 Agent
+### OpenCode {#opencode}
+
+在 `~/.config/opencode/opencode.json` 裏加一個 provider，並把 API Key 放進 `MODELTAPS_API_KEY`：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "modeltaps": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "Modeltaps",
+      "options": { "baseURL": "https://your-modeltaps-domain.com/coding-agent/v1", "apiKey": "{env:MODELTAPS_API_KEY}" },
+      "models": { "claude-sonnet-5-5": {} }
+    }
+  },
+  "model": "modeltaps/claude-sonnet-5-5"
+}
+```
+
+- Claude 模型用 `@ai-sdk/anthropic` 套件，OpenCode 會帶上 `cache_control`，提示快取才能生效；其他模型用 `@ai-sdk/openai-compatible`，`baseURL` 相同。
+- 在 `models` 裏列出要用的模型；在 OpenCode 裏執行 `/models` 檢查。
+
+### Goose {#goose}
+
+Claude 模型用 Goose 內建的 Anthropic provider，host 指向 `/coding-agent`（不帶 `/v1`：Goose 會自己補 `/v1/messages`）。這個 provider 會自己加提示快取標記。
+
+```bash
+export GOOSE_PROVIDER=anthropic
+export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
+export GOOSE_MODEL=claude-sonnet-5-5
+goose configure   # 選 Anthropic，輸入 API Key
+```
+
+其他模型在 `~/.config/goose/custom_providers/modeltaps.json` 加一個自訂的 OpenAI 相容 provider，再在 `~/.config/goose/config.yaml` 設 `GOOSE_PROVIDER: modeltaps` 和 `GOOSE_MODEL`：
+
+```json
+{
+  "name": "modeltaps",
+  "engine": "openai",
+  "display_name": "Modeltaps",
+  "api_key_env": "MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
+  "dynamic_models": true,
+  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+}
+```
+
+- `dynamic_models` 讓 Goose 的模型列表取自你的 Key 可呼叫的模型。
+- `goose configure` 會把 Key 存進系統鑰匙圈。桌面版裏同樣的設定在「設定 → 模型」。
+
+### 其他編程 Agent {#other-coding-agents}
 
 OpenAI 相容的 Agent 指向 `https://your-modeltaps-domain.com/coding-agent/v1`，Anthropic 相容的指向 `https://your-modeltaps-domain.com/coding-agent`。行為與 `/v1`、`/claude` 完全一致，請求會計入編程 Agent 流量。
 

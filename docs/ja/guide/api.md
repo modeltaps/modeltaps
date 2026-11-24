@@ -158,7 +158,9 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 
 利用ログには各リクエストを送ったエージェントが記録されます。接続先アドレスで判定し、それ以外のアドレスでは User-Agent から識別します（Claude Code、Codex、OpenCode、Gemini CLI）。組織ではツール別の利用状況を確認できます。[組織](/ja/guide/organization#利用状況) を参照してください。
 
-### Claude Code
+これらの設定はコンソールでも作れます。**API キー** ページでキーの ⋯ メニュー（またはヘッダーの **接続** ボタン）から **ツールに接続** を選ぶと、サイトのアドレス、キー、既定のモデルが入った設定が表示されます。
+
+### Claude Code {#claude-code}
 
 `~/.claude/settings.json` にゲートウェイを設定します（同じ変数をシェルで export しても構いません）。
 
@@ -178,7 +180,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
 - `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` を設定すると、`/model` に API キーで呼び出せるすべてのチャットモデルが `claude-code/<モデル>` の形式で表示されます。100 万トークン以上の入力を受け付けるモデルは末尾に `[1m]` が付き、Claude Code はそのコンテキスト長を使います。ゲートウェイがプレフィックスとサフィックスを取り除くため、利用状況とログには実際のモデル名が表示されます。画像、音声、埋め込みのモデルは表示されません。
 - `cache_control` のキャッシュブレークポイントはそのまま上流に送られ、同じ Claude Code セッションのリクエストは同じチャネルに固定されるため、上流のプロンプトキャッシュが効き続けます。`/context` のトークン数は `/v1/messages/count_tokens` から取得され、これは推定値で課金されません。
 
-### Codex
+### Codex {#codex}
 
 `~/.codex/config.toml` に provider を追加し、指定した環境変数に API キーを設定します。
 
@@ -202,7 +204,57 @@ export MODELTAPS_API_KEY=sk-ここを自分のキーに置き換えてくださ�
 - `model_catalog_url` を設定すると、Codex は Modeltaps からモデルカタログを読み込みます。`/model` に API キーで呼び出せるチャットモデルが表示され、モデルのメタデータが見つからないという警告も出なくなります。各エントリには Codex 自身のシステムプロンプトが含まれるため、内蔵モデルを使う場合と同じように動作します。
 - Codex が送る `prompt_cache_key` はそのまま上流に送られ、同じ Codex セッションのリクエストは同じチャネルに固定されます。
 
-### その他のコーディングエージェント
+### OpenCode {#opencode}
+
+`~/.config/opencode/opencode.json` にプロバイダーを追加し、API キーを `MODELTAPS_API_KEY` に入れます。
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "modeltaps": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "Modeltaps",
+      "options": { "baseURL": "https://your-modeltaps-domain.com/coding-agent/v1", "apiKey": "{env:MODELTAPS_API_KEY}" },
+      "models": { "claude-sonnet-5-5": {} }
+    }
+  },
+  "model": "modeltaps/claude-sonnet-5-5"
+}
+```
+
+- Claude モデルには `@ai-sdk/anthropic` パッケージを使ってください。OpenCode が `cache_control` を送り、プロンプトキャッシュが効きます。その他のモデルには同じ `baseURL` で `@ai-sdk/openai-compatible` を使います。
+- 使うモデルを `models` に並べ、OpenCode で `/models` を実行して確認します。
+
+### Goose {#goose}
+
+Claude モデルには Goose 内蔵の Anthropic プロバイダーを使い、ホストを `/coding-agent` に向けます（`/v1` は不要です。Goose が `/v1/messages` を付けます）。このプロバイダーはプロンプトキャッシュのマーカーを自分で付けます。
+
+```bash
+export GOOSE_PROVIDER=anthropic
+export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
+export GOOSE_MODEL=claude-sonnet-5-5
+goose configure   # Anthropic を選び API キーを入力
+```
+
+その他のモデルには `~/.config/goose/custom_providers/modeltaps.json` にカスタムの OpenAI 互換プロバイダーを追加し、`~/.config/goose/config.yaml` で `GOOSE_PROVIDER: modeltaps` と `GOOSE_MODEL` を設定します。
+
+```json
+{
+  "name": "modeltaps",
+  "engine": "openai",
+  "display_name": "Modeltaps",
+  "api_key_env": "MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
+  "dynamic_models": true,
+  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+}
+```
+
+- `dynamic_models` を有効にすると、Goose のモデル一覧がキーで呼び出せるモデルから作られます。
+- `goose configure` はキーをシステムのキーチェーンに保存します。デスクトップアプリでは「設定 → モデル」に同じ項目があります。
+
+### その他のコーディングエージェント {#other-coding-agents}
 
 OpenAI 互換のエージェントは `https://your-modeltaps-domain.com/coding-agent/v1`、Anthropic 互換のエージェントは `https://your-modeltaps-domain.com/coding-agent` に向けてください。動作は `/v1`、`/claude` とまったく同じで、リクエストはコーディングエージェントのトラフィックとして集計されます。
 

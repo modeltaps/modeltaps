@@ -188,6 +188,24 @@ func renderSkillMd(base string) string {
 		w("More: `%s/llms.txt`.\n\n", base)
 	}
 
+	// Per-agent notes (AGENT-8): the same facts the console's "Connect a tool" dialog uses
+	// (web/src/views/panel/Token/connect/tools.js); change both together.
+	w("## Appendix: known agents\n\n")
+	w("Where you are one of these agents, configure it this way; it keeps prompt caching working and lets the user see usage per tool.\n\n")
+	if config.ClaudeAPIEnabled {
+		w("- Claude Code: in `~/.claude/settings.json` under `env`, set `ANTHROPIC_BASE_URL` to `%s/claude-code` (no `/v1`), `ANTHROPIC_AUTH_TOKEN` to the key, `ANTHROPIC_API_KEY` to an empty string and `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` to `1`. Check with `/model`.\n", base)
+	}
+	w("- Codex: in `~/.codex/config.toml`, a provider with `base_url = \"%s/codex/v1\"`, `wire_api = \"responses\"`, `model_catalog_url = \"%s/codex/v1/models\"` and `env_key` naming the variable that holds the key. Check with `/model`.\n", base, base)
+	if config.ClaudeAPIEnabled {
+		w("- Goose: for Claude models use the built-in `anthropic` provider with `ANTHROPIC_HOST` set to `%s/coding-agent` (no `/v1`); it adds prompt cache markers itself. ", base)
+		w("For other models add a custom provider in `~/.config/goose/custom_providers/` with `engine: openai` and `base_url` `%s/coding-agent/v1/chat/completions`. Store the key through `goose configure` (system keychain).\n", base)
+		w("- OpenCode: a provider in `opencode.json` with `options.baseURL` `%s/coding-agent/v1`; use the `@ai-sdk/anthropic` package for Claude models (so prompt caching works) and `@ai-sdk/openai-compatible` for others.\n", base)
+	} else {
+		w("- Goose: a custom provider in `~/.config/goose/custom_providers/` with `engine: openai` and `base_url` `%s/coding-agent/v1/chat/completions`. Store the key through `goose configure` (system keychain).\n", base)
+		w("- OpenCode: a provider in `opencode.json` with `npm` `@ai-sdk/openai-compatible` and `options.baseURL` `%s/coding-agent/v1`.\n", base)
+	}
+	w("- OpenClaw: an OpenAI-compatible provider with base URL `%s/v1` and `api: openai-completions`.\n\n", base)
+
 	// Appendix.
 	w("## Appendix: reference commands\n\n")
 	w("For reference only; prefer your own credential mechanism. Each reads the key from a prompt or standard input, so it does not end up in shell history or process lists.\n\n")

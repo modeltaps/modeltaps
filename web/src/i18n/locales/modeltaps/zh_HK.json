@@ -5314,5 +5314,73 @@
       "docs": "查文件「{{query}}」",
       "propose_other": "擬定變更方案（{{count}} 項）"
     }
+  },
+  "connectTool": {
+    "menu": "接入工具",
+    "title": "接入工具",
+    "desc": "選你用的工具。下面的設定已經填好本站地址、API Key 和預設模型，複製到工具裏即可。",
+    "pickTool": "工具",
+    "noKey": "還沒有啟用的 API Key。先建立一個，再來接入工具。",
+    "key": "使用哪把 Key",
+    "model": "預設模型",
+    "copied": "已複製 ✓",
+    "install": "安裝 {{tool}}",
+    "docs": "文件",
+    "kind": {
+      "terminal": "編程 Agent（終端）",
+      "desktop": "桌面 Agent",
+      "other": "OpenAI / Anthropic 相容"
+    },
+    "other": {
+      "name": "其他工具"
+    },
+    "method": {
+      "file": "設定檔",
+      "command": "命令",
+      "values": "地址和 Key",
+      "ai": "讓 AI 設定"
+    },
+    "note": {
+      "mergeJson": "檔案已存在就合併進去，不存在就新建。",
+      "mergeToml": "加到檔案裏；檔案裏已有 model_provider 或 model 時替換那兩行。",
+      "shellSession": "只對目前終端生效。要長期生效，把這幾行加到 shell 啟動檔（~/.zshrc 或 ~/.bashrc）。",
+      "keyEnv": "設定從這個環境變數讀 Key。把這行加到 shell 啟動檔，或改成從系統鑰匙圈讀取。",
+      "gooseConfig": "桌面版裏同樣的設定在「設定 → 模型」。",
+      "gooseKey": "然後執行這條命令，選 Anthropic，按提示輸入 API Key：Goose 會把它存進系統鑰匙圈。",
+      "openclawCommand": "OpenClaw 命令列版和桌面版都適用。執行後重啟 OpenClaw。",
+      "openclawConfig": "合併進 ~/.openclaw/openclaw.json，然後重啟 OpenClaw。",
+      "openaiBase": "OpenAI 相容地址：工具要填 OpenAI API 地址時用這個。",
+      "anthropicBase": "Anthropic 相容地址，不帶 /v1：工具會自己補 /v1/messages。",
+      "apiKey": "API Key"
+    },
+    "modelHint": {
+      "goose": "Claude 模型走 Goose 內建的 Anthropic provider，會帶上提示快取標記；其他模型走自訂的 OpenAI 相容 provider。",
+      "opencode": "Claude 模型走 Anthropic 協定，提示快取才能生效；其他模型走 OpenAI 相容協定。"
+    },
+    "agent": {
+      "desc": "適用於能讀說明、能執行命令的 Agent：把這段話貼進工具的對話框，它會讀接入說明、用一次性配對碼換取 Key 並完成設定，Key 不會出現在對話裏。",
+      "promptTool": "請把 {{tool}} 設定成使用這個閘道。",
+      "cannotIssue": "只有建立這把 Key 的成員才能把它交給 Agent。",
+      "resetNote": "配對碼被兌換後，這把 Key 會換成新的密鑰，正在使用的舊副本隨之失效。"
+    },
+    "cache": {
+      "verified": "提示快取：已透過本閘道實測命中。",
+      "unverified": "提示快取：工具會帶快取標記，尚未透過本閘道實測。",
+      "depends": "提示快取：取決於模型和協定。Anthropic 協定需要用戶端自己帶 cache_control；OpenAI 模型由上游自動快取。",
+      "claude-code": {
+        "verified": "提示快取：已實測。cache_control 原樣轉發給上游，同一工作階段固定在一條渠道上。"
+      },
+      "codex": {
+        "verified": "提示快取：已實測。Codex 的 prompt_cache_key 原樣轉發，同一工作階段固定在一條渠道上。"
+      }
+    },
+    "verify": {
+      "claudeCode": "驗證：啟動 Claude Code 執行 /model，能看到本站模型（顯示為 claude-code/<模型>）。",
+      "codex": "驗證：啟動 Codex 執行 /model，能看到本站模型。",
+      "opencode": "驗證：啟動 OpenCode 執行 /models，能看到 Modeltaps 和上面選的模型。",
+      "goose": "驗證：執行 goose session 發一句話，用量日誌裏能看到這次請求。",
+      "openclaw": "驗證：在 OpenClaw 裏發一句話，用量日誌裏能看到這次請求。",
+      "other": "驗證：從工具發一次請求，用量日誌裏能看到。"
+    }
   }
 }

@@ -5315,5 +5315,73 @@
       "docs": "查文档「{{query}}」",
       "propose_other": "拟定变更方案（{{count}} 项）"
     }
+  },
+  "connectTool": {
+    "menu": "接入工具",
+    "title": "接入工具",
+    "desc": "选你用的工具。下面的配置已经填好本站地址、API Key 和默认模型，复制到工具里即可。",
+    "pickTool": "工具",
+    "noKey": "还没有启用的 API Key。先创建一个，再来接入工具。",
+    "key": "使用哪把 Key",
+    "model": "默认模型",
+    "copied": "已复制 ✓",
+    "install": "安装 {{tool}}",
+    "docs": "文档",
+    "kind": {
+      "terminal": "编程 Agent（终端）",
+      "desktop": "桌面 Agent",
+      "other": "OpenAI / Anthropic 兼容"
+    },
+    "other": {
+      "name": "其他工具"
+    },
+    "method": {
+      "file": "配置文件",
+      "command": "命令",
+      "values": "地址和 Key",
+      "ai": "让 AI 配置"
+    },
+    "note": {
+      "mergeJson": "文件已存在就合并进去，不存在就新建。",
+      "mergeToml": "加到文件里；文件里已有 model_provider 或 model 时替换那两行。",
+      "shellSession": "只对当前终端生效。要长期生效，把这几行加到 shell 启动文件（~/.zshrc 或 ~/.bashrc）。",
+      "keyEnv": "配置从这个环境变量读 Key。把这行加到 shell 启动文件，或改成从系统钥匙串读取。",
+      "gooseConfig": "桌面版里同样的设置在「设置 → 模型」。",
+      "gooseKey": "然后运行这条命令，选 Anthropic，按提示输入 API Key：Goose 会把它存进系统钥匙串。",
+      "openclawCommand": "OpenClaw 命令行版和桌面版都适用。运行后重启 OpenClaw。",
+      "openclawConfig": "合并进 ~/.openclaw/openclaw.json，然后重启 OpenClaw。",
+      "openaiBase": "OpenAI 兼容地址：工具要填 OpenAI API 地址时用这个。",
+      "anthropicBase": "Anthropic 兼容地址，不带 /v1：工具会自己补 /v1/messages。",
+      "apiKey": "API Key"
+    },
+    "modelHint": {
+      "goose": "Claude 模型走 Goose 内置的 Anthropic provider，会带上提示缓存标记；其他模型走自定义的 OpenAI 兼容 provider。",
+      "opencode": "Claude 模型走 Anthropic 协议，提示缓存才能生效；其他模型走 OpenAI 兼容协议。"
+    },
+    "agent": {
+      "desc": "适用于能读说明、能执行命令的 Agent：把这段话贴进工具的对话框，它会读接入说明、用一次性配对码换取 Key 并完成配置，Key 不会出现在对话里。",
+      "promptTool": "请把 {{tool}} 配置成使用这个网关。",
+      "cannotIssue": "只有创建这把 Key 的成员才能把它交给 Agent。",
+      "resetNote": "配对码被兑换后，这把 Key 会换成新的密钥，正在使用的旧副本随之失效。"
+    },
+    "cache": {
+      "verified": "提示缓存：已通过本网关实测命中。",
+      "unverified": "提示缓存：工具会带缓存标记，尚未通过本网关实测。",
+      "depends": "提示缓存：取决于模型和协议。Anthropic 协议需要客户端自己带 cache_control；OpenAI 模型由上游自动缓存。",
+      "claude-code": {
+        "verified": "提示缓存：已实测。cache_control 原样转发给上游，同一会话固定在一条渠道上。"
+      },
+      "codex": {
+        "verified": "提示缓存：已实测。Codex 的 prompt_cache_key 原样转发，同一会话固定在一条渠道上。"
+      }
+    },
+    "verify": {
+      "claudeCode": "验证：启动 Claude Code 运行 /model，能看到本站模型（显示为 claude-code/<模型>）。",
+      "codex": "验证：启动 Codex 运行 /model，能看到本站模型。",
+      "opencode": "验证：启动 OpenCode 运行 /models，能看到 Modeltaps 和上面选的模型。",
+      "goose": "验证：运行 goose session 发一句话，用量日志里能看到这次请求。",
+      "openclaw": "验证：在 OpenClaw 里发一句话，用量日志里能看到这次请求。",
+      "other": "验证：从工具发一次请求，用量日志里能看到。"
+    }
   }
 }

@@ -5440,5 +5440,73 @@
       "propose_one": "Drafted a change plan ({{count}} change)",
       "propose_other": "Drafted a change plan ({{count}} changes)"
     }
+  },
+  "connectTool": {
+    "menu": "Connect a tool",
+    "title": "Connect a tool",
+    "desc": "Pick the tool you use. Its configuration below already holds this site's address, the API key and a default model; copy it into the tool.",
+    "pickTool": "Tool",
+    "noKey": "No enabled API key yet. Create one first, then connect a tool.",
+    "key": "Key to use",
+    "model": "Default model",
+    "copied": "Copied ✓",
+    "install": "Install {{tool}}",
+    "docs": "Documentation",
+    "kind": {
+      "terminal": "Coding agent (terminal)",
+      "desktop": "Desktop agent",
+      "other": "OpenAI / Anthropic compatible"
+    },
+    "other": {
+      "name": "Other tools"
+    },
+    "method": {
+      "file": "Config file",
+      "command": "Command",
+      "values": "Address and key",
+      "ai": "Let the AI set it up"
+    },
+    "note": {
+      "mergeJson": "Merge into the file if it exists; create it otherwise.",
+      "mergeToml": "Add to the file; if it already sets model_provider or model, replace those lines.",
+      "shellSession": "Applies to the current terminal. To keep it, add the lines to your shell profile (~/.zshrc or ~/.bashrc).",
+      "keyEnv": "The config reads the key from this environment variable. Add the line to your shell profile, or load it from your system keychain.",
+      "gooseConfig": "In the desktop app the same settings are under Settings → Models.",
+      "gooseKey": "Then run this, choose Anthropic and enter the API key when asked: Goose keeps it in the system keychain.",
+      "openclawCommand": "Works for the OpenClaw CLI and the desktop app. Restart OpenClaw afterwards.",
+      "openclawConfig": "Merge into ~/.openclaw/openclaw.json, then restart OpenClaw.",
+      "openaiBase": "OpenAI-compatible base URL: for tools that ask for an OpenAI API address.",
+      "anthropicBase": "Anthropic-compatible base URL, without /v1: the tool appends /v1/messages itself.",
+      "apiKey": "API key"
+    },
+    "modelHint": {
+      "goose": "Claude models use Goose's built-in Anthropic provider, which sends prompt cache markers; other models use a custom OpenAI-compatible provider.",
+      "opencode": "Claude models use the Anthropic protocol so prompt caching can work; other models use the OpenAI-compatible one."
+    },
+    "agent": {
+      "desc": "For agents that can read instructions and run commands: paste this into the tool's chat. It reads the setup guide, redeems the one-time pairing code and configures itself. The key never appears in the chat.",
+      "promptTool": "Set up {{tool}} to use this gateway.",
+      "cannotIssue": "Only the member who created this key can hand it to an agent.",
+      "resetNote": "Redeeming a pairing code gives the key a new secret: copies of the key already in use stop working."
+    },
+    "cache": {
+      "verified": "Prompt caching: confirmed through this gateway.",
+      "unverified": "Prompt caching: the tool sends cache markers, not yet confirmed through this gateway.",
+      "depends": "Prompt caching: depends on the model and protocol. Anthropic-protocol clients must send cache_control themselves; OpenAI models cache automatically upstream.",
+      "claude-code": {
+        "verified": "Prompt caching: confirmed. cache_control reaches the upstream unchanged and one session stays on one channel."
+      },
+      "codex": {
+        "verified": "Prompt caching: confirmed. Codex's prompt_cache_key reaches the upstream and one session stays on one channel."
+      }
+    },
+    "verify": {
+      "claudeCode": "Check: start Claude Code and run /model; this site's models are listed as claude-code/<model>.",
+      "codex": "Check: start Codex and run /model; this site's models are listed.",
+      "opencode": "Check: start OpenCode and run /models; Modeltaps is listed with the model above.",
+      "goose": "Check: run goose session and send a short message; the request shows up in Usage logs.",
+      "openclaw": "Check: send a message in OpenClaw; the request shows up in Usage logs.",
+      "other": "Check: send one request from the tool; it shows up in Usage logs."
+    }
   }
 }

@@ -88,6 +88,10 @@ func TestSkillMdRendersSiteSettings(t *testing.T) {
 		"## 7. Report back to the user",
 		"how to revoke it",
 		"[Acme AI: Gateway documentation](https://docs.example.com)",
+		"## Appendix: known agents",
+		"`ANTHROPIC_HOST` set to `https://gw.example.com/coding-agent` (no `/v1`)",
+		"`base_url` `https://gw.example.com/coding-agent/v1/chat/completions`",
+		"`model_catalog_url = \"https://gw.example.com/codex/v1/models\"`",
 		"## Appendix: reference commands",
 		"security add-generic-password -U -s acme-ai-gateway",
 	} {

@@ -45,7 +45,7 @@ const renderTable = (props) =>
         onDelete: vi.fn(),
         onToggleStatus: vi.fn(),
         onShowUsage: vi.fn(),
-        onConnectOpenClaw: vi.fn(),
+        onConnectTool: vi.fn(),
         onOpen: vi.fn(),
         ...props
       })

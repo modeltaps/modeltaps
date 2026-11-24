@@ -59,7 +59,7 @@ const openPanel = (tab, extra = {}) =>
         onCopyText: vi.fn(),
         onDelete: vi.fn(),
         onShowUsage: vi.fn(),
-        onConnectOpenClaw: vi.fn(),
+        onConnectTool: vi.fn(),
         ...extra
       })
     )

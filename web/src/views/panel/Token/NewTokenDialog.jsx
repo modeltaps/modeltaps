@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plug } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,7 @@ export default function NewTokenDialog({
   onCreated,
   onManagementCreated,
   onOpen,
+  onConnectTool,
   baseUrl,
   onCopy,
   allowManagement = false,
@@ -198,6 +199,12 @@ export default function NewTokenDialog({
                   {t('apiKey.new.openDetails')}
                 </Button>
               ) : null}
+              {created.id && !created.management && onConnectTool ? (
+                <Button variant="outline" className="gap-1.5 rounded-lg" onClick={() => onConnectTool({ ...created, name })}>
+                  <Plug className="size-4" />
+                  {t('connectTool.menu')}
+                </Button>
+              ) : null}
               <Button className="rounded-lg" onClick={onClose}>
                 {t('apiKey.new.done')}
               </Button>
@@ -325,6 +332,8 @@ NewTokenDialog.propTypes = {
   onCreated: PropTypes.func.isRequired,
   onManagementCreated: PropTypes.func,
   onOpen: PropTypes.func.isRequired,
+  // Opens "Connect a tool" for the key just created (AGENT-8).
+  onConnectTool: PropTypes.func,
   baseUrl: PropTypes.string,
   onCopy: PropTypes.func.isRequired,
   allowManagement: PropTypes.bool,

@@ -49,7 +49,7 @@ export default function TokenPanel({
   onCopyText,
   onDelete,
   onShowUsage,
-  onConnectOpenClaw
+  onConnectTool
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useScopedNavigate();
@@ -111,9 +111,7 @@ export default function TokenPanel({
   // Reset is offered on the key row of the overview, not in this menu.
   const resetKey = token && onResetKey && !playground && (!canResetKey || canResetKey(token)) ? () => onResetKey(token) : undefined;
   const menu = token
-    ? buildTokenActions({ item: token, t, navigate, onEdit: () => {}, onDelete, onShowUsage, onConnectOpenClaw }).filter(
-        (a) => a && a.overflow
-      )
+    ? buildTokenActions({ item: token, t, navigate, onEdit: () => {}, onDelete, onShowUsage, onConnectTool }).filter((a) => a && a.overflow)
     : [];
 
   return (
@@ -222,5 +220,5 @@ TokenPanel.propTypes = {
   onCopyText: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onShowUsage: PropTypes.func.isRequired,
-  onConnectOpenClaw: PropTypes.func.isRequired
+  onConnectTool: PropTypes.func.isRequired
 };

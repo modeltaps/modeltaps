@@ -2,13 +2,13 @@ import { useState, useEffect, useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, RotateCcw, KeyRound, Search, Link2, Power, PowerOff, Trash2 } from 'lucide-react';
+import { Plus, RotateCcw, KeyRound, Search, Link2, Plug, Power, PowerOff, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import { FilterSheet, describeEntry, filterStateToParams, paramsToFilterState, isEntryActive } from '@/components/filter-bar';
@@ -46,7 +46,7 @@ import NewTokenDialog from './NewTokenDialog';
 import ManagementKeyList from './ManagementKeyList';
 import { LogIONotice, TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
-import OpenClawConnectDialog from './OpenClawConnectDialog';
+import ToolConnectDialog from './connect/ToolConnectDialog';
 import { KeySecretDialog } from './KeySecret';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 
@@ -202,7 +202,9 @@ export default function Token() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [usageTarget, setUsageTarget] = useState(null);
-  const [openClawTarget, setOpenClawTarget] = useState(null);
+  // The "Connect a tool" dialog: `{ token, pairing }` for one key (row menu, new key), `{}` to
+  // pick the key in the dialog (page header).
+  const [connectTarget, setConnectTarget] = useState(null);
   // Keys are stored as hashes only (SEC-47). A key created or reset on this page stays known here,
   // in memory and only while the page is open, so its test command and client setup can be built;
   // for other keys those dialogs ask the user to paste the key.
@@ -624,6 +626,13 @@ export default function Token() {
             <DropdownMenuContent align="end" className="w-80 p-3">
               <div className="mb-2 text-sm font-medium">{t('token_index.apiAddress')}</div>
               <ConnectInfo addresses={apiAddresses} onCopy={copyText} />
+              <DropdownMenuItem
+                className="mt-3 justify-center gap-1.5 rounded-md border border-border"
+                onClick={() => setConnectTarget({})}
+              >
+                <Plug className="size-3.5" />
+                {t('connectTool.menu')}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <ResponsiveToolbarButton primary icon={Plus} label={t('token_index.createToken')} onClick={openCreate} />
@@ -742,7 +751,7 @@ export default function Token() {
                   onDelete={setDeleteTarget}
                   onToggleStatus={onToggleStatus}
                   onShowUsage={setUsageTarget}
-                  onConnectOpenClaw={setOpenClawTarget}
+                  onConnectTool={(token) => setConnectTarget({ token })}
                   onOpen={(item) => route.open(item.id)}
                   openId={route.openId}
                   selectedIds={selectedIds}
@@ -799,7 +808,7 @@ export default function Token() {
             onCopyText={copyText}
             onDelete={setDeleteTarget}
             onShowUsage={setUsageTarget}
-            onConnectOpenClaw={setOpenClawTarget}
+            onConnectTool={(token) => setConnectTarget({ token })}
           />
         )}
 
@@ -812,6 +821,13 @@ export default function Token() {
             }}
             onManagementCreated={() => setManagementReload((k) => k + 1)}
             onOpen={(id) => route.open(id)}
+            onConnectTool={(created) => {
+              route.close();
+              setConnectTarget({
+                token: { id: created.id, name: created.name, status: 1 },
+                pairing: created.pairingCode ? { code: created.pairingCode, expiresAt: created.pairingExpiresAt } : undefined
+              });
+            }}
             baseUrl={apiAddresses[0]?.url}
             onCopy={copyText}
             allowManagement={!isOrgContext}
@@ -907,12 +923,16 @@ export default function Token() {
           serverAddress={siteInfo?.server_address}
         />
 
-        <OpenClawConnectDialog
-          open={!!openClawTarget}
-          onOpenChange={(o) => !o && setOpenClawTarget(null)}
-          token={openClawTarget}
-          secret={openClawTarget ? freshSecrets[openClawTarget.id] : undefined}
+        <ToolConnectDialog
+          open={!!connectTarget}
+          onOpenChange={(o) => !o && setConnectTarget(null)}
+          token={connectTarget?.token}
+          tokens={connectTarget && !connectTarget.token ? tokens.filter((x) => !isPlaygroundToken(x)) : undefined}
+          secrets={freshSecrets}
+          pairing={connectTarget?.pairing}
+          canIssueFor={canResetKey}
           serverAddress={siteInfo?.server_address}
+          onCopy={copyText}
         />
       </div>
     </>

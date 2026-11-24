@@ -192,7 +192,7 @@ function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
 // workbench paths and keeps the current scope (useScopedNavigate). `group` splits the
 // menu into sections: manage, connect, inspect, then the destructive delete.
 // `onResetKey` is left out where the key cannot be reset by this user (canResetKey).
-export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
+export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey, onShowUsage, onConnectTool, onToggleStatus }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
   const goUsage = () => navigate(`${workbench.usage()}?tokens=${encodeURIComponent(item.name)}`);
   const goLog = () => navigate(`${workbench.logs()}?token_name=${encodeURIComponent(item.name)}`);
@@ -211,7 +211,7 @@ export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onReset
       onClick: () => onToggleStatus(item)
     },
     { key: 'test', group: 'connect', label: t('token_index.testCommand'), icon: Terminal, onClick: () => onShowUsage(item) },
-    { key: 'openclaw', group: 'connect', label: t('token_index.openclawConnect'), icon: Plug, onClick: () => onConnectOpenClaw(item) },
+    { key: 'connect-tool', group: 'connect', label: t('connectTool.menu'), icon: Plug, onClick: () => onConnectTool(item) },
     { key: 'usage', group: 'inspect', label: t('token_index.usage'), icon: BarChart3, disabled: !item.name, onClick: goUsage },
     { key: 'log', group: 'inspect', label: t('token_index.viewLog'), icon: FileText, disabled: !item.name, onClick: goLog },
     { key: 'delete', group: 'danger', label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
@@ -384,7 +384,7 @@ export default function TokenTable({
   onDelete,
   onToggleStatus,
   onShowUsage,
-  onConnectOpenClaw,
+  onConnectTool,
   onOpen,
   openId,
   selectedIds = null,
@@ -597,7 +597,7 @@ export default function TokenTable({
                 onDelete,
                 onResetKey: resetFor(c.row.original),
                 onShowUsage,
-                onConnectOpenClaw
+                onConnectTool
               })}
             />
           </RowControl>
@@ -614,7 +614,7 @@ export default function TokenTable({
     onDelete,
     onToggleStatus,
     onShowUsage,
-    onConnectOpenClaw,
+    onConnectTool,
     navigate,
     tokens,
     selectedIds,
@@ -657,7 +657,7 @@ export default function TokenTable({
             onToggleStatus={onToggleStatus}
             onOpen={onOpen}
             active={item.id === openId}
-            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey: resetFor(item), onShowUsage, onConnectOpenClaw })}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey: resetFor(item), onShowUsage, onConnectTool })}
           />
         ))}
       </ul>

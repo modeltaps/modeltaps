@@ -158,7 +158,9 @@ Coding agents have endpoints of their own. The path says which agent is calling;
 
 Usage logs record which agent sent each request: the endpoint decides, and on the other endpoints the agent is recognised from its User-Agent (Claude Code, Codex, OpenCode, Gemini CLI). Organizations can break their usage down by tool; see [Organizations](/guide/organization#usage).
 
-### Claude Code
+The console writes these configurations for you: on **API Keys**, open a key's ⋯ menu (or the **Connect** button in the header) and choose **Connect a tool**. It fills in your site address, the key and a default model.
+
+### Claude Code {#claude-code}
 
 Add the gateway to `~/.claude/settings.json` (or export the same variables in your shell):
 
@@ -178,7 +180,7 @@ Add the gateway to `~/.claude/settings.json` (or export the same variables in yo
 - With `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY`, `/model` lists every chat model your key can call, as `claude-code/<model>`. Models that accept a prompt of one million tokens or more end in `[1m]`, which makes Claude Code use that context window. The gateway removes the prefix and the suffix, so usage and logs show the real model name. Image, audio and embedding models are not listed.
 - `cache_control` breakpoints reach the upstream unchanged, and the requests of one Claude Code session stay on one channel, so the upstream prompt cache keeps working. `/context` gets token counts from `/v1/messages/count_tokens`, which is an estimate and is not billed.
 
-### Codex
+### Codex {#codex}
 
 Add a provider to `~/.codex/config.toml` and put your API key in the environment variable it names:
 
@@ -202,7 +204,57 @@ export MODELTAPS_API_KEY=sk-replace-with-your-key
 - `model_catalog_url` makes Codex read its model list from Modeltaps, so `/model` lists the chat models your key can call and Codex does not warn about unknown model metadata. Each entry carries Codex's own system prompt, so Codex behaves as it does with its built-in models.
 - The `prompt_cache_key` Codex sends reaches the upstream unchanged, and the requests of one Codex session stay on one channel.
 
-### Other coding agents
+### OpenCode {#opencode}
+
+Add a provider to `~/.config/opencode/opencode.json` and put your API key in `MODELTAPS_API_KEY`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "modeltaps": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "Modeltaps",
+      "options": { "baseURL": "https://your-modeltaps-domain.com/coding-agent/v1", "apiKey": "{env:MODELTAPS_API_KEY}" },
+      "models": { "claude-sonnet-5-5": {} }
+    }
+  },
+  "model": "modeltaps/claude-sonnet-5-5"
+}
+```
+
+- For Claude models use the `@ai-sdk/anthropic` package, so OpenCode sends `cache_control` and prompt caching works. For other models use `@ai-sdk/openai-compatible` with the same `baseURL`.
+- List the models you use under `models`; run `/models` in OpenCode to check.
+
+### Goose {#goose}
+
+For Claude models, use Goose's built-in Anthropic provider and point its host at `/coding-agent` (no `/v1`: Goose appends `/v1/messages`). The provider adds prompt cache markers itself.
+
+```bash
+export GOOSE_PROVIDER=anthropic
+export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
+export GOOSE_MODEL=claude-sonnet-5-5
+goose configure   # choose Anthropic and enter the API key
+```
+
+For other models, add a custom OpenAI-compatible provider in `~/.config/goose/custom_providers/modeltaps.json`, then set `GOOSE_PROVIDER: modeltaps` and `GOOSE_MODEL` in `~/.config/goose/config.yaml`:
+
+```json
+{
+  "name": "modeltaps",
+  "engine": "openai",
+  "display_name": "Modeltaps",
+  "api_key_env": "MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
+  "dynamic_models": true,
+  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+}
+```
+
+- `dynamic_models` fills Goose's model picker from the models your key can call.
+- `goose configure` keeps the key in the system keychain. In the desktop app the same settings are under Settings → Models.
+
+### Other coding agents {#other-coding-agents}
 
 Point an OpenAI-compatible agent at `https://your-modeltaps-domain.com/coding-agent/v1` and an Anthropic-compatible one at `https://your-modeltaps-domain.com/coding-agent`. They behave exactly like `/v1` and `/claude`; the requests are counted as coding-agent traffic.
 

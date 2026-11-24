@@ -656,6 +656,26 @@
       "mono": true,
       "color": true,
       "scale": 1
+    },
+    "claudecode": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "goose": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "opencode": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "openclaw": {
+      "mono": true,
+      "color": true,
+      "scale": 1
     }
   },
   "aliases": {
