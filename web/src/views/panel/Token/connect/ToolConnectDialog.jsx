@@ -265,6 +265,9 @@ function DeeplinkMethod({ method, keyKnown, onCreateKey }) {
           </a>
         </p>
       ))}
+      {method.links.some((link) => link.app === 'ccswitch') && (
+        <p className="text-xs text-muted-foreground">{t('connectTool.import.ccswitchConflict')}</p>
+      )}
       <p className="text-xs text-muted-foreground">{t('connectTool.import.keyInLink')}</p>
     </div>
   );

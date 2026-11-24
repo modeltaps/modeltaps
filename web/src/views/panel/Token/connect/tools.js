@@ -77,11 +77,15 @@ const field = (label, value, { secret = false } = {}) => ({ label, value, secret
 
 // CC Switch's provider import link (ccswitch://v1/import, documented in its user manual,
 // "Deep link" FAQ). Values are URL-encoded; the app shows a confirmation before importing.
-export function ccSwitchLink({ app, name, endpoint, key, model, apiFormat, homepage }) {
+// `config` (Base64 JSON) carries what the plain fields cannot: Claude Code's env block, Codex's
+// config.toml. Tested with CC Switch 4.0.40: without it the import drops the model discovery
+// variable and model_catalog_url, so /model lists none of the site's models.
+export function ccSwitchLink({ app, name, endpoint, key, model, apiFormat, homepage, config }) {
   const params = new URLSearchParams({ resource: 'provider', app, name, endpoint, apiKey: key });
   if (model) params.set('model', model);
   if (apiFormat) params.set('apiFormat', apiFormat);
   if (homepage) params.set('homepage', homepage);
+  if (config) params.set('config', base64Utf8(JSON.stringify(config)));
   return `ccswitch://v1/import?${params.toString()}`;
 }
 
@@ -130,11 +134,23 @@ const claudeCode = {
       ANTHROPIC_API_KEY: '',
       CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1'
     };
+    // CC Switch writes the env block as given; an empty ANTHROPIC_API_KEY is left out of it.
+    const linkEnv = Object.fromEntries(Object.entries(env).filter(([k]) => k !== 'ANTHROPIC_API_KEY'));
     return [
       {
         id: 'deeplink',
         links: [
-          { app: 'ccswitch', url: ccSwitchLink({ app: 'claude', name: siteName, endpoint: `${base}/claude-code`, key, homepage: base }) }
+          {
+            app: 'ccswitch',
+            url: ccSwitchLink({
+              app: 'claude',
+              name: siteName,
+              endpoint: `${base}/claude-code`,
+              key,
+              homepage: base,
+              config: { env: linkEnv }
+            })
+          }
         ]
       },
       {
@@ -170,7 +186,30 @@ const codex = {
     {
       id: 'deeplink',
       links: [
-        { app: 'ccswitch', url: ccSwitchLink({ app: 'codex', name: siteName, endpoint: `${base}/codex/v1`, key, model, homepage: base }) }
+        {
+          app: 'ccswitch',
+          url: ccSwitchLink({
+            app: 'codex',
+            name: siteName,
+            endpoint: `${base}/codex/v1`,
+            key,
+            model,
+            homepage: base,
+            config: {
+              auth: { OPENAI_API_KEY: key },
+              config: [
+                `model_provider = "${providerId}"`,
+                `model = "${model}"`,
+                '',
+                `[model_providers.${providerId}]`,
+                `name = "${siteName}"`,
+                `base_url = "${base}/codex/v1"`,
+                'wire_api = "responses"',
+                `model_catalog_url = "${base}/codex/v1/models"`
+              ].join('\n')
+            }
+          })
+        }
       ]
     },
     {

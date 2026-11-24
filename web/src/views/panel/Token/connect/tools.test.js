@@ -78,6 +78,19 @@ describe('import links', () => {
     expect(ccSwitchLink({ app: 'claude', name: 'A B', endpoint: base, key })).toMatch(/^ccswitch:\/\/v1\/import\?/);
   });
 
+  it('CC Switch links carry the config the plain fields cannot (tested with CC Switch 4.0.40)', () => {
+    const decode = (url) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(params(url).get('config')), (c) => c.charCodeAt(0))));
+    const claude = decode(method(guide('claude-code'), 'deeplink').links[0].url);
+    expect(claude).toEqual({
+      env: { ANTHROPIC_BASE_URL: `${base}/claude-code`, ANTHROPIC_AUTH_TOKEN: key, CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1' }
+    });
+    const codex = decode(method(guide('codex', { model: 'gpt-5.5' }), 'deeplink').links[0].url);
+    expect(codex.auth).toEqual({ OPENAI_API_KEY: key });
+    expect(codex.config).toContain(`model_catalog_url = "${base}/codex/v1/models"`);
+    expect(codex.config).toContain('wire_api = "responses"');
+    expect(codex.config).toContain('model = "gpt-5.5"');
+  });
+
   it('OpenCode imports Claude models over the Anthropic format', () => {
     expect(params(method(guide('opencode'), 'deeplink').links[0].url).get('apiFormat')).toBe('anthropic');
     expect(params(method(guide('opencode', { model: 'gpt-5.5' }), 'deeplink').links[0].url).get('apiFormat')).toBe('openai_chat');

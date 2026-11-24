@@ -5361,8 +5361,9 @@
     "import": {
       "ccswitch": "导入到 CC Switch",
       "cherry": "导入到 Cherry Studio",
-      "ccswitchHint": "点按钮会打开本机的 CC Switch，确认后由它写好工具的配置；需要先安装 CC Switch。",
-      "cherryHint": "点按钮会打开本机的 Cherry Studio 并添加这个服务商（需要 1.4.8 或更新版本）。",
+      "ccswitchHint": "点按钮会打开本机的 CC Switch，确认后由它写好工具的配置。确认框里「导入后切换」默认打开，会立即替换这个工具当前的配置；只想先存起来就把它关掉。需要先安装 CC Switch。",
+      "ccswitchConflict": "如果 CC Switch 提示环境变量冲突，是终端启动文件（如 ~/.zshrc）里还留着别家网关的 ANTHROPIC_* 或 OPENAI_* 变量：删掉那几行，重开终端即可。",
+      "cherryHint": "点按钮会打开本机的 Cherry Studio 并添加这个服务商（需要 1.4.8 或更新版本）。第一次打开 Cherry Studio 时，先完成或跳过它的初始设置向导，否则导入不会生效。",
       "getApp": "下载",
       "needKey": "导入链接里要带完整的 Key：先在上方粘贴这把 Key，或者",
       "newKey": "为这次导入新建一把 Key",

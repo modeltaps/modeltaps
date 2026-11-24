@@ -5360,8 +5360,9 @@
     "import": {
       "ccswitch": "匯入到 CC Switch",
       "cherry": "匯入到 Cherry Studio",
-      "ccswitchHint": "點按鈕會打開本機的 CC Switch，確認後由它寫好工具的設定；需要先安裝 CC Switch。",
-      "cherryHint": "點按鈕會打開本機的 Cherry Studio 並加入這個服務商（需要 1.4.8 或更新版本）。",
+      "ccswitchHint": "點按鈕會打開本機的 CC Switch，確認後由它寫好工具的設定。確認框裏「匯入後切換」預設打開，會立即替換這個工具目前的設定；只想先存起來就把它關掉。需要先安裝 CC Switch。",
+      "ccswitchConflict": "如果 CC Switch 提示環境變數衝突，是終端啟動檔（如 ~/.zshrc）裏還留着別家閘道的 ANTHROPIC_* 或 OPENAI_* 變數：刪掉那幾行，重開終端即可。",
+      "cherryHint": "點按鈕會打開本機的 Cherry Studio 並加入這個服務商（需要 1.4.8 或更新版本）。第一次打開 Cherry Studio 時，先完成或略過它的初始設定精靈，否則匯入不會生效。",
       "getApp": "下載",
       "needKey": "匯入連結裏要帶完整的 Key：先在上方貼上這把 Key，或者",
       "newKey": "為這次匯入新建一把 Key",

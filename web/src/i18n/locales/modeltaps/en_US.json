@@ -5486,8 +5486,9 @@
     "import": {
       "ccswitch": "Import to CC Switch",
       "cherry": "Import to Cherry Studio",
-      "ccswitchHint": "Opens CC Switch on this computer; after you confirm, it writes the tool's configuration. CC Switch must be installed.",
-      "cherryHint": "Opens Cherry Studio on this computer and adds this provider (version 1.4.8 or later).",
+      "ccswitchHint": "Opens CC Switch on this computer; after you confirm, it writes the tool’s configuration. Its “switch after import” toggle is on by default and replaces the tool’s current configuration right away: turn it off to only save the provider. CC Switch must be installed.",
+      "ccswitchConflict": "If CC Switch reports an environment variable conflict, your shell profile (such as ~/.zshrc) still exports another gateway’s ANTHROPIC_* or OPENAI_* variables: remove those lines and open a new terminal.",
+      "cherryHint": "Opens Cherry Studio on this computer and adds this provider (version 1.4.8 or later). The first time you open Cherry Studio, finish or skip its setup guide first, or the import does nothing.",
       "getApp": "Download",
       "needKey": "The import link carries the full key: paste the key above first, or",
       "newKey": "create a key for this import",
