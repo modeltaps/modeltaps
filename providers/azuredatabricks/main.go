@@ -12,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/base"
+	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/types"
 )
 
@@ -123,15 +124,43 @@ func (p *AzureDatabricksProvider) convertRequest(request *types.ChatCompletionRe
 		databricksRequest.FrequencyPenalty = float64(*request.FrequencyPenalty)
 	}
 
-	if request.Reasoning != nil {
-		var opErr *types.OpenAIErrorWithStatusCode
-		databricksRequest.MaxTokens, databricksRequest.Thinking, opErr = getThinking(databricksRequest.MaxTokens, request.Reasoning)
-		if opErr != nil {
-			return nil, opErr
+	if request.Reasoning != nil || request.ReasoningEffort != nil {
+		reasoning := request.Reasoning
+		if reasoning == nil {
+			reasoning = &types.ChatReasoning{Effort: *request.ReasoningEffort}
+		}
+		if claude.AdaptiveThinkingSupported(request.Model) {
+			databricksRequest.Thinking, databricksRequest.OutputConfig = getAdaptiveThinking(request.Model, reasoning)
+		} else {
+			var opErr *types.OpenAIErrorWithStatusCode
+			databricksRequest.MaxTokens, databricksRequest.Thinking, opErr = getThinking(databricksRequest.MaxTokens, reasoning)
+			if opErr != nil {
+				return nil, opErr
+			}
 		}
 	}
 
 	return databricksRequest, nil
+}
+
+// getAdaptiveThinking is the thinking configuration for the Claude models Databricks serves with
+// adaptive thinking (Opus 4.6 and later, Sonnet 4.6 and later, Haiku 5.5, Fable): a token budget
+// is a 400 on most of them, so the effort goes to output_config.effort instead. Fable takes no
+// thinking parameter at all (it always thinks), and Haiku 5.5 accepts only low, medium and high.
+// Per the Databricks reasoning models guide (checked 2026-11-25).
+func getAdaptiveThinking(model string, reasoning *types.ChatReasoning) (*Thinking, *OutputConfig) {
+	var thinking *Thinking
+	if !claude.AlwaysThinks(model) {
+		thinking = &Thinking{Type: "adaptive"}
+	}
+	effort := claude.ClaudeEffort(reasoning.Effort, model)
+	if strings.Contains(strings.ToLower(model), "haiku") && (effort == "xhigh" || effort == "max") {
+		effort = "high"
+	}
+	if effort == "" {
+		return thinking, nil
+	}
+	return thinking, &OutputConfig{Effort: effort}
 }
 
 func getThinking(maxTokens int, reasoning *types.ChatReasoning) (newMaxTokens int, thinking *Thinking, err *types.OpenAIErrorWithStatusCode) {
@@ -188,11 +217,13 @@ func (p *AzureDatabricksProvider) convertResponse(resp *http.Response) (response
 	}
 
 	for _, choice := range databricksResponse.Choices {
+		text, reasoning := splitContent(choice.Message.Content)
 		response.Choices = append(response.Choices, types.ChatCompletionChoice{
 			Index: choice.Index,
 			Message: types.ChatCompletionMessage{
-				Role:    "assistant",
-				Content: choice.Message.Content,
+				Role:             "assistant",
+				Content:          text,
+				ReasoningContent: reasoning,
 			},
 			FinishReason: choice.FinishReason,
 		})
@@ -238,7 +269,83 @@ func streamHandler(rawLine *[]byte, dataChan chan string, errChan chan error) {
 		return
 	}
 
-	dataChan <- string(*rawLine)
+	dataChan <- string(flattenStreamChunk(*rawLine))
+}
+
+// splitContent reads a message content that is either a string or, with thinking on, an array of
+// blocks: {"type": "reasoning", "summary": [{"type": "summary_text", "text": ...}]} and
+// {"type": "text", "text": ...}. It returns the answer text and the reasoning summary.
+func splitContent(raw json.RawMessage) (text, reasoning string) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return "", ""
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		return s, ""
+	}
+	var blocks []struct {
+		Type    string `json:"type"`
+		Text    string `json:"text"`
+		Summary []struct {
+			Text string `json:"text"`
+		} `json:"summary"`
+	}
+	if json.Unmarshal(raw, &blocks) != nil {
+		return string(raw), ""
+	}
+	var t, r strings.Builder
+	for _, b := range blocks {
+		switch b.Type {
+		case "reasoning":
+			for _, part := range b.Summary {
+				r.WriteString(part.Text)
+			}
+		case "text":
+			t.WriteString(b.Text)
+		}
+	}
+	return t.String(), r.String()
+}
+
+// flattenStreamChunk rewrites a stream chunk whose delta content is an array of blocks (the shape
+// of non-streaming responses with thinking on) into the chat shape clients read: the text in
+// content, the reasoning summary in reasoning_content. Other chunks are passed on unchanged.
+func flattenStreamChunk(line []byte) []byte {
+	var chunk map[string]json.RawMessage
+	if json.Unmarshal(line, &chunk) != nil {
+		return line
+	}
+	var choices []map[string]json.RawMessage
+	if json.Unmarshal(chunk["choices"], &choices) != nil {
+		return line
+	}
+	changed := false
+	for _, choice := range choices {
+		var delta map[string]json.RawMessage
+		if json.Unmarshal(choice["delta"], &delta) != nil {
+			continue
+		}
+		content := delta["content"]
+		if len(content) == 0 || content[0] != '[' {
+			continue
+		}
+		text, reasoning := splitContent(content)
+		delta["content"], _ = json.Marshal(text)
+		if reasoning != "" {
+			delta["reasoning_content"], _ = json.Marshal(reasoning)
+		}
+		choice["delta"], _ = json.Marshal(delta)
+		changed = true
+	}
+	if !changed {
+		return line
+	}
+	chunk["choices"], _ = json.Marshal(choices)
+	out, err := json.Marshal(chunk)
+	if err != nil {
+		return line
+	}
+	return out
 }
 
 func requestErrorHandle(resp *http.Response) *types.OpenAIError {
@@ -262,11 +369,17 @@ type databricksChatRequest struct {
 	PresencePenalty  float64                       `json:"presence_penalty,omitempty"`
 	FrequencyPenalty float64                       `json:"frequency_penalty,omitempty"`
 	Thinking         *Thinking                     `json:"thinking,omitempty"`
+	OutputConfig     *OutputConfig                 `json:"output_config,omitempty"`
 }
 
 type Thinking struct {
 	Type         string `json:"type,omitempty"`
 	BudgetTokens int    `json:"budget_tokens,omitempty"`
+}
+
+// OutputConfig carries the effort that sets how much adaptive thinking does.
+type OutputConfig struct {
+	Effort string `json:"effort,omitempty"`
 }
 
 // databricksChatResponse is the response body for Azure Databricks
@@ -278,8 +391,9 @@ type databricksChatResponse struct {
 	Choices []struct {
 		Index   int `json:"index"`
 		Message struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
+			Role string `json:"role"`
+			// A string, or an array of reasoning and text blocks with thinking on (splitContent).
+			Content json.RawMessage `json:"content"`
 		} `json:"message"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`

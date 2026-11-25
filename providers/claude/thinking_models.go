@@ -72,6 +72,16 @@ func ThinkingHiddenByDefault(name string) bool {
 	return false
 }
 
+// ClaudeEffort is claudeEffort for other providers that serve Claude models.
+func ClaudeEffort(effort, model string) string { return claudeEffort(effort, model) }
+
+// AlwaysThinks reports whether the model thinks on every request and takes no thinking
+// configuration but the effort (Fable, Mythos): omitting thinking is the same as adaptive.
+func AlwaysThinks(name string) bool {
+	family, _, _, ok := claudeModelVersion(name)
+	return ok && (family == "fable" || family == "mythos")
+}
+
 // claudeEffort maps an OpenAI-style reasoning effort onto Claude's output_config.effort, "" when
 // it has no counterpart. "minimal" becomes "low"; "xhigh" becomes "high" on models that do not
 // have it (Opus 4.6, Sonnet 4.6).
