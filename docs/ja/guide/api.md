@@ -228,31 +228,28 @@ export MODELTAPS_API_KEY=sk-ここを自分のキーに置き換えてくださ�
 
 ### Goose {#goose}
 
-Claude モデルには Goose 内蔵の Anthropic プロバイダーを使い、ホストを `/coding-agent` に向けます（`/v1` は不要です。Goose が `/v1/messages` を付けます）。このプロバイダーはプロンプトキャッシュのマーカーを自分で付けます。
+Modeltaps を独立したプロバイダーとして追加すると、そのモデルが Goose のモデル切り替えで一つの名前の下に並びます。
 
-```bash
-export GOOSE_PROVIDER=anthropic
-export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
-export GOOSE_MODEL=claude-sonnet-5-5
-goose configure   # Anthropic を選び API キーを入力
-```
+1. デスクトップ版で **設定 → モデル → プロバイダーを設定** を開き、**プロバイダーを追加** から **手動設定** を選びます。
+2. 種類は **OpenAI 互換** のまま。表示名は `Modeltaps`、API アドレスは `https://your-modeltaps-domain.com/coding-agent`（`/v1` は不要です。Goose が `/v1/chat/completions` を付けます）、API ベースパスは空のまま、API キーが必要にチェックしてキーを貼り付け、利用可能なモデルにはカンマ区切りで使うモデルを入れ、ストリーミングはオンのままにします。
+3. **プロバイダーを作成** を押して既定のモデルを選びます。あとからチャット欄の下のモデルボタンで切り替えられます。
 
-その他のモデルには `~/.config/goose/custom_providers/modeltaps.json` にカスタムの OpenAI 互換プロバイダーを追加し、`~/.config/goose/config.yaml` で `GOOSE_PROVIDER: modeltaps` と `GOOSE_MODEL` を設定します。
+Goose はキーをシステムのキーチェーンに保存し、プロバイダーを `~/.config/goose/custom_providers/` に書き出します。CLI も同じファイルを読みます。
 
 ```json
 {
-  "name": "modeltaps",
+  "name": "custom_modeltaps",
   "engine": "openai",
   "display_name": "Modeltaps",
-  "api_key_env": "MODELTAPS_API_KEY",
-  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
-  "dynamic_models": true,
-  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+  "api_key_env": "CUSTOM_MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent",
+  "supports_streaming": true,
+  "models": [{ "name": "claude-sonnet-5-5" }, { "name": "gpt-5.5" }, { "name": "deepseek-v4-pro" }]
 }
 ```
 
-- `dynamic_models` を有効にすると、Goose のモデル一覧がキーで呼び出せるモデルから作られます。
-- `goose configure` はキーをシステムのキーチェーンに保存します。デスクトップアプリでは「設定 → モデル」に同じ項目があります。
+- この方法でも Claude モデルのプロンプトキャッシュは効きます。キャッシュのマーカーはゲートウェイが付けます。
+- モデル一覧はいつでも追加・削除できます。Goose は一覧にあるモデルだけを表示します。
 
 ### その他のコーディングエージェント {#other-coding-agents}
 

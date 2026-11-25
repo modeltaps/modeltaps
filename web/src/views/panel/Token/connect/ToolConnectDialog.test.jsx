@@ -77,7 +77,7 @@ describe('ToolConnectDialog', () => {
     open({ token, secrets: { 7: SECRET } });
     fireEvent.click(screen.getByTestId('tool-goose'));
     await waitFor(() => expect(screen.getByTestId('tool-primary').textContent).toContain('claude-sonnet-5-5'));
-    expect(screen.getByTestId('tool-primary').textContent).toContain('ANTHROPIC_HOSThttps://gw.example.com/coding-agent');
+    expect(screen.getByTestId('tool-primary').textContent).toContain('API URLhttps://gw.example.com/coding-agent');
     const primary = screen.getByTestId('tool-primary').textContent;
     expect(primary).toContain('claude-sonnet-5-5');
     expect(primary).not.toContain(SECRET);

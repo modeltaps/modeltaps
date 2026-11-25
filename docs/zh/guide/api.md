@@ -228,31 +228,28 @@ export MODELTAPS_API_KEY=sk-替换为你的key
 
 ### Goose {#goose}
 
-Claude 模型用 Goose 内置的 Anthropic provider，host 指向 `/coding-agent`（不带 `/v1`：Goose 会自己补 `/v1/messages`）。这个 provider 会自己加提示缓存标记。
+把 Modeltaps 加成一个单独的提供商，它的模型就会在 Goose 的模型切换里归在同一个名字下：
 
-```bash
-export GOOSE_PROVIDER=anthropic
-export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
-export GOOSE_MODEL=claude-sonnet-5-5
-goose configure   # 选 Anthropic，输入 API Key
-```
+1. 在桌面版打开 **设置 → 模型 → 配置提供商**，点 **添加提供商**，选 **手动配置**。
+2. 类型保持 **OpenAI 兼容**。显示名称填 `Modeltaps`，API 地址填 `https://your-modeltaps-domain.com/coding-agent`（不带 `/v1`：Goose 会自己补 `/v1/chat/completions`），API 基础路径留空，勾选需要 API 密钥并粘贴，可用模型填你要用的模型（逗号分隔），保持支持流式响应。
+3. 点 **创建提供商** 并选一个默认模型。之后在聊天框下方的模型按钮里随时切换。
 
-其他模型在 `~/.config/goose/custom_providers/modeltaps.json` 加一个自定义的 OpenAI 兼容 provider，再在 `~/.config/goose/config.yaml` 设 `GOOSE_PROVIDER: modeltaps` 和 `GOOSE_MODEL`：
+Goose 会把密钥存进系统钥匙串，并把提供商写到 `~/.config/goose/custom_providers/`；命令行版读的是同一个文件：
 
 ```json
 {
-  "name": "modeltaps",
+  "name": "custom_modeltaps",
   "engine": "openai",
   "display_name": "Modeltaps",
-  "api_key_env": "MODELTAPS_API_KEY",
-  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
-  "dynamic_models": true,
-  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+  "api_key_env": "CUSTOM_MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent",
+  "supports_streaming": true,
+  "models": [{ "name": "claude-sonnet-5-5" }, { "name": "gpt-5.5" }, { "name": "deepseek-v4-pro" }]
 }
 ```
 
-- `dynamic_models` 让 Goose 的模型列表取自你的 Key 可调用的模型。
-- `goose configure` 会把 Key 存进系统钥匙串。桌面版里同样的设置在「设置 → 模型」。
+- 这样配置 Claude 模型照样能用提示缓存：缓存标记由网关自动添加。
+- 可用模型列表随时可以增删；Goose 只显示列出的模型。
 
 ### 其他编程 Agent {#other-coding-agents}
 

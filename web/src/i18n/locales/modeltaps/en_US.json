@@ -5495,14 +5495,10 @@
       "keyInLink": "The link contains the key: don't share it. To revoke it later, disable the key on the API Keys page."
     },
     "steps": {
-      "gooseAnthropic": [
-        "Open Goose and go to Settings → Models, then configure providers.",
-        "Pick Anthropic and enter the ANTHROPIC_HOST and API key below.",
-        "Choose the model below."
-      ],
       "gooseCustom": [
-        "In Goose, go to Settings → Models and add a custom provider of the OpenAI-compatible type.",
-        "Enter the API URL and API key below, and the model name."
+        "In Goose, open Settings → Models → Configure providers, click Add provider and choose Manual configuration.",
+        "Keep the type OpenAI compatible and fill in the display name, API URL, API key and models below; leave the base path empty and keep streaming on.",
+        "Click Create provider and pick a default model. Switch models later from the model button under the chat box."
       ],
       "hermes": [
         "Run hermes model and choose a custom OpenAI-compatible endpoint.",
@@ -5543,17 +5539,17 @@
       "mergeToml": "Add to the file; if it already sets model_provider or model, replace those lines.",
       "shellSession": "Applies to the current terminal. To keep it, add the lines to your shell profile (~/.zshrc or ~/.bashrc).",
       "keyEnv": "The config reads the key from this environment variable. Add the line to your shell profile, or load it from your system keychain.",
-      "gooseConfig": "In the desktop app the same settings are under Settings → Models.",
-      "gooseKey": "Then run this, choose Anthropic and enter the API key when asked: Goose keeps it in the system keychain.",
+      "gooseConfig": "The desktop app writes the same files when you add the provider in its settings; the key goes into the system keychain.",
       "openclawCommand": "Works for the OpenClaw CLI and the desktop app. Restart OpenClaw afterwards.",
       "openclawConfig": "Merge into ~/.openclaw/openclaw.json, then restart OpenClaw.",
       "openaiBase": "OpenAI-compatible base URL: for tools that ask for an OpenAI API address.",
       "anthropicBase": "Anthropic-compatible base URL, without /v1: the tool appends /v1/messages itself.",
       "apiKey": "API key",
-      "cursorPublic": "Cursor calls the model from its own servers, and this address is only reachable from this computer or network: use the site's public address."
+      "cursorPublic": "Cursor calls the model from its own servers, and this address is only reachable from this computer or network: use the site's public address.",
+      "gooseCli": "For the Goose CLI with a Claude model, the built-in Anthropic provider also works: run these in the terminal before goose."
     },
     "modelHint": {
-      "goose": "Claude models use Goose's built-in Anthropic provider, which sends prompt cache markers; other models use a custom OpenAI-compatible provider.",
+      "goose": "Goose talks to every model the same way; Claude models still get prompt caching, as the gateway adds the cache markers. Add or remove models in the list at any time.",
       "opencode": "Claude models use the Anthropic protocol so prompt caching can work; other models use the OpenAI-compatible one."
     },
     "agent": {

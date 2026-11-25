@@ -13,7 +13,8 @@ import {
   isPrivateAddress,
   pickModel,
   providerIdFor,
-  searchTools
+  searchTools,
+  suggestModels
 } from './tools';
 
 const base = 'https://gw.example.com';
@@ -124,19 +125,36 @@ describe('tool guides', () => {
     expect(env.code).toBe(`export ${KEY_ENV}="${key}"`);
   });
 
-  it('Goose fills the Anthropic host for Claude models and the OpenAI URL for others', () => {
-    const claude = guide('goose');
+  it('Goose gets a provider of its own with a model list, the address without /v1', () => {
+    const models = ['gpt-5.5', 'claude-opus-5-5', 'claude-sonnet-5-5', 'deepseek-v4-pro', 'kimi-k2.5', 'kimi-k2.6', 'other'];
+    const claude = guide('goose', { models, siteName: 'Modeltaps' });
     expect(claude.primary.fields.map((f) => [f.label, f.value])).toEqual([
-      ['ANTHROPIC_HOST', `${base}/coding-agent`],
-      ['ANTHROPIC_API_KEY', key],
-      ['Model', 'claude-sonnet-5-5']
+      ['Display name', 'Modeltaps'],
+      ['API URL', `${base}/coding-agent`],
+      ['API Key', key],
+      ['Models', 'claude-sonnet-5-5, claude-opus-5-5, gpt-5.5, deepseek-v4-pro, kimi-k2.6']
     ]);
     expect(method(claude, 'command').blocks[0].code).toContain('export GOOSE_PROVIDER="anthropic"');
     expect(claude.cache).toBe('verified');
-    const gpt = guide('goose', { model: 'gpt-5.5' });
-    expect(gpt.primary.fields[0].value).toBe(`${base}/coding-agent/v1`);
-    expect(JSON.parse(gpt.manual.blocks[0].code)).toMatchObject({ engine: 'openai', api_key_env: KEY_ENV, dynamic_models: true });
+    expect(JSON.parse(claude.manual.blocks[0].code)).toMatchObject({
+      engine: 'openai',
+      api_key_env: KEY_ENV,
+      base_url: `${base}/coding-agent`
+    });
+    const gpt = guide('goose', { model: 'gpt-5.5', models });
+    expect(method(gpt, 'command')).toBeUndefined();
+    expect(gpt.primary.fields[3].value.startsWith('gpt-5.5, claude-opus-5-5')).toBe(true);
     expect(gpt.cache).toBe('depends');
+  });
+
+  it('suggestModels puts the chosen model first and caps the list', () => {
+    expect(suggestModels(['claude-opus-5-5', 'x'], 'x')).toEqual(['x', 'claude-opus-5-5']);
+    expect(suggestModels([], '')).toEqual([]);
+    expect(suggestModels(['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'gpt-5.5'], 'm', 3)).toEqual([
+      'm',
+      'claude-opus-5-5',
+      'claude-sonnet-5-5'
+    ]);
   });
 
   it('editor extensions get the /v1 base URL, the key and the model', () => {

@@ -477,8 +477,8 @@ export default function ToolConnectDialog({
   }, [tool, models]);
 
   const guide = useMemo(
-    () => (tool ? buildToolGuide(tool, { base, key, model, anthropic, siteName }) : null),
-    [tool, base, key, model, anthropic, siteName]
+    () => (tool ? buildToolGuide(tool, { base, key, model, models, anthropic, siteName }) : null),
+    [tool, base, key, model, models, anthropic, siteName]
   );
   const modelMissing = tool?.needsModel && !loading && models.length === 0;
   const CacheIcon = guide ? CACHE_ICON[guide.cache] : null;

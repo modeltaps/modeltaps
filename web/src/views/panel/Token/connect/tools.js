@@ -292,6 +292,35 @@ const opencode = {
   verify: 'opencode'
 };
 
+// Models suggested for tools that take a fixed model list (Goose): the chosen model first, then
+// the first available match of each pattern, at most `limit`.
+const SUGGESTED = [
+  /^claude-opus-5-5$/,
+  /^claude-sonnet-5-5$/,
+  /^claude-haiku-5-5$/,
+  /^gpt-5\.5$/,
+  /^gemini-.*-pro$/,
+  /^deepseek-v4-pro$/,
+  /^kimi-k2\.\d+$/,
+  /^glm-5\.\d+$/
+];
+export function suggestModels(ids, model, limit = 8) {
+  const out = model ? [model] : [];
+  for (const re of SUGGESTED) {
+    if (out.length >= limit) break;
+    const hit = (ids || [])
+      .filter((id) => re.test(id))
+      .sort()
+      .pop();
+    if (hit && !out.includes(hit)) out.push(hit);
+  }
+  return out;
+}
+
+// Goose: a provider of its own named after the site, added in Settings → Models → Configure
+// providers → Add provider → Manual (OpenAI compatible), with a model list to switch between.
+// Goose appends /v1/chat/completions to the API address itself. Claude models keep prompt caching
+// this way, as the gateway adds the cache markers (checked with Goose 1.60.2, 2026-11-26).
 const goose = {
   id: 'goose',
   name: 'Goose',
@@ -302,72 +331,59 @@ const goose = {
   docs: '/guide/api#goose',
   needsModel: true,
   primary: 'fields',
-  cache: ({ model, anthropic }) => (anthropic && isClaudeModel(model) ? CACHE.verified : CACHE.depends),
-  // Claude models use Goose's built-in Anthropic provider, which adds cache_control markers on
-  // its own; other models a custom OpenAI-compatible provider with model discovery.
-  methods: ({ base, key, model, providerId, anthropic }) => {
-    if (anthropic && isClaudeModel(model)) {
-      const settings = { GOOSE_PROVIDER: 'anthropic', GOOSE_MODEL: model, ANTHROPIC_HOST: `${base}/coding-agent` };
-      return [
-        {
-          id: 'fields',
-          steps: 'gooseAnthropic',
-          fields: [
-            field('ANTHROPIC_HOST', `${base}/coding-agent`),
-            field('ANTHROPIC_API_KEY', key, { secret: true }),
-            field('Model', model)
-          ]
-        },
-        {
-          id: 'command',
-          blocks: [
-            block([...Object.entries(settings).map(([k, v]) => `export ${k}="${v}"`), `export ANTHROPIC_API_KEY="${key}"`].join('\n'), {
-              note: 'shellSession'
-            })
-          ]
-        },
-        {
-          id: 'file',
-          blocks: [
-            block(
-              Object.entries(settings)
-                .map(([k, v]) => `${k}: ${v}`)
-                .join('\n'),
-              { path: '~/.config/goose/config.yaml', language: 'yaml', note: 'gooseConfig' }
-            ),
-            block('goose configure', { note: 'gooseKey' })
-          ]
-        }
-      ];
-    }
+  cache: ({ model }) => (isClaudeModel(model) ? CACHE.verified : CACHE.depends),
+  methods: ({ base, key, model, models, providerId, siteName, anthropic }) => {
+    const list = suggestModels(models, model);
     const provider = {
       name: providerId,
       engine: 'openai',
-      display_name: 'Modeltaps',
+      display_name: siteName,
       api_key_env: KEY_ENV,
-      base_url: `${base}/coding-agent/v1/chat/completions`,
-      dynamic_models: true,
-      models: [{ name: model, context_limit: 128000 }]
+      base_url: `${base}/coding-agent`,
+      supports_streaming: true,
+      models: list.map((name) => ({ name }))
     };
-    return [
+    const methods = [
       {
         id: 'fields',
         steps: 'gooseCustom',
-        fields: [field('API URL', `${base}/coding-agent/v1`), field('API Key', key, { secret: true }), field('Model', model)]
-      },
-      {
-        id: 'file',
-        blocks: [
-          block(json(provider), { path: `~/.config/goose/custom_providers/${providerId}.json`, language: 'json' }),
-          block(`GOOSE_PROVIDER: ${providerId}\nGOOSE_MODEL: ${model}`, {
-            path: '~/.config/goose/config.yaml',
-            language: 'yaml',
-            note: 'gooseConfig'
-          }),
-          block(exportKey(key), { note: 'keyEnv' })
+        fields: [
+          field('Display name', siteName),
+          field('API URL', `${base}/coding-agent`),
+          field('API Key', key, { secret: true }),
+          field('Models', list.join(', '))
         ]
       }
     ];
+    if (anthropic && isClaudeModel(model)) {
+      methods.push({
+        id: 'command',
+        blocks: [
+          block(
+            [
+              'export GOOSE_PROVIDER="anthropic"',
+              `export GOOSE_MODEL="${model}"`,
+              `export ANTHROPIC_HOST="${base}/coding-agent"`,
+              `export ANTHROPIC_API_KEY="${key}"`
+            ].join('\n'),
+            { note: 'gooseCli' }
+          )
+        ]
+      });
+    }
+    methods.push({
+      id: 'file',
+      blocks: [
+        block(json(provider), { path: `~/.config/goose/custom_providers/${providerId}.json`, language: 'json' }),
+        block(`active_provider: ${providerId}\nproviders:\n  ${providerId}:\n    enabled: true\n    model: ${model}`, {
+          path: '~/.config/goose/config.yaml',
+          language: 'yaml',
+          note: 'gooseConfig'
+        }),
+        block(exportKey(key), { note: 'keyEnv' })
+      ]
+    });
+    return methods;
   },
   verify: 'goose'
 };
@@ -638,11 +654,12 @@ export function searchTools(tools, query) {
 
 // Everything the dialog shows for one tool: the primary method first, then the others with the
 // hand-written config file last, and the caching status.
-export function buildToolGuide(tool, { base, key, model, anthropic, siteName }) {
+export function buildToolGuide(tool, { base, key, model, models, anthropic, siteName }) {
   const ctx = {
     base,
     key: key || KEY_PLACEHOLDER,
     model: model || '',
+    models: models || [],
     anthropic: Boolean(anthropic),
     providerId: providerIdFor(base),
     siteName: siteName || 'Modeltaps'

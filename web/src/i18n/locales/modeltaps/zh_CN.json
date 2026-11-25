@@ -5370,14 +5370,10 @@
       "keyInLink": "链接里含有 Key，不要发给别人；以后不用了，在 API Key 页停用这把 Key 即可。"
     },
     "steps": {
-      "gooseAnthropic": [
-        "打开 Goose，进入「Settings → Models」，配置提供方（providers）。",
-        "选 Anthropic，填入下面的 ANTHROPIC_HOST 和 API Key。",
-        "选择下面这个模型。"
-      ],
       "gooseCustom": [
-        "在 Goose 的「Settings → Models」里添加自定义提供方，类型选 OpenAI 兼容。",
-        "填入下面的 API URL、API Key 和模型名。"
+        "在 Goose 里打开「设置 → 模型 → 配置提供商」，点「添加提供商」，选「手动配置」。",
+        "类型保持「OpenAI 兼容」，填入下面的显示名称、API 地址、API 密钥和可用模型；「API 基础路径」留空，保持「支持流式响应」勾选。",
+        "点「创建提供商」并选一个默认模型。之后在聊天框下方的模型按钮里随时切换。"
       ],
       "hermes": [
         "运行 hermes model，选择自定义的 OpenAI 兼容端点。",
@@ -5418,17 +5414,17 @@
       "mergeToml": "加到文件里；文件里已有 model_provider 或 model 时替换那两行。",
       "shellSession": "只对当前终端生效。要长期生效，把这几行加到 shell 启动文件（~/.zshrc 或 ~/.bashrc）。",
       "keyEnv": "配置从这个环境变量读 Key。把这行加到 shell 启动文件，或改成从系统钥匙串读取。",
-      "gooseConfig": "桌面版里同样的设置在「设置 → 模型」。",
-      "gooseKey": "然后运行这条命令，选 Anthropic，按提示输入 API Key：Goose 会把它存进系统钥匙串。",
+      "gooseConfig": "在桌面版设置里添加提供商时，Goose 会写出同样的文件，密钥存进系统钥匙串。",
       "openclawCommand": "OpenClaw 命令行版和桌面版都适用。运行后重启 OpenClaw。",
       "openclawConfig": "合并进 ~/.openclaw/openclaw.json，然后重启 OpenClaw。",
       "openaiBase": "OpenAI 兼容地址：工具要填 OpenAI API 地址时用这个。",
       "anthropicBase": "Anthropic 兼容地址，不带 /v1：工具会自己补 /v1/messages。",
       "apiKey": "API Key",
-      "cursorPublic": "Cursor 从它自己的服务器调用模型，而这个地址只有本机或内网能访问：请改用站点的公网地址。"
+      "cursorPublic": "Cursor 从它自己的服务器调用模型，而这个地址只有本机或内网能访问：请改用站点的公网地址。",
+      "gooseCli": "命令行版 Goose 用 Claude 模型时，也可以用内置的 Anthropic 提供商：在终端里先运行这几行，再启动 goose。"
     },
     "modelHint": {
-      "goose": "Claude 模型走 Goose 内置的 Anthropic provider，会带上提示缓存标记；其他模型走自定义的 OpenAI 兼容 provider。",
+      "goose": "Goose 对所有模型都用同一种方式请求；Claude 模型照样能用提示缓存，缓存标记由网关自动添加。可用模型列表随时可以增删。",
       "opencode": "Claude 模型走 Anthropic 协议，提示缓存才能生效；其他模型走 OpenAI 兼容协议。"
     },
     "agent": {

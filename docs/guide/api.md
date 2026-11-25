@@ -228,31 +228,28 @@ Add a provider to `~/.config/opencode/opencode.json` and put your API key in `MO
 
 ### Goose {#goose}
 
-For Claude models, use Goose's built-in Anthropic provider and point its host at `/coding-agent` (no `/v1`: Goose appends `/v1/messages`). The provider adds prompt cache markers itself.
+Add Modeltaps as a provider of its own, so its models are listed under one name in Goose's model switcher:
 
-```bash
-export GOOSE_PROVIDER=anthropic
-export ANTHROPIC_HOST=https://your-modeltaps-domain.com/coding-agent
-export GOOSE_MODEL=claude-sonnet-5-5
-goose configure   # choose Anthropic and enter the API key
-```
+1. In the desktop app, open **Settings → Models → Configure providers**, click **Add provider** and choose **Manual configuration**.
+2. Keep the type **OpenAI compatible**. Display name `Modeltaps`, API URL `https://your-modeltaps-domain.com/coding-agent` (no `/v1`: Goose appends `/v1/chat/completions`), leave the base path empty, tick that the provider needs an API key and paste it, list the models you use separated by commas, and keep streaming on.
+3. Click **Create provider** and pick a default model. Switch models later from the model button under the chat box.
 
-For other models, add a custom OpenAI-compatible provider in `~/.config/goose/custom_providers/modeltaps.json`, then set `GOOSE_PROVIDER: modeltaps` and `GOOSE_MODEL` in `~/.config/goose/config.yaml`:
+Goose keeps the key in the system keychain and writes the provider to `~/.config/goose/custom_providers/`; the CLI reads the same file:
 
 ```json
 {
-  "name": "modeltaps",
+  "name": "custom_modeltaps",
   "engine": "openai",
   "display_name": "Modeltaps",
-  "api_key_env": "MODELTAPS_API_KEY",
-  "base_url": "https://your-modeltaps-domain.com/coding-agent/v1/chat/completions",
-  "dynamic_models": true,
-  "models": [{ "name": "gpt-5.5", "context_limit": 128000 }]
+  "api_key_env": "CUSTOM_MODELTAPS_API_KEY",
+  "base_url": "https://your-modeltaps-domain.com/coding-agent",
+  "supports_streaming": true,
+  "models": [{ "name": "claude-sonnet-5-5" }, { "name": "gpt-5.5" }, { "name": "deepseek-v4-pro" }]
 }
 ```
 
-- `dynamic_models` fills Goose's model picker from the models your key can call.
-- `goose configure` keeps the key in the system keychain. In the desktop app the same settings are under Settings → Models.
+- Claude models keep prompt caching this way: the gateway adds the cache markers.
+- Add or remove models in the list at any time; Goose shows only the ones listed.
 
 ### Other coding agents {#other-coding-agents}
 
