@@ -48,7 +48,13 @@ func providerForType(channelType int) (provider providersBase.ProviderInterface)
 			provider = nil
 		}
 	}()
-	return providers.GetProvider(&model.Channel{Type: channelType}, nil)
+	channel := &model.Channel{Type: channelType}
+	if channelType == config.ChannelTypeOpenAI {
+		// The official API reads no balance; OpenAI channels on a relay do, so the type offers it.
+		relay := "https://relay.example"
+		channel.BaseURL = &relay
+	}
+	return providers.GetProvider(channel, nil)
 }
 
 func loadChannelTypeCapabilities() channelTypeCapabilities {

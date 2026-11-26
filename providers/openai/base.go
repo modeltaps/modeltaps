@@ -1,14 +1,15 @@
 package openai
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
-	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/providers/base"
@@ -38,7 +39,7 @@ type OpenAIProvider struct {
 // 创建 OpenAIProvider
 func (f OpenAIProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
 	openAIProvider := CreateOpenAIProvider(channel, "https://api.openai.com")
-	openAIProvider.BalanceAction = true
+	openAIProvider.BalanceAction = !isOfficialOpenAI(channel)
 	// Only OpenAI itself serves the Decisions API; the OpenAI-compatible providers built on
 	// CreateOpenAIProvider do not, so the path is not part of getOpenAIConfig.
 	if channel.Type == config.ChannelTypeOpenAI {
@@ -66,8 +67,27 @@ func CreateOpenAIProvider(channel *model.Channel, baseURL string) *OpenAIProvide
 	if channel.Type == config.ChannelTypeOpenAI {
 		OpenAIProvider.SupportStreamOptions = true
 	}
+	if isOfficialOpenAI(channel) {
+		OpenAIProvider.BalanceAction = false
+	}
 
 	return OpenAIProvider
+}
+
+// isOfficialOpenAI reports whether an OpenAI channel talks to OpenAI itself. Its
+// /v1/dashboard/billing endpoints only take a browser session key and refuse every API key, so
+// the balance is not read there (the account cost report reads the spend with an admin key);
+// OpenAI-compatible relays that serve these endpoints keep the balance.
+func isOfficialOpenAI(channel *model.Channel) bool {
+	if channel.Type != config.ChannelTypeOpenAI {
+		return false
+	}
+	baseURL := strings.TrimSpace(channel.GetBaseURL())
+	if baseURL == "" {
+		return true
+	}
+	u, err := url.Parse(baseURL)
+	return err == nil && strings.EqualFold(u.Hostname(), "api.openai.com")
 }
 
 func getOpenAIConfig(baseURL string, channel *model.Channel) base.ProviderConfig {
