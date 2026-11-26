@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common/config"
@@ -212,10 +213,16 @@ func TestFetchPricedModels(t *testing.T) {
 		requester.InitHttpClient()
 	}
 	withCostSettings(t, model.SupplyCostOrderPriority, 95, 5)
-	var asked []string
+	// The endpoint lookups run on several workers, so the handler records paths under a lock.
+	var (
+		mu    sync.Mutex
+		asked []string
+	)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		mu.Lock()
 		asked = append(asked, r.URL.Path)
+		mu.Unlock()
 		switch r.URL.Path {
 		case "/v1/models":
 			if r.URL.Query().Get("output_modalities") != "" {
