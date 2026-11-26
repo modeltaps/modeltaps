@@ -11,6 +11,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/accountcost"
+	providersBase "github.com/modeltaps/modeltaps/providers/base"
 
 	"github.com/gin-gonic/gin"
 )
@@ -150,10 +151,12 @@ func refreshAllAccountDailyCosts(channels []*model.Channel) {
 			dailyCostFetched[account] = now
 		}
 		dailyCostFetchedMu.Unlock()
-		if !due {
+		if !due || !backgroundReadAllowed(channel, backgroundReadDailyCost) {
 			continue
 		}
-		if err := refreshChannelDailyCosts(channel, now); err != nil {
+		err := refreshChannelDailyCosts(channel, now)
+		noteBackgroundRead(channel, backgroundReadDailyCost, err)
+		if err != nil && !errors.Is(err, providersBase.ErrKeyRejected) {
 			logger.SysError("daily cost report failed for channel " + channel.Name + " (ID " + strconv.Itoa(channel.Id) + "): " + err.Error())
 		}
 	}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // creditsResponse 是 `GET /v1/credits` 的响应：团队余额与累计消耗（USD 字符串），普通 API key 即可查询。
@@ -24,7 +26,7 @@ func (p *VercelProvider) Balance() (float64, error) {
 	resp := &creditsResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "")
 	}
 
 	balance, err := strconv.ParseFloat(resp.Balance, 64)

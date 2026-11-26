@@ -5331,6 +5331,7 @@
       "credential": "Credential refresh failed",
       "model_consistency": "Model details missing",
       "cost_mismatch": "Upstream charges",
+      "key_rejected": "Upstream refused the key",
       "price_source": "Price source issue"
     },
     "subject": {
@@ -5361,6 +5362,10 @@
         "review": "The official price of {{model}} ended on {{day}} and no new price is published yet: check the vendor's page and set the price if it changed"
       },
       "credential": "Requests will fail once the current token expires; sign in again on the channel",
+      "keyRejected": {
+        "balance": "The upstream refused the channel's key for the balance, so the scheduled balance refresh stopped. Fix the key or management key; saving the channel with a new key starts it again",
+        "daily_cost": "The upstream refused the management key for the account cost report, so its scheduled read stopped. Fix the management key; saving the channel with a new key starts it again"
+      },
       "consistency": "{{model}} generates images, but its output modalities lack image",
       "cost": {
         "higher": "{{model}}: the upstream billed more than the price list says (last 3 days). Requests may lose money; check the channel's price, fee rate or cost ratio",

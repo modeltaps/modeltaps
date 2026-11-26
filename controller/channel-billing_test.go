@@ -56,7 +56,7 @@ func setupBalanceTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open in-memory database: %v", err)
 	}
-	if err := testDB.AutoMigrate(&model.Channel{}); err != nil {
+	if err := testDB.AutoMigrate(&model.Channel{}, &model.Alert{}); err != nil {
 		t.Fatalf("migrate channels: %v", err)
 	}
 	oldDB := model.DB

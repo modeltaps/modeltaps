@@ -31,6 +31,8 @@ describe('upstream charges', () => {
     expect(x.text).toContain('alerts.item.cost.higher');
     expect(describeAlertItem(t, 'cost_mismatch', 'daily|lower').text).toBe('alerts.item.cost.daily_lower');
     expect(alertTarget({ kind: 'cost_mismatch', channel_id: 3 })).toContain('tab=performance');
+    expect(alertTarget({ kind: 'key_rejected', channel_id: 4 })).toContain('tab=connection');
+    expect(describeAlertItem(t, 'key_rejected', 'balance')).toEqual({ tone: 'warn', text: 'alerts.item.keyRejected.balance' });
   });
 });
 

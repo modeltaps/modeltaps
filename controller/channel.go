@@ -298,6 +298,9 @@ func UpdateChannel(c *gin.Context) {
 		})
 		return
 	}
+	if getErr == nil {
+		clearKeyRejectedOnKeyChange(oldChannel, channel.Id)
+	}
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	// Models this edit added that only get a catalog row there are attached afterwards.
 	var supplyAfter []ChannelSupplyNames

@@ -1,7 +1,7 @@
 package recraftAI
 
 import (
-	"errors"
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 type Response struct {
@@ -22,7 +22,7 @@ func (p *RecraftProvider) Balance() (float64, error) {
 	var info Response
 	_, errWithCode := p.Requester.SendRequest(req, &info, false)
 	if errWithCode != nil {
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "")
 	}
 
 	balance := 0.0

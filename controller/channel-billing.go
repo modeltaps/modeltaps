@@ -166,6 +166,14 @@ func UpdateChannelBalance(c *gin.Context) {
 		return
 	}
 	balance, err := updateChannelBalance(channel)
+	// An admin asked for this read, so it runs even when the scheduled one is stopped; its
+	// outcome stops or starts the scheduled one again.
+	switch {
+	case errors.Is(err, errUsageWindowsUpdated):
+		noteBackgroundRead(channel, backgroundReadBalance, nil)
+	case !errors.Is(err, errBalanceNotSupported):
+		noteBackgroundRead(channel, backgroundReadBalance, err)
+	}
 	if err != nil {
 		if errors.Is(err, errUsageWindowsUpdated) {
 			fresh, _ := model.GetChannelById(id)
@@ -214,9 +222,22 @@ func updateAllChannelsBalance() error {
 		if channel.Status != config.ChannelStatusEnabled {
 			continue
 		}
+		// A refused key stops the read, other failures wait longer each time (see
+		// channel_background_reads.go).
+		if !backgroundReadAllowed(channel, backgroundReadBalance) {
+			continue
+		}
 		balance, err := updateChannelBalance(channel)
+		if errors.Is(err, errBalanceNotSupported) {
+			continue
+		}
+		if errors.Is(err, errUsageWindowsUpdated) {
+			noteBackgroundRead(channel, backgroundReadBalance, nil)
+			continue
+		}
+		noteBackgroundRead(channel, backgroundReadBalance, err)
 		if err != nil {
-			if !errors.Is(err, errBalanceNotSupported) && !errors.Is(err, errUsageWindowsUpdated) {
+			if !errors.Is(err, providersBase.ErrKeyRejected) {
 				logger.SysError(fmt.Sprintf("update balance failed for channel %s (ID %d): %s", channel.Name, channel.Id, err.Error()))
 			}
 			continue

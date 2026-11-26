@@ -3,6 +3,8 @@ package requesty
 import (
 	"errors"
 	"net/http"
+
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // manageBaseURL hosts Requesty's management API, which the balance belongs to.
@@ -25,10 +27,7 @@ func (p *RequestyProvider) Balance() (float64, error) {
 	resp := &orgResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		if errWithCode.StatusCode == http.StatusUnauthorized || errWithCode.StatusCode == http.StatusForbidden {
-			return 0, errors.New("the Requesty balance needs a key with manage permission: set the channel's management key")
-		}
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "the Requesty balance needs a key with manage permission: set the channel's management key")
 	}
 	if resp.Balance == nil {
 		return 0, errors.New("Requesty returned no balance")

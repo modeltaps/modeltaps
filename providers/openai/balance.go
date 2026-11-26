@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +24,7 @@ func (p *OpenAIProvider) Balance() (float64, error) {
 	var subscription OpenAISubscriptionResponse
 	_, errWithCode := p.Requester.SendRequest(req, &subscription, false)
 	if errWithCode != nil {
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "")
 	}
 
 	now := time.Now()
@@ -43,7 +42,7 @@ func (p *OpenAIProvider) Balance() (float64, error) {
 	usage := OpenAIUsageResponse{}
 	_, errWithCode = p.Requester.SendRequest(req, &usage, false)
 	if errWithCode != nil {
-		return 0, errWithCode
+		return 0, base.UpstreamReadError(errWithCode, "")
 	}
 
 	balance := subscription.HardLimitUSD - usage.TotalUsage/100

@@ -18,6 +18,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // ErrNotSupported says the channel's upstream has no daily cost report this package can read.
@@ -125,7 +126,7 @@ func getJSON(channel *model.Channel, reqURL string, headers map[string]string, o
 		return err
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return fmt.Errorf("the upstream refused the management key (HTTP %d): %s", resp.StatusCode, snippet(body))
+		return base.KeyRejected(fmt.Sprintf("the upstream refused the management key (HTTP %d): %s", resp.StatusCode, snippet(body)))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("the cost report returned HTTP %d: %s", resp.StatusCode, snippet(body))

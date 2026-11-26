@@ -18,12 +18,13 @@ import (
 // alertListKinds are the alert kinds the admin list shows; the rest (as the pending price
 // changes a sync keeps for the next one) are bookkeeping.
 var alertListKinds = map[string]bool{
-	"model_drift":       true,
-	"price_change":      true,
-	"credential":        true,
-	"model_consistency": true,
-	"cost_mismatch":     true,
-	"price_source":      true,
+	"model_drift":        true,
+	"price_change":       true,
+	"credential":         true,
+	"model_consistency":  true,
+	"cost_mismatch":      true,
+	"price_source":       true,
+	keyRejectedAlertKind: true,
 }
 
 // alertClosedDays is how far back the list of closed alerts goes.

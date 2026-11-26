@@ -3,6 +3,8 @@ package cheaperinference
 import (
 	"errors"
 	"net/http"
+
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // balanceResponse is `GET /v1/account/balance`: the wallet in USD. available_usd is the balance
@@ -24,11 +26,7 @@ func (p *CheaperInferenceProvider) Balance() (float64, error) {
 	resp := &balanceResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		switch errWithCode.StatusCode {
-		case http.StatusUnauthorized, http.StatusForbidden:
-			return 0, errors.New("the Cheaper Inference balance needs a key with the account:read scope: set the channel's management key")
-		}
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "the Cheaper Inference balance needs a key with the account:read scope: set the channel's management key")
 	}
 	balance, ok := resp.spendable()
 	if !ok {

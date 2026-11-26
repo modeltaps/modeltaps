@@ -3,6 +3,8 @@ package venice
 import (
 	"errors"
 	"net/http"
+
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // balanceResponse is `GET /billing/balance` (beta). Each balance is null when the account has
@@ -50,11 +52,11 @@ func (p *VeniceProvider) Balance() (float64, error) {
 	resp := &balanceResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		switch errWithCode.StatusCode {
-		case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden:
-			return 0, errors.New("Venice refused the key for the balance: check the channel key, or set a management key that can read billing")
+		const refused = "Venice refused the key for the balance: check the channel key, or set a management key that can read billing"
+		if errWithCode.StatusCode == http.StatusPaymentRequired {
+			return 0, errors.New(refused)
 		}
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, refused)
 	}
 	balance := resp.spendable()
 	p.Channel.UpdateBalance(balance)

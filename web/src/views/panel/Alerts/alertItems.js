@@ -6,9 +6,9 @@ import { timestamp2string } from 'utils/common';
 // "renamed:a → b", "gone:a", "stopped:m", "unsupplied:m", "held" for model drift;
 // "raised|m|in|out|in|out", "held|…", "locked|…", "scheduled|…" and "review|m|day|source" for
 // price changes; "cost|m|higher|lower" and "daily|higher|lower" for upstream charges that differ
-// from the price list; "refresh failed" for
-// credentials; a model name for model consistency; "reason|failing since|last success" for a
-// price source that stopped updating (reason read, shrank or zeroed);
+// from the price list; "refresh failed" for credentials; "balance" and "daily_cost" for the
+// reads whose key the upstream refused; a model name for model consistency;
+// "reason|failing since|last success" for a price source that stopped updating (reason read, shrank or zeroed);
 // "official|m|in|out|models.dev in|models.dev out" for a built-in official price models.dev differs from.
 export function describeAlertItem(t, kind, item) {
   if (kind === 'model_drift') {
@@ -59,6 +59,9 @@ export function describeAlertItem(t, kind, item) {
     }
   }
   if (kind === 'credential') return { tone: 'warn', text: t('alerts.item.credential') };
+  if (kind === 'key_rejected' && ['balance', 'daily_cost'].includes(item)) {
+    return { tone: 'warn', text: t(`alerts.item.keyRejected.${item}`) };
+  }
   if (kind === 'model_consistency') return { tone: 'info', text: t('alerts.item.consistency', { model: item }) };
   return { tone: 'info', text: item };
 }
@@ -67,7 +70,12 @@ export function describeAlertItem(t, kind, item) {
 // catalog.
 export function alertTarget(alert) {
   if (alert.channel_id) {
-    const tab = alert.kind === 'credential' ? 'connection' : alert.kind === 'cost_mismatch' ? 'performance' : 'models';
+    const tab =
+      alert.kind === 'credential' || alert.kind === 'key_rejected'
+        ? 'connection'
+        : alert.kind === 'cost_mismatch'
+          ? 'performance'
+          : 'models';
     return `${admin.providers(alert.channel_id)}?tab=${tab}`;
   }
   if (alert.kind === 'price_change' || alert.kind === 'model_consistency') return admin.models();

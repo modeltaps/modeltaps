@@ -6,6 +6,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 // ErrNoKeyLimit 表示 OpenRouter key 没有设置消费上限：`GET /api/v1/key` 只能看到这把 key 的
@@ -88,10 +89,7 @@ func (p *OpenRouterProvider) fetchAccountBalance(manageKey string) (float64, err
 	resp := &creditsResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		if errWithCode.StatusCode == http.StatusUnauthorized || errWithCode.StatusCode == http.StatusForbidden {
-			return 0, errors.New("the OpenRouter account balance needs a management key: check the channel's management key")
-		}
-		return 0, errors.New(errWithCode.OpenAIError.Message)
+		return 0, base.UpstreamReadError(errWithCode, "the OpenRouter account balance needs a management key: check the channel's management key")
 	}
 	return resp.Data.TotalCredits - resp.Data.TotalUsage, nil
 }
@@ -107,7 +105,7 @@ func (p *OpenRouterProvider) fetchKeyInfo() (*keyInfo, error) {
 	resp := &keyInfoResponse{}
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
-		return nil, errors.New(errWithCode.OpenAIError.Message)
+		return nil, base.UpstreamReadError(errWithCode, "")
 	}
 	return &resp.Data, nil
 }
