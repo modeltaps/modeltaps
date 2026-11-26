@@ -136,6 +136,13 @@ func (u *Usage) GetExtraTokens() map[string]int {
 	if u.CacheReadInputTokens > 0 && u.PromptTokensDetails.CachedReadTokens == 0 {
 		u.PromptTokensDetails.CachedReadTokens = u.CacheReadInputTokens
 	}
+	// Some gateways (Venice) report one cache hit twice: as prompt_tokens_details.cached_tokens
+	// and as the top-level cache_read_input_tokens. Counted under both kinds, the hit was taken off
+	// the input twice, which drove the price below zero. It counts once, as a cache read.
+	if d := &u.PromptTokensDetails; d.CachedReadTokens > 0 && d.CachedTokens == d.CachedReadTokens &&
+		u.ExtraTokens[config.UsageExtraCache] == d.CachedTokens {
+		delete(u.ExtraTokens, config.UsageExtraCache)
+	}
 	// Requesty's cache writes, split by TTL when it says; a total without a split counts as 5m.
 	if d := &u.PromptTokensDetails; d.RequestyCachingTokens > 0 && d.CachedWriteTokens == 0 && d.CachedWrite1hTokens == 0 {
 		if det := d.RequestyCachingDetails; det != nil && det.Caching5mTokens+det.Caching1hTokens > 0 {

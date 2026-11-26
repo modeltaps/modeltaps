@@ -85,3 +85,33 @@ func TestGetExtraTokensVeniceCacheWrite(t *testing.T) {
 		t.Fatalf("cache write = %v", extra)
 	}
 }
+
+// Venice reports one cache hit twice, as cached_tokens and as cache_read_input_tokens (body as
+// Venice returned it for deepseek-v4-1-flash-uncensored). It counts once, as a cache read.
+func TestGetExtraTokensVeniceCacheHitCountsOnce(t *testing.T) {
+	var u Usage
+	body := `{"prompt_tokens":3931,"completion_tokens":3,"total_tokens":3934,"prompt_tokens_details":{"cached_tokens":3840},"cache_read_input_tokens":3840}`
+	if err := json.Unmarshal([]byte(body), &u); err != nil {
+		t.Fatal(err)
+	}
+	extra := u.GetExtraTokens()
+	if extra[config.UsageExtraCachedRead] != 3840 {
+		t.Fatalf("cached_read = %d, want 3840", extra[config.UsageExtraCachedRead])
+	}
+	if _, ok := extra[config.UsageExtraCache]; ok {
+		t.Fatalf("the hit must not also count as cached_tokens: %v", extra)
+	}
+	// A second call (billing reads it more than once) gives the same answer.
+	if _, ok := u.GetExtraTokens()[config.UsageExtraCache]; ok {
+		t.Fatalf("second call counted the hit twice")
+	}
+
+	// OpenAI's own format, cached_tokens alone, is unchanged.
+	var openai Usage
+	if err := json.Unmarshal([]byte(`{"prompt_tokens":2000,"prompt_tokens_details":{"cached_tokens":1500}}`), &openai); err != nil {
+		t.Fatal(err)
+	}
+	if got := openai.GetExtraTokens()[config.UsageExtraCache]; got != 1500 {
+		t.Fatalf("cached_tokens = %d, want 1500", got)
+	}
+}
