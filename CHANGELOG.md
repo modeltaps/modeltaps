@@ -16,6 +16,27 @@ heaviest supplies of a tier stay in it and each lighter weight moves to a tier o
 below. Models that follow the call order already shared their tiers by weight and do not change.
 The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint are removed.
 
+Traditional Chinese is no longer offered. Accounts and sites that chose it, and browsers asking
+for any Chinese variant, get Simplified Chinese; nothing needs to be changed. The console's
+Develop section is now named API.
+
+### Added
+
+- "Connect a tool" on the API keys page replaces the OpenClaw setup dialog. It is a directory of
+  tools (popular ones first, a search box, tools grouped by kind) that fills in the site address,
+  the key and a default model. Each tool leads with the way to connect it that asks the least:
+  a one-click import into CC Switch (Claude Code, Codex, OpenCode, Gemini CLI, Hermes, OpenClaw)
+  or Cherry Studio, numbered steps with the base URL, key and model to paste (Cursor, Cline, Roo
+  Code, Kilo Code, Goose, Open WebUI, LobeChat), a single command, or letting an AI agent set it
+  up with a pairing code. The hand-written config file comes last. It opens from a key's menu,
+  the header Connect popover and the new key dialog, and says how to check the setup and how far
+  prompt caching is confirmed for each tool. Import links carry the full key, so they stay off
+  until the key is known and offer to create one. Cursor warns when the site address is private.
+- Goose is recognised by its `Agent-Session-Id` header (it sends no User-Agent), logged as Goose
+  and listed in organization usage. Its setup adds a provider named after the site with a list of
+  suggested models; Claude models keep prompt caching.
+- `skill.md` and the API guide cover OpenCode and Goose.
+
 ### Changed
 
 - The providers page names the call order in tiers: "Join the tier above" and "Own tier"
@@ -70,10 +91,25 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
 - Four dialogs whose content ran to the edges get the usual padding: own policy limits, the
   billing note of the models page, the price update check and the batch supplies dialog.
 
+- The model catalog's batch bar offers "select all N matching" for every row the filters match,
+  not only the current page. Model names keep 20rem and are cut in the middle, so a variant at the
+  end stays visible; release date and cheapest-vs-sell start hidden.
+- Input and output prices have their own columns in the model catalog and the model list.
+- The user model table gains context and release date columns, plus opt-in max output,
+  modalities, capabilities and open weights columns. The public model info list carries
+  `released_at` and `open_weights`.
+- The providers page shows dropped, renamed and new upstream models in a narrow Model changes
+  column, with the details in its tooltip; a click opens the channel's models tab.
+- The language picker moved from the header to the footer of the home and public pages. Its
+  dialog shows each language's flag and name, and languages are listed by their ISO 639-1 code
+  (English, Japanese, Chinese).
+- OpenRouter uses its one-color mark, which reads on the light theme.
+
 ### Removed
 
 - The supply mode (balance or failover) on the settings page, on a model's Supplies tab and in
   the model list's batch actions.
+- Traditional Chinese from the console, the language pickers and the default-language setting.
 
 ### Fixed
 
@@ -84,6 +120,29 @@ The `SupplyModeDefault` setting and the `POST /api/model_supply/mode` endpoint a
   endpoints cheapest first), requests carry that order as `provider.order`, and the channel's
   cost is the first endpoint's price. Models the vendor does not host there are ordered against
   the median-priced endpoint.
+- Chat clients now see the thinking of newer Claude models on `/v1/chat/completions`. Vercel
+  channels ask for summarized thinking, which the newest models otherwise leave empty;
+  `reasoning` from Vercel, Requesty, Venice and CheaperInference is renamed to
+  `reasoning_content`; and Claude channels give Opus 4.6, Sonnet 4.6 and later models adaptive
+  thinking with the effort in `output_config` instead of a token budget they reject.
+  `reasoning_effort` turns thinking on.
+- Databricks channels use adaptive thinking for the same models and read responses whose content
+  is a list of reasoning and text blocks, which used to fail the request. Not yet checked against
+  a live Databricks endpoint.
+- A balance read that the upstream refuses with 401 or 403 stops that channel's scheduled reads,
+  opens a "key rejected" alert and sends one notice, instead of retrying every hour until the
+  upstream locks the account. Reads start again once the channel is saved with another key or a
+  manual refresh works; other failures wait an hour, doubling up to a day.
+- OpenAI channels on the official API no longer try to read a balance, which that API refuses for
+  every API key. OpenAI channels on a relay still read it.
+- A prompt cache hit reported in two fields (Venice) is counted once. It used to come off the
+  input twice, so the channel cost fell to almost nothing and hid the margin.
+- Reloading a console page whose path contains `/models` returns the app instead of a JSON 404.
+
+### Security
+
+- `gorilla/websocket` is pinned to the upstream commit that fixes GO-2026-6278 (a WebSocket mask
+  key from a weak random source); no tagged release carries the fix yet.
 
 ## [0.7.4] - 2026-11-21
 
