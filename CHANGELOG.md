@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Upgrading
+## [0.7.5] - 2026-11-28
+
+### Upgrading from 0.7.4
 
 The failover supply mode is gone: a tier now always shares its requests by weight, and a supply
 that should only back up another goes in the tier below. Models set by hand that used failover
