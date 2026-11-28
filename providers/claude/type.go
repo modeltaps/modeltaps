@@ -323,7 +323,27 @@ type ClaudeStreamResponse struct {
 	Delta        Delta          `json:"delta,omitempty"`
 	ContentBlock ContentBlock   `json:"content_block,omitempty"`
 	Usage        Usage          `json:"usage,omitempty"`
-	Error        *ClaudeError   `json:"error,omitempty"`
+	// Error is the error of an "error" event: {"type":"error","error":{"type":...,"message":...}}.
+	Error *ClaudeErrorInfo `json:"error,omitempty"`
+}
+
+// streamError is the error event of a stream as a full error object.
+func (r *ClaudeStreamResponse) streamError() *ClaudeError {
+	if r.Error == nil {
+		return nil
+	}
+	return &ClaudeError{Type: "error", ErrorInfo: *r.Error}
+}
+
+// StreamErrorEvent is an error event to hand to a client that reads the Messages stream. Its
+// text is the event's data line, so the client can parse it like the upstream's own.
+type StreamErrorEvent struct {
+	ClaudeError
+}
+
+func (e *StreamErrorEvent) Error() string {
+	body, _ := json.Marshal(e.ClaudeError)
+	return "data: " + string(body) + "\n\n"
 }
 
 type ContentBlock struct {

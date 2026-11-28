@@ -231,13 +231,13 @@ func (h *ClaudeRelayStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan 
 		return
 	}
 
-	if claudeResponse.Error != nil {
+	if streamErr := claudeResponse.streamError(); streamErr != nil {
 		if h.AddEvent {
 			event := "event: error\n"
 			dataChan <- event
 		}
 
-		errChan <- claudeResponse.Error
+		errChan <- &StreamErrorEvent{ClaudeError: *streamErr}
 		return
 	}
 
