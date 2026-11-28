@@ -211,7 +211,27 @@ func (u *Usage) GetExtraTokens() map[string]int {
 		u.ExtraTokens[config.UsageExtraReasoning] = u.CompletionTokensDetails.ReasoningTokens
 	}
 
+	u.includeCacheInPrompt()
+
 	return u.ExtraTokens
+}
+
+// includeCacheInPrompt adds the cache tokens to the prompt tokens when the upstream left them
+// out. The cache prices are applied as a correction to a prompt count that contains the cached
+// tokens (the OpenAI convention). Some OpenAI-compatible upstreams report the Anthropic way
+// instead, with the cache reads and writes beside the uncached input; the correction then drove
+// the input below zero and the request cost next to nothing. Cache tokens above the prompt
+// count cannot be part of it, so they are added. It does nothing on a second call.
+func (u *Usage) includeCacheInPrompt() {
+	cache := u.ExtraTokens[config.UsageExtraCache] + u.ExtraTokens[config.UsageExtraCachedRead] +
+		u.ExtraTokens[config.UsageExtraCachedWrite] + u.ExtraTokens[config.UsageExtraCachedWrite1h]
+	if cache <= u.PromptTokens {
+		return
+	}
+	u.PromptTokens += cache
+	if u.TotalTokens > 0 {
+		u.TotalTokens = u.PromptTokens + u.CompletionTokens
+	}
 }
 
 func (u *Usage) SetExtraTokens(key string, value int) {
@@ -321,18 +341,18 @@ type StreamOptions struct {
 	IncludeUsage bool `json:"include_usage,omitempty"`
 }
 
+// IncExtraBilling counts one call of a tool billed per call. The type (search context size,
+// image quality and size) decides the tool's price and is kept from the tool's first call,
+// whichever tool the response used first.
 func (u *Usage) IncExtraBilling(key string, bType string) {
 	if u.ExtraBilling == nil {
 		u.ExtraBilling = make(map[string]ExtraBilling)
-		if _, ok := u.ExtraTokens[key]; !ok {
-			u.ExtraBilling[key] = ExtraBilling{
-				Type:      bType,
-				CallCount: 0,
-			}
-		}
 	}
 
-	billing := u.ExtraBilling[key]
+	billing, ok := u.ExtraBilling[key]
+	if !ok {
+		billing.Type = bType
+	}
 	billing.CallCount++
 	u.ExtraBilling[key] = billing
 }

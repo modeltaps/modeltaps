@@ -115,3 +115,35 @@ func TestGetExtraTokensVeniceCacheHitCountsOnce(t *testing.T) {
 		t.Fatalf("cached_tokens = %d, want 1500", got)
 	}
 }
+
+// An OpenAI-compatible upstream that reports the cache the Anthropic way leaves the cache tokens
+// out of prompt_tokens. They are added, so the cache discount comes off a prompt that holds them.
+func TestGetExtraTokensAddsCacheLeftOutOfPrompt(t *testing.T) {
+	var u Usage
+	body := `{"prompt_tokens":200,"completion_tokens":500,"total_tokens":700,"cache_read_input_tokens":50000,"cache_creation_input_tokens":1000}`
+	if err := json.Unmarshal([]byte(body), &u); err != nil {
+		t.Fatal(err)
+	}
+	extra := u.GetExtraTokens()
+	if extra[config.UsageExtraCachedRead] != 50000 || extra[config.UsageExtraCachedWrite] != 1000 {
+		t.Fatalf("extra tokens = %v", extra)
+	}
+	if u.PromptTokens != 51200 || u.TotalTokens != 51700 {
+		t.Fatalf("prompt = %d, total = %d, want 51200 and 51700", u.PromptTokens, u.TotalTokens)
+	}
+	u.GetExtraTokens()
+	if u.PromptTokens != 51200 {
+		t.Fatalf("a second call changed the prompt to %d", u.PromptTokens)
+	}
+
+	// A prompt that already holds its cached tokens stays as it is.
+	var openai Usage
+	body = `{"prompt_tokens":1200,"completion_tokens":50,"prompt_tokens_details":{"cached_tokens":1000}}`
+	if err := json.Unmarshal([]byte(body), &openai); err != nil {
+		t.Fatal(err)
+	}
+	openai.GetExtraTokens()
+	if openai.PromptTokens != 1200 {
+		t.Fatalf("prompt = %d, want 1200", openai.PromptTokens)
+	}
+}
