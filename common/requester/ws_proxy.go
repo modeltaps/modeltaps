@@ -48,7 +48,9 @@ func NewWSProxy(userConn, supplierConn *websocket.Conn, timeout time.Duration, h
 		timeout:        timeout,
 		handler:        handler,
 		usageHandler:   usageHandler,
-		done:           make(chan struct{}),
+		// Both transfer goroutines report here and Wait reads once: with room for both, the
+		// second one ends instead of blocking for good after every session.
+		done:           make(chan struct{}, 2),
 		userClosed:     make(chan struct{}),
 		supplierClosed: make(chan struct{}),
 	}
