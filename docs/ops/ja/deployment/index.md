@@ -338,6 +338,51 @@ docker compose --profile docs stop docs
 
 実行方法と設定項目はコンテナデプロイと同じです。`.env` / 環境変数で注入することも、`--config ./config.yaml` で設定ファイルを指定することもできます（[コマンドライン引数](./cli.md) を参照）。本番環境では [ベアメタル（手動）デプロイ](#ベアメタル-手動-デプロイ) に従ってディレクトリとファイルの権限を強化してください。
 
+## リバースプロキシ
+
+モデルの応答はストリーミングで返されます。1 回のリクエストが数分続くことがあり、モデルが考えている間は無通信の時間もあります。リバースプロキシを既定の設定のまま使うと、応答がバッファリングされ、60 秒間データがない接続は切断されます。その結果、応答がまとめて一度に届いたり、長い応答が途中で切れたりします。Nginx では、バッファリングの無効化、読み取りタイムアウトの延長、WebSocket アップグレードの許可（リアルタイム用エンドポイント `/v1/realtime` と `/gemini/ws/` は WebSocket を使用します）の 3 点を設定してください。
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    # WebSocket (/v1/realtime, /gemini/ws/)
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    # Streaming responses
+    proxy_buffering off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 128m;
+}
+```
+
+```nginx
+# http {}
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+`map` ブロックは `http {}` に、`location` はサイトの `server {}` に記述します。読み取りタイムアウトは `RELAY_TIMEOUT`（サンプル設定では 600 秒）に合わせてください。より長いリクエストを許可する場合は両方を延ばします。
+
+Caddy の `reverse_proxy` は既定でストリーミング応答を即時に転送し、WebSocket にも対応しているため、追加の設定は不要です。CDN やクラウドのロードバランサーを前段に置く場合は、そのアイドルタイムアウトが上記の読み取りタイムアウトより短くないことを確認してください。
+
+## 本番環境での推奨設定
+
+既定値は試用や小規模サイト向けです。サービスを公開する前に、次の 3 点を確認してください。
+
+- **データベースには MySQL または PostgreSQL を使用する。** SQLite は同時に 1 つの書き込みしか処理できません。同時書き込みは待ち行列に入り、3 秒を超えて待った書き込みは失敗します（課金とログはエラーログに記録されるだけです）。SQLite は試用、個人、数人のチームに向いています。
+- **バッチ更新を有効にする：`BATCH_UPDATE_ENABLED=true`。** 既定では、リクエストごとに複数の行（残高、キーの使用量、チャネルの使用量、ログ）を同期的に書き込むため、負荷が高まるとここがボトルネックになります。有効にすると、これらの書き込みは `BATCH_UPDATE_INTERVAL` 秒（既定 5）ごとにまとめられます。その代わり、画面上の残高と使用量は最大でこの間隔だけ遅れ、プロセスが異常終了すると最後の間隔内で未保存の課金が失われます。
+- **Redis を設定する：`REDIS_CONN_STRING`。** キー、ユーザー、グループの照会がキャッシュから返され、レート制限とセッションアフィニティが複数インスタンス間で一致します。複数インスタンスで運用する場合は必須です。[マルチサーバーでのデプロイ](#マルチサーバーでのデプロイ) を参照してください。
+
 ## サーバーアドレスの設定
 
 サーバーアドレスの出荷時の初期値は `http://localhost:3000` です。サイトを別のドメイン、IP アドレス、ポートで公開する場合（リバースプロキシ経由を含む）は、初回ログイン直後に変更してください。

@@ -338,6 +338,51 @@ docker compose --profile docs stop docs
 
 運行方式與配置項和容器部署一致：既可用 `.env` / 環境變數注入，也可用 `--config ./config.yaml` 指定設定檔（見 [命令列參數](./cli.md)）。生產環境請按 [裸機（手動）部署](#裸機-手動-部署) 收緊目錄與檔案權限。
 
+## 反向代理
+
+模型回覆是串流下發的，一次請求可能持續幾分鐘，中間還會有模型思考時的停頓。反向代理按預設配置會緩衝回應、60 秒無資料就斷開，表現為「半天不出字」或長回覆中途斷掉。Nginx 需要三處設定：關閉緩衝、調大讀取逾時、放行 WebSocket 升級（即時語音介面 `/v1/realtime` 與 `/gemini/ws/` 使用 WebSocket）。
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    # WebSocket (/v1/realtime, /gemini/ws/)
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    # Streaming responses
+    proxy_buffering off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 128m;
+}
+```
+
+```nginx
+# http {}
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+`map` 那一段放在 `http {}` 裡，`location` 放在站點的 `server {}` 裡。讀取逾時建議與 `RELAY_TIMEOUT`（範例配置為 600 秒）一致；允許更長的請求時兩處一起調大。
+
+Caddy 的 `reverse_proxy` 預設就會即時下發串流回應並支援 WebSocket，不需要額外配置。CDN 或雲端負載平衡在前面時，同樣要確認其閒置逾時不小於上面的讀取逾時。
+
+## 生產環境建議
+
+出廠預設值面向試用和小規模站點。對外提供服務前請確認以下三項：
+
+- **數據庫用 MySQL 或 PostgreSQL。** SQLite 同一時刻只能有一個寫入，並發寫入會排隊，等待超過 3 秒的寫入失敗（扣費與日誌只記錯誤日誌）。SQLite 適合試用、個人或幾個人的小團隊。
+- **開啟批次更新：`BATCH_UPDATE_ENABLED=true`。** 預設每個請求都要同步寫多行數據庫（餘額、Key 用量、渠道用量、日誌），並發一高就成為瓶頸。開啟後這些寫入每 `BATCH_UPDATE_INTERVAL` 秒（預設 5）合併一次。代價是介面上的餘額與用量最多滯後這個間隔，行程異常退出時會丟掉最後一個間隔內尚未落庫的扣費。
+- **配置 Redis：`REDIS_CONN_STRING`。** 令牌、用戶與分組的查詢走快取，限流與工作階段固定在多個實例之間保持一致。多實例部署必須配置，見 [多機部署](#多機部署)。
+
 ## 設定伺服器地址
 
 伺服器地址的出廠預設值是 `http://localhost:3000`。只要站點透過其他網域、IP 或連接埠對外訪問（包括經反向代理訪問），首次登入後就要立即修改：

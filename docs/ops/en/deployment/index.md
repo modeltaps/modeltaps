@@ -338,6 +338,51 @@ Besides the container image, the delivery package includes a `modeltaps` executa
 
 Runtime behaviour and configuration keys are the same as for the container deployment: you can inject settings through `.env` / environment variables, or point at a configuration file with `--config ./config.yaml` (see [CLI Options](./cli.md)). In production, tighten directory and file permissions as described in [Bare-metal (manual) deployment](#bare-metal-manual-deployment).
 
+## Reverse proxy
+
+Model answers are streamed. One request can run for minutes, with pauses while the model thinks. A reverse proxy with default settings buffers the response and drops a connection that is silent for 60 seconds, which shows as answers that arrive all at once or long answers cut off midway. Nginx needs three things: buffering off, a longer read timeout, and the WebSocket upgrade (the realtime endpoints `/v1/realtime` and `/gemini/ws/` use WebSocket).
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    # WebSocket (/v1/realtime, /gemini/ws/)
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    # Streaming responses
+    proxy_buffering off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 128m;
+}
+```
+
+```nginx
+# http {}
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+The `map` block goes in `http {}` and the `location` in the site's `server {}`. Keep the read timeout in line with `RELAY_TIMEOUT` (600 seconds in the example configuration); raise both to allow longer requests.
+
+Caddy's `reverse_proxy` streams responses as they arrive and handles WebSocket by default, so it needs no extra settings. With a CDN or a cloud load balancer in front, check that its idle timeout is not shorter than the read timeout above.
+
+## Production settings
+
+The defaults suit a trial or a small site. Before serving real traffic, check these three:
+
+- **Use MySQL or PostgreSQL.** SQLite takes one write at a time: concurrent writes queue, and a write that waits more than 3 seconds fails (for charges and logs, only an error is logged). SQLite is fine for a trial, one person or a team of a few.
+- **Turn on batched updates: `BATCH_UPDATE_ENABLED=true`.** By default every request writes several database rows synchronously (balance, key usage, channel usage, log), which becomes the bottleneck under load. With batching these writes are merged every `BATCH_UPDATE_INTERVAL` seconds (5 by default). The cost: balances and usage on screen lag by up to that interval, and a crash loses the charges of the last interval that were not yet written.
+- **Set up Redis: `REDIS_CONN_STRING`.** Key, user and group lookups are served from cache, and rate limits and session affinity stay consistent across instances. It is required with more than one instance, see [Multi-node deployment](#multi-node-deployment).
+
 ## Setting the server address
 
 The server address defaults to `http://localhost:3000`. Whenever the site is reached through another domain, IP address or port (including through a reverse proxy), change it right after the first sign-in:

@@ -104,6 +104,9 @@ Develop section is now named API.
   dialog shows each language's flag and name, and languages are listed by their ISO 639-1 code
   (English, Japanese, Chinese).
 - OpenRouter uses its one-color mark, which reads on the light theme.
+- The deployment guide has a reverse proxy section (WebSocket upgrade, buffering off, read
+  timeout) and a list of production settings: MySQL or PostgreSQL instead of SQLite, batched
+  updates and Redis.
 
 ### Removed
 
@@ -138,6 +141,20 @@ Develop section is now named API.
 - A prompt cache hit reported in two fields (Venice) is counted once. It used to come off the
   input twice, so the channel cost fell to almost nothing and hid the margin.
 - Reloading a console page whose path contains `/models` returns the app instead of a JSON 404.
+- A request whose upstream reports its cache reads and writes beside the prompt tokens instead
+  of inside them is billed in full. The cache discount used to be taken off a prompt count that
+  did not hold those tokens, so the input went below zero and the whole request cost 1 quota.
+- A tool billed per call in a Responses answer (image generation, web search) keeps its price
+  when another tool was counted first. Before, only the first tool kept its type, so an image
+  generated after a web search was free.
+- `reasoning_effort: "none"` (or `reasoning.effort: "none"`) no longer turns thinking on for
+  Claude models on chat completions. Models that take an effort get the lowest one; Vercel
+  channels do not ask for a thinking summary.
+- An error event in a Claude stream reaches the client as a `data:` line with the upstream's
+  error type and message, on the Messages endpoint and on chat completions. The message used to
+  be lost, and the Messages stream carried a line without the `data:` prefix.
+- A WebSocket session (OpenAI Realtime, Gemini Live) no longer leaves a goroutine behind when it
+  ends.
 
 ### Security
 

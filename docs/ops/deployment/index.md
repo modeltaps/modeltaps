@@ -338,6 +338,51 @@ docker compose --profile docs stop docs
 
 运行方式与配置项和容器部署一致：既可用 `.env` / 环境变量注入，也可用 `--config ./config.yaml` 指定配置文件（见 [命令行参数](./cli.md)）。生产环境请按 [裸机（手动）部署](#裸机-手动-部署) 收紧目录与文件权限。
 
+## 反向代理
+
+模型回复是流式下发的，一次请求可能持续几分钟，中间还会有模型思考时的停顿。反向代理按默认配置会缓冲响应、60 秒无数据就断开，表现为「半天不出字」或长回复中途断掉。Nginx 需要三处设置：关闭缓冲、调大读超时、放行 WebSocket 升级（实时语音接口 `/v1/realtime` 与 `/gemini/ws/` 使用 WebSocket）。
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    # WebSocket (/v1/realtime, /gemini/ws/)
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    # Streaming responses
+    proxy_buffering off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 128m;
+}
+```
+
+```nginx
+# http {}
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+`map` 那一段放在 `http {}` 里，`location` 放在站点的 `server {}` 里。读超时建议与 `RELAY_TIMEOUT`（示例配置为 600 秒）一致；允许更长的请求时两处一起调大。
+
+Caddy 的 `reverse_proxy` 默认就会即时下发流式响应并支持 WebSocket，不需要额外配置。CDN 或云负载均衡在前面时，同样要确认其空闲超时不小于上面的读超时。
+
+## 生产环境建议
+
+出厂默认值面向试用和小规模站点。对外提供服务前请确认以下三项：
+
+- **数据库用 MySQL 或 PostgreSQL。** SQLite 同一时刻只能有一个写入，并发写入会排队，等待超过 3 秒的写入失败（扣费与日志只记错误日志）。SQLite 适合试用、个人或几个人的小团队。
+- **开启批量更新：`BATCH_UPDATE_ENABLED=true`。** 默认每个请求都要同步写多行数据库（余额、Key 用量、渠道用量、日志），并发一高就成为瓶颈。开启后这些写入每 `BATCH_UPDATE_INTERVAL` 秒（默认 5）合并一次。代价是界面上的余额与用量最多滞后这个间隔，进程异常退出时会丢掉最后一个间隔内尚未落库的扣费。
+- **配置 Redis：`REDIS_CONN_STRING`。** 令牌、用户与分组的查询走缓存，限流与会话固定在多个实例之间保持一致。多实例部署必须配置，见 [多机部署](#多机部署)。
+
 ## 设置服务器地址
 
 服务器地址的出厂默认值是 `http://localhost:3000`。只要站点通过其他域名、IP 或端口对外访问（包括经反向代理访问），首次登录后就要立即修改：
