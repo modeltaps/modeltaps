@@ -17,6 +17,8 @@ func TestWithThinkingDisplay(t *testing.T) {
 		{"effort on a new model", `{"model":"anthropic/claude-opus-5.5","reasoning_effort":"low"}`, true},
 		{"reasoning object", `{"model":"anthropic/claude-sonnet-5.5","reasoning":{"max_tokens":2000}}`, true},
 		{"no reasoning asked", `{"model":"anthropic/claude-opus-5.5"}`, false},
+		{"effort none", `{"model":"anthropic/claude-opus-5.5","reasoning_effort":"none"}`, false},
+		{"reasoning object with effort none", `{"model":"anthropic/claude-opus-5.5","reasoning":{"effort":"none"}}`, false},
 		{"model shows thinking already", `{"model":"anthropic/claude-sonnet-4.6","reasoning_effort":"low"}`, false},
 		{"not Claude", `{"model":"openai/gpt-5.5","reasoning_effort":"low"}`, false},
 		{"client set its own", `{"model":"anthropic/claude-opus-5.5","reasoning_effort":"low","providerOptions":{"anthropic":{"thinking":{"type":"adaptive"}}}}`, false},

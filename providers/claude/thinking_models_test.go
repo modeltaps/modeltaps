@@ -105,4 +105,14 @@ func TestConvertFromChatOpenaiAdaptiveThinking(t *testing.T) {
 	if got.Thinking != nil || got.OutputConfig != nil {
 		t.Fatalf("Thinking = %#v, OutputConfig = %#v, want none", got.Thinking, got.OutputConfig)
 	}
+
+	// "none" asks for the fastest answer: no thinking configuration, the lowest effort.
+	got = convertForTest(t, &types.ChatCompletionRequest{Model: "claude-opus-5-5", MaxTokens: 4096, ReasoningEffort: effortPtr("none"), Messages: msgs})
+	if got.Thinking != nil || got.OutputConfig == nil || got.OutputConfig.Effort != "low" {
+		t.Fatalf("none: Thinking = %#v, OutputConfig = %#v, want no thinking and effort low", got.Thinking, got.OutputConfig)
+	}
+	got = convertForTest(t, &types.ChatCompletionRequest{Model: "claude-haiku-4-5", MaxTokens: 4096, Reasoning: &types.ChatReasoning{Effort: "None"}, Messages: msgs})
+	if got.Thinking != nil || got.OutputConfig != nil || got.MaxTokens != 4096 {
+		t.Fatalf("none on an older model: Thinking = %#v, OutputConfig = %#v", got.Thinking, got.OutputConfig)
+	}
 }

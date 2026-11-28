@@ -129,7 +129,13 @@ func (p *AzureDatabricksProvider) convertRequest(request *types.ChatCompletionRe
 		if reasoning == nil {
 			reasoning = &types.ChatReasoning{Effort: *request.ReasoningEffort}
 		}
-		if claude.AdaptiveThinkingSupported(request.Model) {
+		if claude.ReasoningOff(reasoning) {
+			// "none" must not turn thinking on; the lowest effort is the closest setting on
+			// models that take one.
+			if claude.AdaptiveThinkingSupported(request.Model) {
+				databricksRequest.OutputConfig = &OutputConfig{Effort: "low"}
+			}
+		} else if claude.AdaptiveThinkingSupported(request.Model) {
 			databricksRequest.Thinking, databricksRequest.OutputConfig = getAdaptiveThinking(request.Model, reasoning)
 		} else {
 			var opErr *types.OpenAIErrorWithStatusCode

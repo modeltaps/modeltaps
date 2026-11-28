@@ -234,7 +234,13 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 		if reasoning == nil && request.ReasoningEffort != nil {
 			reasoning = &types.ChatReasoning{Effort: *request.ReasoningEffort}
 		}
-		if AdaptiveThinkingSupported(claudeRequest.Model) {
+		if ReasoningOff(reasoning) && request.OneOtherArg != "thinking" {
+			// "none" asks for the fastest answer. The newest models cannot switch thinking off,
+			// so the closest setting is the lowest effort, with no thinking configuration.
+			if AdaptiveThinkingSupported(claudeRequest.Model) {
+				claudeRequest.OutputConfig = &OutputConfig{Effort: "low"}
+			}
+		} else if AdaptiveThinkingSupported(claudeRequest.Model) {
 			claudeRequest.Thinking, claudeRequest.OutputConfig = getAdaptiveThinking(claudeRequest.Model, reasoning)
 		} else {
 			var opErr *types.OpenAIErrorWithStatusCode
@@ -528,7 +534,7 @@ func (h *ClaudeStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan strin
 		return
 	}
 
-	aiError := errorHandle(claudeResponse.Error)
+	aiError := errorHandle(claudeResponse.streamError())
 	if aiError != nil {
 		errChan <- aiError
 		return

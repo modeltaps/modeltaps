@@ -39,6 +39,8 @@ func TestConvertRequestThinking(t *testing.T) {
 		{"Sonnet 4.6 adaptive, xhigh lowered", &types.ChatCompletionRequest{Model: "databricks-claude-sonnet-4-6", MaxTokens: 4096, ReasoningEffort: effort("xhigh")}, `{"type":"adaptive"}`, "high"},
 		{"budget only: adaptive without effort", &types.ChatCompletionRequest{Model: "databricks-claude-opus-4-8", MaxTokens: 4096, Reasoning: &types.ChatReasoning{MaxTokens: 2000}}, `{"type":"adaptive"}`, ""},
 		{"older model keeps the budget", &types.ChatCompletionRequest{Model: "databricks-claude-sonnet-4-5", MaxTokens: 4096, ReasoningEffort: effort("medium")}, `{"budget_tokens":2048,"type":"enabled"}`, ""},
+		{"none: no thinking, lowest effort", &types.ChatCompletionRequest{Model: "databricks-claude-opus-5-5", MaxTokens: 4096, ReasoningEffort: effort("none")}, "", "low"},
+		{"none on an older model: nothing", &types.ChatCompletionRequest{Model: "databricks-claude-sonnet-4-5", MaxTokens: 4096, ReasoningEffort: effort("none")}, "", ""},
 		{"no reasoning asked", &types.ChatCompletionRequest{Model: "databricks-claude-opus-5-5", MaxTokens: 4096}, "", ""},
 	}
 	for _, tc := range cases {

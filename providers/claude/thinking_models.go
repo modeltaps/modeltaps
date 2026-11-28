@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/modeltaps/modeltaps/types"
 )
 
 // Which thinking configuration a Claude model takes, from its name. Two generations matter:
@@ -80,6 +82,13 @@ func ClaudeEffort(effort, model string) string { return claudeEffort(effort, mod
 func AlwaysThinks(name string) bool {
 	family, _, _, ok := claudeModelVersion(name)
 	return ok && (family == "fable" || family == "mythos")
+}
+
+// ReasoningOff reports whether an OpenAI-style reasoning request asks for no reasoning: the
+// effort "none" without a token budget. Such a request must not turn thinking on.
+func ReasoningOff(reasoning *types.ChatReasoning) bool {
+	return reasoning != nil && reasoning.MaxTokens == 0 &&
+		strings.EqualFold(strings.TrimSpace(reasoning.Effort), "none")
 }
 
 // claudeEffort maps an OpenAI-style reasoning effort onto Claude's output_config.effort, "" when

@@ -66,6 +66,11 @@ func withThinkingDisplay(body []byte) []byte {
 	if !root.Get("reasoning_effort").Exists() && !root.Get("reasoning").IsObject() {
 		return body
 	}
+	// "none" asks for no reasoning, so there is no summary to request.
+	if strings.EqualFold(root.Get("reasoning_effort").String(), "none") ||
+		strings.EqualFold(root.Get("reasoning.effort").String(), "none") {
+		return body
+	}
 	if root.Get("providerOptions.anthropic.thinking").Exists() {
 		return body
 	}
